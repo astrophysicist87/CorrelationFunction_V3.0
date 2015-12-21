@@ -553,6 +553,8 @@ debugger(__LINE__, __FILE__);
 
 void CorrelationFunction::Update_sourcefunction(particle_info* particle, int FOarray_length, int particle_idx)
 {
+	full_FO_length = FOarray_length * eta_s_npts;
+
 	osc0 = new double *** [FOarray_length];					//to hold cos/sin(q0 t)
 	osc1 = new double ** [FOarray_length];					//to hold cos/sin(qx x)
 	osc2 = new double ** [FOarray_length];					//to hold cos/sin(qy y)
@@ -599,6 +601,29 @@ void CorrelationFunction::Update_sourcefunction(particle_info* particle, int FOa
 				osc3[isurf][ieta][iq][0] = cos(hbarCm1*qz_pts[iq]*zpt);
 				osc0[isurf][ieta][iq][1] = sin(hbarCm1*qt_pts[iq]*tpt);
 				osc3[isurf][ieta][iq][1] = sin(hbarCm1*qz_pts[iq]*zpt);
+			}
+		}
+	}
+
+	S_p_withweight_array = new double *** [n_interp_pT_pts];
+	zero_FOcell_flag = new bool *** [n_interp_pT_pts];
+	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+	{
+		S_p_withweight_array[ipt] = new double ** [n_interp_pphi_pts];
+		zero_FOcell_flag[ipt] = new bool ** [n_interp_pphi_pts];
+		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		{
+			S_p_withweight_array[ipt][ipphi] = new double * [FOarray_length];
+			zero_FOcell_flag[ipt][ipphi] = new bool * [FOarray_length];
+			for (int isurf = 0; isurf < FOarray_length; ++isurf)
+			{
+				S_p_withweight_array[ipt][ipphi][isurf] = new double [eta_s_npts];
+				zero_FOcell_flag[ipt][ipphi][isurf] = new bool [eta_s_npts];
+				for (int ieta = 0; ieta < eta_s_npts; ++ieta)
+				{
+					S_p_withweight_array[ipt][ipphi][isurf][ieta] = 0.0;
+					zero_FOcell_flag[ipt][ipphi][isurf][ieta] = false;	//assume by default that all FOcells need to be included, i.e., cannot be zeroed
+				}
 			}
 		}
 	}

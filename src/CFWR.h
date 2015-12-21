@@ -79,6 +79,7 @@ class CorrelationFunction
 		int target_particle_id;		//the particle whose spectra (with resonance contributions) you want to compute
 		int current_level_of_output;
 		int qspace_cs_slice_length;
+		int full_FO_length;
 
 		int n_zeta_pts, n_v_pts, n_s_pts;
 		double v_min, v_max, zeta_min, zeta_max, s_min, s_max;
@@ -207,7 +208,9 @@ class CorrelationFunction
 		double *** res_sign_info, *** res_log_info, *** res_moments_info;
 		double ***** local_temp_moments, ******* temp_moments_array;
 
-		double **** weighted_S_p_array;
+		double **** S_p_withweight_array;
+		//double ** S_pt_pphi_withweight_array;
+		bool **** zero_FOcell_flag;
 		
 		//miscellaneous
 		ofstream * global_out_stream_ptr;
@@ -240,6 +243,9 @@ class CorrelationFunction
 		int Set_resonance_in_HDF_array(int local_pid, double ******* resonance_array_to_use);
 		int Initialize_resonance_HDF_array();
 		int Copy_chunk(int current_resonance_index, int reso_idx_to_be_copied);
+		int Set_S_p_withweight_chunk(int ipt, int ipphi, double * local_array);
+		int Get_S_p_withweight_chunk(int ipt, int ipphi, double * local_array);
+		int Create_S_p_withweight_HDFarray();
 
 		void Set_giant_array_slice(int iqt, int iqx, int iqy, int iqz);
 		void addElementToQueue(priority_queue<pair<double, size_t> >& p, pair<double, size_t> elem, size_t max_size);
@@ -247,7 +253,7 @@ class CorrelationFunction
 		void Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int dc_idx);
 		void Cal_dN_dypTdpTdphi(double** SP_p0, double** SP_px, double** SP_py, double** SP_pz, FO_surf* FOsurf_ptr);
 		void Cal_dN_dypTdpTdphi_heap(FO_surf* FOsurf_ptr, int local_pid);
-		void Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, int local_pid, double cutoff, int iqt, int iqx, int iqy, int iqz);
+		void Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, int local_pid, double cutoff);
 		double Cal_dN_dypTdpTdphi_function(FO_surf* FOsurf_ptr, int local_pid, double pT, double pphi);
 		void Do_resonance_integrals(int iKT, int iKphi, int dc_idx);
 		void Flatten_dN_dypTdpTdphi_moments();
@@ -343,6 +349,9 @@ class CorrelationFunction
 		H5::DataSpace * dataspace, * memspace;
 		H5::H5File * file;
 		H5::DataSet * dataset;
+		H5::DataSpace * SPAdataspace, * SPAmemspace;
+		H5::H5File * SPAfile;
+		H5::DataSet * SPAdataset;
 		H5::DataSpace * resonance_dataspace, * resonance_memspace;
 		H5::H5File * resonance_file;
 		H5::DataSet * resonance_dataset;
