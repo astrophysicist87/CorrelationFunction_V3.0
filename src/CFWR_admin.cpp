@@ -723,6 +723,36 @@ CorrelationFunction::~CorrelationFunction()
    return;
 }
 
+void CorrelationFunction::Delete_S_p_withweight_array()
+{
+	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+	{
+		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		{
+			for (int isurf = 0; isurf < FO_length; ++isurf)
+				delete [] zero_FOcell_flag[ipt][ipphi][isurf];
+			delete [] zero_FOcell_flag[ipt][ipphi];
+		}
+		delete [] S_p_withweight_array[ipt];
+		delete [] zero_FOcell_flag[ipt];
+	}
+	delete [] S_p_withweight_array;
+	delete [] zero_FOcell_flag;
+
+	return;
+}
+
+void CorrelationFunction::Reset_zero_FOcell_flag_array()
+{
+	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+	for (int isurf = 0; isurf < FO_length; ++isurf)
+	for (int ieta = 0; ieta < eta_s_npts; ++ieta)
+		zero_FOcell_flag[ipt][ipphi][isurf][ieta] = false;	//assume by default that all FOcells need to be included, i.e., cannot be zeroed
+
+	return;
+}
+
 void CorrelationFunction::Allocate_decay_channel_info()
 {
 	if (VERBOSE > 2) *global_out_stream_ptr << "Reallocating memory for decay channel information..." << endl;

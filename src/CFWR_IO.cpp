@@ -241,7 +241,11 @@ void CorrelationFunction::Output_total_target_eiqx_dN_dypTdpTdphi(int folderinde
 	filename_stream_target_dN_dypTdpTdphi << global_path << "/total_" << local_name << "_eiqx_dN_dypTdpTdphi_ev" << folderindex << no_df_stem << ".dat";
 	ofstream output_target_dN_dypTdpTdphi(filename_stream_target_dN_dypTdpTdphi.str().c_str());
 
-	int HDFloadTargetSuccess = Get_resonance_from_HDF_array(target_particle_id, current_dN_dypTdpTdphi_moments);
+	int HDFloadTargetSuccess = 0;
+	if (USE_2D_HDF5)
+		HDFloadTargetSuccess = Get_2D_resonance_from_HDF_array(target_particle_id, current_dN_dypTdpTdphi_moments);
+	else
+		HDFloadTargetSuccess = Get_resonance_from_HDF_array(target_particle_id, current_dN_dypTdpTdphi_moments);
 
 	for (int iqt = 0; iqt < qnpts; ++iqt)
 	for (int iqx = 0; iqx < qnpts; ++iqx)

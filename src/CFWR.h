@@ -244,9 +244,10 @@ class CorrelationFunction
 		int Set_resonance_in_HDF_array(int local_pid, double ******* resonance_array_to_use);
 		int Initialize_resonance_HDF_array();
 		int Copy_chunk(int current_resonance_index, int reso_idx_to_be_copied);
-		int Set_S_p_withweight_chunk(int ipt, int ipphi, double * local_array);
-		int Get_S_p_withweight_chunk(int ipt, int ipphi, double * local_array);
-		int Create_S_p_withweight_HDFarray();
+		int Get_2D_resonance_from_HDF_array(int local_pid, double ******* resonance_array_to_fill);
+		int Set_2D_resonance_in_HDF_array(int local_pid, double ******* resonance_array_to_use);
+		int Initialize_2D_resonance_HDF_array();
+		int Copy_2D_chunk(int current_resonance_index, int reso_idx_to_be_copied);
 
 		void Set_giant_array_slice(int iqt, int iqx, int iqy, int iqz);
 		void addElementToQueue(priority_queue<pair<double, size_t> >& p, pair<double, size_t> elem, size_t max_size);
@@ -314,6 +315,8 @@ class CorrelationFunction
 		void Teardown_temp_arrays(double ***** local_temp_moments, double ******* temp_moments_array);
 		void Setup_current_daughters_dN_dypTdpTdphi_moments(int n_daughter);
 		void Cleanup_current_daughters_dN_dypTdpTdphi_moments(int n_daughter);
+		void Delete_S_p_withweight_array();
+		void Reset_zero_FOcell_flag_array();
 
 		// Gaussian fit / correlation function routines
 		void Get_GF_HBTradii(FO_surf* FOsurf_ptr, int folderindex);

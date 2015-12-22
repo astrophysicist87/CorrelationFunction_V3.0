@@ -145,11 +145,11 @@ static int wt[16][16] = {
 
 
 //**********************************************************************
-long binarySearch(double * A, int length, double value, bool skip_out_of_range)
+long binarySearch(double * A, int length, double value, bool skip_out_of_range /*== true*/)
 // Return the index of the largest number less than value in the list A
 // using binary search. Index starts with 0.
 // If skip_out_of_range is set to true, then it will return -1 for those
-// samples that are out of the table range.
+// samples that are out of the table range (default is true).
 {
    //int length = A->size();
    int idx_i, idx_f, idx;

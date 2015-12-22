@@ -11,7 +11,7 @@ void stratify_npts(double a, double b, int n1, int npts, double * x);
 void scalepoints(double * x, double a, double b, double scale, int n);
 
 //miscellaneous functions needed for interpolation routines
-long binarySearch(double * A, int length, double value, bool skip_out_of_range);
+long binarySearch(double * A, int length, double value, bool skip_out_of_range = true);
 void get_1D_derivatives(double * x, double * f, double * derivatives, int length, double);
 void get_2D_derivatives(double * x, double * y, double ** f, double ** f1, double ** f2, double ** f12, int x_length, int y_length, double default_edge_fill);
 void bcucof(double * y, double * y1, double * y2, double * y12, double d1, double d2, double ** c);

@@ -120,8 +120,6 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 			{
 				current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt][iqx][iqy][iqz][itrig] += ssum_vec[qpt_cs_idx] / fraction_of_resonances;
 				double temp = current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt][iqx][iqy][iqz][itrig];
-				current_daughters_ln_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt][iqx][iqy][iqz][itrig] = log(abs(temp)+1.e-100);
-				current_daughters_sign_of_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt][iqx][iqy][iqz][itrig] = sgn(temp);
 				++qpt_cs_idx;
 			}
 	
@@ -203,8 +201,6 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 			{
 				current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt][iqx][iqy][iqz][itrig] += ssum_vec[qpt_cs_idx] / fraction_of_resonances;
 				double temp = current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt][iqx][iqy][iqz][itrig];
-				current_daughters_ln_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt][iqx][iqy][iqz][itrig] = log(abs(temp)+1.e-100);
-				current_daughters_sign_of_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt][iqx][iqy][iqz][itrig] = sgn(temp);
 				++qpt_cs_idx;
 			}
 	

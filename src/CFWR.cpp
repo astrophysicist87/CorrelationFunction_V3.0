@@ -61,7 +61,11 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 	Stopwatch BIGsw;
 	int decay_channel_loop_cutoff = n_decay_channels;			//loop over direct pions and decay_channels
 
-	int HDFInitializationSuccess = Initialize_resonance_HDF_array();
+	int HDFInitializationSuccess = 0;
+	if (USE_2D_HDF5)
+		HDFInitializationSuccess = Initialize_2D_resonance_HDF_array();
+	else
+		HDFInitializationSuccess = Initialize_resonance_HDF_array();
 	if (HDFInitializationSuccess < 0)
 	{
 		cerr << "Failed to initialize HDF array of resonances!  Exiting..." << endl;
@@ -94,6 +98,9 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 		Get_spacetime_moments(FOsurf_ptr, idc);
 	}	//computing all resonances' spacetime moments here first
 		//THEN do phase-space integrals
+
+	// once all spacetime moments have been computed, get rid of weighted S_p array to save space
+	Delete_S_p_withweight_array();
 
 	if (VERBOSE > 0) *global_out_stream_ptr << endl << "************************************************************"
 											<< endl << "* Computed all (thermal) space-time moments!" << endl
@@ -436,7 +443,11 @@ bool CorrelationFunction::particles_are_the_same(int reso_idx1, int reso_idx2)
 
 void CorrelationFunction::Recycle_spacetime_moments()
 {
-	int HDFcopyChunkSuccess = Copy_chunk(current_resonance_particle_id, reso_particle_id_of_moments_to_recycle);
+	int HDFcopyChunkSuccess = 0;
+	if (USE_2D_HDF5)
+		HDFcopyChunkSuccess = Copy_2D_chunk(current_resonance_particle_id, reso_particle_id_of_moments_to_recycle);
+	else
+		HDFcopyChunkSuccess = Copy_chunk(current_resonance_particle_id, reso_particle_id_of_moments_to_recycle);
 
 	return;
 }
@@ -445,8 +456,12 @@ void CorrelationFunction::Recycle_spacetime_moments()
 //**************************************************************
 void CorrelationFunction::Load_resonance_and_daughter_spectra(int local_pid)
 {
+	int getHDFresonanceSpectra = 0;
 	// get parent resonance spectra, set logs and signs arrays that are needed for interpolation
-	Get_resonance_from_HDF_array(local_pid, current_dN_dypTdpTdphi_moments);
+	if (USE_2D_HDF5)
+		getHDFresonanceSpectra = Get_2D_resonance_from_HDF_array(local_pid, current_dN_dypTdpTdphi_moments);
+	else
+		getHDFresonanceSpectra = Get_resonance_from_HDF_array(local_pid, current_dN_dypTdpTdphi_moments);
 	Set_current_resonance_logs_and_signs();
 
 	// get spectra for all daughters, set all of the logs and signs arrays that are needed for interpolation
@@ -461,7 +476,10 @@ void CorrelationFunction::Load_resonance_and_daughter_spectra(int local_pid)
 		for (set<int>::iterator it = daughter_resonance_indices.begin(); it != daughter_resonance_indices.end(); ++it)
 		{
 			int daughter_pid = *it;		//daughter pid is pointed to by iterator
-			Get_resonance_from_HDF_array(daughter_pid, current_daughters_dN_dypTdpTdphi_moments[d_idx]);
+			if (USE_2D_HDF5)
+				getHDFresonanceSpectra = Get_2D_resonance_from_HDF_array(daughter_pid, current_daughters_dN_dypTdpTdphi_moments[d_idx]);
+			else
+				getHDFresonanceSpectra = Get_resonance_from_HDF_array(daughter_pid, current_daughters_dN_dypTdpTdphi_moments[d_idx]);
 			++d_idx;
 		}
 	
@@ -482,7 +500,11 @@ void CorrelationFunction::Update_daughter_spectra()
 	for (set<int>::iterator it = daughter_resonance_indices.begin(); it != daughter_resonance_indices.end(); ++it)
 	{
 		int daughter_pid = *it;		//daughter pid is pointed to by iterator
-		Set_resonance_in_HDF_array(daughter_pid, current_daughters_dN_dypTdpTdphi_moments[d_idx]);
+		int setHDFresonanceSpectra = 0;
+		if (USE_2D_HDF5)
+			setHDFresonanceSpectra = Set_2D_resonance_in_HDF_array(daughter_pid, current_daughters_dN_dypTdpTdphi_moments[d_idx]);
+		else
+			setHDFresonanceSpectra = Set_resonance_in_HDF_array(daughter_pid, current_daughters_dN_dypTdpTdphi_moments[d_idx]);
 		++d_idx;
 	}
 
@@ -626,7 +648,11 @@ void CorrelationFunction::Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int lo
 	*global_out_stream_ptr << "CP#2: Took " << sw.printTime() << " seconds." << endl;
 
 	// store in HDF5 file
-	int setHDFresonanceSpectra = Set_resonance_in_HDF_array(local_pid, current_dN_dypTdpTdphi_moments);
+	int setHDFresonanceSpectra = 0;
+	if (USE_2D_HDF5)
+		setHDFresonanceSpectra = Set_2D_resonance_in_HDF_array(local_pid, current_dN_dypTdpTdphi_moments);
+	else
+		setHDFresonanceSpectra = Set_resonance_in_HDF_array(local_pid, current_dN_dypTdpTdphi_moments);
 	if (setHDFresonanceSpectra < 0)
 	{
 		cerr << "Failed to initialize HDF array of resonances!  Exiting..." << endl;
@@ -727,11 +753,6 @@ sw2.Start();
 			double px = pT*cos_pphi;
 			double py = pT*sin_pphi;
 			number_of_FOcells_above_cutoff_array[ipt][iphi] = floor(nFO_cutoff * FO_length);
-			if (number_of_FOcells_above_cutoff_array[ipt][iphi] != FO_length)
-			{
-				cerr << "Error here!" << endl;
-				exit;
-			}
 
 			double tempsum = 0.0, tempabssum = 0.0;
 			double ** tmp_S_p_withweight_array = new double * [FO_length];
@@ -741,11 +762,7 @@ sw2.Start();
 			// try to define this array so that it's smaller at run-time...
 			S_p_withweight_array[ipt][iphi] = new double * [ number_of_FOcells_above_cutoff_array[ipt][iphi] ];
 			for (int ii = 0; ii < number_of_FOcells_above_cutoff_array[ipt][iphi]; ++ii)
-			{
 				S_p_withweight_array[ipt][iphi][ii] = new double [eta_s_npts];
-				//for (int ieta = 0; ieta < eta_s_npts; ++ieta)
-				//	S_p_withweight_array[ipt][iphi][ii][ieta] = 0.0;
-			}
 
 			int iFOcell = 0;
 			priority_queue<pair<double, size_t> > FOcells_PQ;
@@ -814,11 +831,6 @@ sw2.Start();
 			sw3.Start();
 			int FOcells_PQ_size = FOcells_PQ.size();
 			number_of_FOcells_above_cutoff_array[ipt][iphi] = FOcells_PQ_size;
-			if (number_of_FOcells_above_cutoff_array[ipt][iphi] != FO_length)
-			{
-				cerr << "Error here!" << endl;
-				exit;
-			}
 
 			for (int ii = 0; ii < FOcells_PQ_size; ii++)
 			{
@@ -896,7 +908,6 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 	debug_sw.Start();
 
 	int temp_moms_lin_arr_length = n_interp_pT_pts * n_interp_pphi_pts * ntrig;
-	int FT_loop_length = ntrig;
 
 	double eta_s_symmetry_factor = 2.0;
 
@@ -935,13 +946,14 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 				{
 					if (running_sum >= cutoff)
 					{
-						*global_out_stream_ptr << "   --> Convergence reached at index == " << index << "/" << number_of_FOcells_above_cutoff_array[ipt][iphi] << "!" << endl
-												<< "   --> Finished with " << 100.*running_sum << "% of integrals completed!" << endl;
+						//*global_out_stream_ptr << "   --> Convergence reached at index == " << index << "/" << number_of_FOcells_above_cutoff_array[ipt][iphi] << "!" << endl
+						//						<< "   --> Finished with " << 100.*running_sum << "% of integrals completed!" << endl;
 						break;
 					}
 					else if (index >= number_of_FOcells_above_cutoff_array[ipt][iphi])
 					{
-						*global_out_stream_ptr << "WARNING: you didn't choose large enough number of partial ordered FO cells!" << endl
+						*global_out_stream_ptr << "WARNING: you didn't choose large enough number of partial ordered FO cells for (pt, pphi) = ("
+												<< SPinterp_pT[ipt] << ", " << SPinterp_pphi[ipt] << ")!" << endl
 												<< "   --> quit with only " << 100.*running_sum << "% < " << 100.*cutoff << "% of integrals completed!" << endl;
 						break;
 					}
@@ -949,7 +961,6 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 					double * slice3 = slice2[index];
 
 					int isurf = most_important_FOcells_for_current_pt_and_pphi[index];
-					//double * slice3 = slice2[isurf];
 					bool * z_slice3 = z_slice2[isurf];
 					double * slice_of_giant_array_slice = giant_array_slice[isurf];
 	
@@ -961,18 +972,8 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 						if (z_slice3[ieta])
 							continue;
 	
-						//double S_p_withweight = S_p_withweight_array[ipt][iphi][isurf][ieta];
-						//double S_p_withweight = S_p_withweight_array[ipt][iphi][index][ieta];
 						double S_p_withweight = slice3[ieta];
 	
-						//lin_TMLAL_idx = ptphi_index * FT_loop_length;
-	
-						//for (int itrig = 0; itrig < ntrig; ++itrig)
-						//{
-							// notice carefully worked index math to speed up calculations...
-							//temp_moms_linear_array[lin_TMLAL_idx] += slice_of_giant_array_slice[ntrig*ieta+itrig] * S_p_withweight;
-							//++lin_TMLAL_idx;
-						//}
 						for (int itrig = 0; itrig < ntrig; ++itrig)
 							temp_moms_linear_array[ntrig * ptphi_index + itrig] += slice_of_giant_array_slice[ntrig * ieta + itrig] * S_p_withweight;
 
@@ -993,6 +994,7 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 			current_dN_dypTdpTdphi_moments[ipt][iphi][iqt][iqx][iqy][iqz][itrig] = temp;
 			++iidx;
 		}
+
 		// Clean up
 		delete [] giant_array_slice;
 
@@ -1001,6 +1003,16 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 								<< iqt << ", " << iqx << ", " << iqy << ", " << iqz
 								<< ") in " << debug_sw2.printTime() << " seconds." << endl;
 	}		//end of q-loops
+
+	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+	for (int iphi = 0; iphi < n_interp_pphi_pts; ++iphi)
+	{
+		for (int ii = 0; ii < number_of_FOcells_above_cutoff_array[ipt][iphi]; ++ii)
+			delete [] S_p_withweight_array[ipt][iphi][ii];
+		delete [] S_p_withweight_array[ipt][iphi];
+	}
+	Reset_zero_FOcell_flag_array();
+
 
 	delete [] temp_moms_linear_array;
 

@@ -62,8 +62,30 @@ void CorrelationFunction::Get_GF_HBTradii(FO_surf* FOsurf_ptr, int folderindex)
 
 /*double CorrelationFunction::Compute_correlationfunction(double * q_interp)
 {
-	// try using linear-logarithmic interpolation
-	
+	// try using linear-logarithmic interpolation if q-point is within grid
+	// otherwise, just use linear interpolation/extrapolation, or throw an exception and do return unity
+	double results = 0.0;
+	int qtidx = binarySearch(qt_pts, qnpts, q_interp[0]);
+	int qxidx = binarySearch(qx_pts, qnpts, q_interp[1]);
+	int qyidx = binarySearch(qy_pts, qnpts, q_interp[2]);
+	int qzidx = binarySearch(qz_pts, qnpts, q_interp[3]);
+	bool q_point_is_outside_grid = ( qtidx == -1 ) || ( qxidx == -1 ) || ( qyidx == -1 ) || ( qzidx == -1 );
+
+	if (!q_point_is_outside_grid)
+	{
+		double * sgnd_q2_interp = new double [4];
+		for (int i = 0; i < 4; ++i)
+			sgnd_q2_interp[i] = sgn(q_interp[i]) * q_interp[i] * q_interp[i];
+
+		
+	}
+	else
+	{
+		*global_out_stream_ptr << "Warning: q_interp point was outside of computed grid!" << endl;
+		result = 1.0;
+	}
+
+	return (result);
 }*/
 
 void CorrelationFunction::Cal_correlationfunction()
@@ -74,16 +96,14 @@ void CorrelationFunction::Cal_correlationfunction()
 	double * q_interp = new double [4];
 
 	// Then compute full correlation function
-	//for (int iKT = 0; iKT < n_localp_T; iKT++)
-	//for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 	for (int iqo = 0; iqo < qonpts; ++iqo)
 	for (int iqs = 0; iqs < qsnpts; ++iqs)
 	for (int iql = 0; iql < qlnpts; ++iql)
 	{
-		Get_q_points(qo_pts[iqo], qs_pts[iqs], ql_pts[iql], K_T[iKT], K_phi[iKphi], q_interp);
-		CFvals[iKT][iKphi][iqo][iqs][iql] = Compute_correlationfunction(q_interp);
+		Get_q_points(qo_pts[iqo], qs_pts[iqs], ql_pts[iql], SPinterp_pT[ipt], SPinterp_pphi[ipphi], q_interp);
+		CFvals[ipt][ipphi][iqo][iqs][iql] = Compute_correlationfunction(q_interp);
 	}*/
 
 	return;
