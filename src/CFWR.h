@@ -80,6 +80,7 @@ class CorrelationFunction
 		int current_level_of_output;
 		int qspace_cs_slice_length;
 		int full_FO_length;
+		int nFO_cutoff;
 
 		int n_zeta_pts, n_v_pts, n_s_pts;
 		double v_min, v_max, zeta_min, zeta_max, s_min, s_max;

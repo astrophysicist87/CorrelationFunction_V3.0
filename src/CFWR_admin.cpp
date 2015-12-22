@@ -613,15 +613,15 @@ void CorrelationFunction::Update_sourcefunction(particle_info* particle, int FOa
 		zero_FOcell_flag[ipt] = new bool ** [n_interp_pphi_pts];
 		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 		{
-			S_p_withweight_array[ipt][ipphi] = new double * [FOarray_length];
+			//S_p_withweight_array[ipt][ipphi] = new double * [FOarray_length];
 			zero_FOcell_flag[ipt][ipphi] = new bool * [FOarray_length];
 			for (int isurf = 0; isurf < FOarray_length; ++isurf)
 			{
-				S_p_withweight_array[ipt][ipphi][isurf] = new double [eta_s_npts];
+				//S_p_withweight_array[ipt][ipphi][isurf] = new double [eta_s_npts];
 				zero_FOcell_flag[ipt][ipphi][isurf] = new bool [eta_s_npts];
 				for (int ieta = 0; ieta < eta_s_npts; ++ieta)
 				{
-					S_p_withweight_array[ipt][ipphi][isurf][ieta] = 0.0;
+					//S_p_withweight_array[ipt][ipphi][isurf][ieta] = 0.0;
 					zero_FOcell_flag[ipt][ipphi][isurf][ieta] = false;	//assume by default that all FOcells need to be included, i.e., cannot be zeroed
 				}
 			}
