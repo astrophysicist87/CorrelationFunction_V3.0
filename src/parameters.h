@@ -20,6 +20,7 @@ using namespace std;
 #define SPACETIME_MOMENTS_ONLY		false		// duh
 #define DO_ALL_DECAY_CHANNELS		false		// duh
 #define USE_HDF5			false		// utilizes HDF5 software to store large arrays
+#define USE_LAMBDA			false		// fit correlation function with adjustable intercept parameter
 
 #ifndef H5_NO_NAMESPACE
     using namespace H5;
@@ -58,12 +59,12 @@ const int qlnpts = 10;
 //const int qnpts = 6;
 //const double delta_q = 0.05;
 //const double init_q = -2.5*delta_q;
-//const int qnpts = 3;
-//const double delta_q = 0.05;
-//const double init_q = -delta_q;
-const int qnpts = 1;
-const double delta_q = 0.005;
-const double init_q = 0.0;
+const int qnpts = 3;
+const double delta_q = 0.05;
+const double init_q = -delta_q;
+//const int qnpts = 1;
+//const double delta_q = 0.005;
+//const double init_q = 0.0;
 
 
 //single particle spectra info

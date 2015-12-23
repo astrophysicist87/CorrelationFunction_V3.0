@@ -104,10 +104,10 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 	BIGsw.toc();
 	*global_out_stream_ptr << "\t ...finished all (thermal) space-time moments in " << BIGsw.takeTime() << " seconds." << endl;
 	
-	if (SPACETIME_MOMENTS_ONLY || thermal_pions_only)
+	if (SPACETIME_MOMENTS_ONLY)
 		return;
-	//else if (thermal_pions_only)
-	//	goto correlation_function_calculation;
+	else if (thermal_pions_only)
+		goto correlation_function_calculation;
 
 	*global_out_stream_ptr << "Computing all phase-space integrals..." << endl;
 	BIGsw.tic();
@@ -150,9 +150,9 @@ debugger(__LINE__, __FILE__);
 		Delete_decay_channel_info();				// free up memory
 	}											// END of decay channel loop
 
-//correlation_function_calculation:
+correlation_function_calculation:
 	// Now, with all resonance contributions to correlation function computed, do the actual calculation
-	//Cal_correlationfunction();
+	Cal_correlationfunction();
 
    return;
 }

@@ -915,22 +915,26 @@ void CorrelationFunction::Set_q_points()
 		qx_pts[iq] = init_q + (double)iq * delta_q;
 		qy_pts[iq] = init_q + (double)iq * delta_q;
 		qz_pts[iq] = init_q + (double)iq * delta_q;
-		if (abs(qt_pts[iq]) < tol)
+		if (abs(qt_pts[iq]) < 1.e-15)
 			iqt0 = iq;
-		if (abs(qx_pts[iq]) < tol)
+		if (abs(qx_pts[iq]) < 1.e-15)
 			iqx0 = iq;
-		if (abs(qy_pts[iq]) < tol)
+		if (abs(qy_pts[iq]) < 1.e-15)
 			iqy0 = iq;
-		if (abs(qz_pts[iq]) < tol)
+		if (abs(qz_pts[iq]) < 1.e-15)
 			iqz0 = iq;
 	}
+
+	cerr << "Output iq*0 = " << iqt0 << "   " << iqx0 << "   " << iqy0 << "   " << iqz0 << endl;
+
+if (1) exit;
 
 	return;
 }
 
-// sets points in q-space for computing weighted spectra grid
 void CorrelationFunction::Set_correlation_function_q_pts()
 {
+	// initialize q-points for actual correlation function
 	qo_pts = new double [qonpts];
 	qs_pts = new double [qsnpts];
 	ql_pts = new double [qlnpts];
@@ -940,6 +944,19 @@ void CorrelationFunction::Set_correlation_function_q_pts()
 		qs_pts[iq] = init_q + (double)iq * delta_q;
 	for (int iq = 0; iq < qlnpts; ++iq)
 		ql_pts[iq] = init_q + (double)iq * delta_q;
+
+	// initialize error matrix
+	Correl_3D_err = new double [qonpts];
+	for (int iqo = 0; iqo < qonpts; ++iqo)
+	{
+		Correl_3D_err[iqo] = new double [qsnpts];
+		for (int iqs = 0; iqs < qsnpts; ++iqs)
+		{
+			Correl_3D_err[iqo][iqs] = new double [qlnpts];
+			for (int iql = 0; iql < qlnpts; ++iql)
+				Correl_3D_err[iqo][iqs][iql] = 0.0;
+		}
+	}
 
 	return;
 }

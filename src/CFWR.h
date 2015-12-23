@@ -48,18 +48,22 @@ typedef struct
    bool include_channel;
 }decay_info;
 
-struct Correlationfunction1D_data
+struct Correlationfunction3D_data
 {
   size_t data_length;
-  double * q;
+  double * q_o;
+  double * q_s;
+  double * q_l;
   double * y;
   double * sigma;
 };
 
-int Fittarget_correlfun1D_f (const gsl_vector *xvec_ptr, void *params_ptr, gsl_vector *f_ptr);
-int Fittarget_correlfun1D_df (const gsl_vector *xvec_ptr, void *params_ptr,  gsl_matrix *Jacobian_ptr);
-int Fittarget_correlfun1D_fdf (const gsl_vector* xvec_ptr, void *params_ptr, gsl_vector* f_ptr, gsl_matrix* Jacobian_ptr);
-
+int Fittarget_correlfun3D_f (const gsl_vector *xvec_ptr, void *params_ptr, gsl_vector *f_ptr);
+int Fittarget_correlfun3D_df (const gsl_vector *xvec_ptr, void *params_ptr,  gsl_matrix *Jacobian_ptr);
+int Fittarget_correlfun3D_fdf (const gsl_vector* xvec_ptr, void *params_ptr, gsl_vector* f_ptr, gsl_matrix* Jacobian_ptr);
+int Fittarget_correlfun3D_f_withlambda (const gsl_vector *xvec_ptr, void *params_ptr, gsl_vector *f_ptr);
+int Fittarget_correlfun3D_df_withlambda (const gsl_vector *xvec_ptr, void *params_ptr,  gsl_matrix *Jacobian_ptr);
+int Fittarget_correlfun3D_fdf_withlambda (const gsl_vector* xvec_ptr, void *params_ptr, gsl_vector* f_ptr, gsl_matrix* Jacobian_ptr);
 
 class CorrelationFunction
 {
@@ -175,7 +179,7 @@ class CorrelationFunction
 		double * VEC_pstar, * VEC_Estar, * VEC_DeltaY, * VEC_Yp, * VEC_Ym, * VEC_s_factor, * VEC_g_s;
 		double ** VEC_P_Y, ** VEC_MTbar, ** VEC_DeltaMT, ** VEC_MTp, ** VEC_MTm, ** VEC_v_factor;
 		double *** VEC_MT, *** VEC_PPhi_tilde, *** VEC_PPhi_tildeFLIP, *** VEC_PT, *** VEC_zeta_factor;
-        	double * ssum_vec, * vsum_vec, * zetasum_vec, * Csum_vec;
+		double * ssum_vec, * vsum_vec, * zetasum_vec, * Csum_vec;
 		
 		//Emission function
 		int FO_length;
@@ -189,12 +193,8 @@ class CorrelationFunction
 		int iqt0, iqx0, iqy0, iqz0;
 		
 		//store correlation functions
-		double * Correl_1D_out;
-		double * Correl_1D_out_err;
-		double * Correl_1D_side;
-		double * Correl_1D_side_err;
-		double * Correl_1D_long;
-		double * Correl_1D_long_err;
+		//double *** Correl_3D;
+		double *** Correl_3D_err;
 		double ** lambda_Correl, ** lambda_Correl_err;
 
 		//HBT radii coefficients
@@ -211,7 +211,6 @@ class CorrelationFunction
 		double ***** local_temp_moments, ******* temp_moments_array;
 
 		double **** S_p_withweight_array;
-		//double ** S_pt_pphi_withweight_array;
 		bool **** zero_FOcell_flag;
 		
 		//miscellaneous
@@ -319,9 +318,11 @@ class CorrelationFunction
 		// Gaussian fit / correlation function routines
 		void Get_GF_HBTradii(FO_surf* FOsurf_ptr, int folderindex);
 		void Cal_correlationfunction();
-		void Fit_Correlationfunction1D(char osl_switch, int iKT, int iKphi);
-		int print_fit_state_1D (size_t iteration, gsl_multifit_fdfsolver * solver_ptr);
-		int Read_correlationfunction(int iKT, int iKphi);
+		void Fit_Correlationfunction3D(double *** Correl_3D);
+		int print_fit_state_3D (size_t iteration, gsl_multifit_fdfsolver * solver_ptr);
+		void Fit_Correlationfunction3D_withlambda(double *** Correl_3D);
+		int print_fit_state_3D_withlambda (size_t iteration, gsl_multifit_fdfsolver * solver_ptr);
+		//int Read_correlationfunction(int iKT, int iKphi);
 		inline double get_fit_results(int i, gsl_multifit_fdfsolver * solver_ptr);
 		inline double get_fit_err (int i, gsl_matrix * covariance_ptr);
 		double Compute_correlationfunction(int ipt, int ipphi, double * q_interp);

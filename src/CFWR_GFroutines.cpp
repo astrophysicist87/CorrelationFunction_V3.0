@@ -25,40 +25,15 @@ double slopes[4][2];
 
 void CorrelationFunction::Get_GF_HBTradii(FO_surf* FOsurf_ptr, int folderindex)
 {
-	bool read_in_correlation_function = false;
-
 	*global_out_stream_ptr << "--> Getting HBT radii by Gaussian fit method" << endl;
-	for(int iKT = 0; iKT < n_localp_T; iKT++)
+	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 	{
-      	*global_out_stream_ptr << "   - Calculating K_T = " << K_T[iKT] << " GeV ..." << endl;
-		for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
-		{
-			*global_out_stream_ptr << "\t\t --> Calculating K_phi = " << K_phi[iKphi] << " ..." << endl;
-			if (corrfuncdim == 1)
-			{
-				if (read_in_correlation_function)
-					Read_correlationfunction(iKT, iKphi);
-				//else
-				//	Cal_correlationfunction();
-				//Fit_Correlationfunction1D('o', iKT, iKphi);
-				//Fit_Correlationfunction1D('s', iKT, iKphi);
-				//Fit_Correlationfunction1D('l', iKT, iKphi);
-				//if (!read_in_correlation_function)
-				//	Output_correlationfunction(folderindex);
-	 		}
-			else if (corrfuncdim == 3)
-			{
-				//Cal_correlationfunction_3D(iKT, iKphi);
-				//if (lambdaflag)
-				//	Fit_Correlationfunction3D_withlambda(iKT, iKphi);
-				//else Fit_Correlationfunction3D(iKT, iKphi);
-				//Output_Correlationfunction_3D(iKT, iKphi, folderindex);
-				cerr << "corrfuncdim == 3 not currently supported!" << endl;
-			}
-			else
-				cerr << "corrfuncdim == " << corrfuncdim << " not currently supported!" << endl;
-		}
-		R2_Fourier_transform(iKT, global_plane_psi);
+		*global_out_stream_ptr << "   --> Doing pT = " << SPinterp_pT[ipt] << ", pphi = " << SPinterp_pphi[ipphi] << "..." << endl;
+		if (USE_LAMBDA)
+			Fit_Correlationfunction3D_withlambda( CFvals[ipt][ipphi] );
+		else
+			Fit_Correlationfunction3D( CFvals[ipt][ipphi] );
 	}
 }
 
@@ -75,7 +50,7 @@ double CorrelationFunction::Compute_correlationfunction(int ipt, int ipphi, doub
 	qidx[1] = binarySearch(qx_pts, qnpts, q_interp[1]);
 	qidx[2] = binarySearch(qy_pts, qnpts, q_interp[2]);
 	qidx[3] = binarySearch(qz_pts, qnpts, q_interp[3]);
-debugger(__LINE__, __FILE__);
+//debugger(__LINE__, __FILE__);
 	bool q_point_is_outside_grid = ( qidx[0] == -1 ) || ( qidx[1] == -1 ) || ( qidx[2] == -1 ) || ( qidx[3] == -1 );
 
 	if (!q_point_is_outside_grid)
@@ -85,27 +60,27 @@ debugger(__LINE__, __FILE__);
 		double q_max[4] = {qt_pts[qidx[0]+1], qx_pts[qidx[1]+1], qy_pts[qidx[2]+1], qz_pts[qidx[3]+1]};
 		double * sgnd_q2_min = new double [4];
 		double * sgnd_q2_max = new double [4];
-debugger(__LINE__, __FILE__);
+//debugger(__LINE__, __FILE__);
 		double ln_C_at_q[2][2][2][2];
 		double ***** current_C_slice = current_dN_dypTdpTdphi_moments[ipt][ipphi];
-debugger(__LINE__, __FILE__);
+//debugger(__LINE__, __FILE__);
 		// set values at all points used for interpolation
 		for (int i = 0; i < 2; ++i)
 		for (int j = 0; j < 2; ++j)
 		for (int k = 0; k < 2; ++k)
 		for (int l = 0; l < 2; ++l)
 		{
-debugger(__LINE__, __FILE__);
-			cerr << q_interp[0] << "   " << q_interp[1] << "   " << q_interp[2] << "   " << q_interp[3] << endl;
-			cerr << qidx[0]+i << "   " << qidx[1]+j << "   " << qidx[2]+k << "   " << qidx[3]+l << endl;
+//debugger(__LINE__, __FILE__);
+			//cerr << q_interp[0] << "   " << q_interp[1] << "   " << q_interp[2] << "   " << q_interp[3] << endl;
+			//cerr << qidx[0]+i << "   " << qidx[1]+j << "   " << qidx[2]+k << "   " << qidx[3]+l << endl;
 			double tmp_cos = current_C_slice[qidx[0]+i][qidx[1]+j][qidx[2]+k][qidx[3]+l][0];
-debugger(__LINE__, __FILE__);
+//debugger(__LINE__, __FILE__);
 			double tmp_sin = current_C_slice[qidx[0]+i][qidx[1]+j][qidx[2]+k][qidx[3]+l][1];
-debugger(__LINE__, __FILE__);
+//debugger(__LINE__, __FILE__);
 			ln_C_at_q[i][j][k][l] = log( (tmp_cos*tmp_cos + tmp_sin*tmp_sin)/(nonFTd_spectra*nonFTd_spectra) );
-debugger(__LINE__, __FILE__);
+//debugger(__LINE__, __FILE__);
 		}
-debugger(__LINE__, __FILE__);
+//debugger(__LINE__, __FILE__);
 		// interpolating w.r.t. q^2, not q
 		for (int i = 0; i < 4; ++i)
 		{
@@ -113,11 +88,11 @@ debugger(__LINE__, __FILE__);
 			sgnd_q2_min[i] = sgn(q_min[i]) * q_min[i] * q_min[i];
 			sgnd_q2_max[i] = sgn(q_max[i]) * q_max[i] * q_max[i];
 		}
-debugger(__LINE__, __FILE__);
+//debugger(__LINE__, __FILE__);
 
 		double interpolated_ln_result = interpolate_4D(sgnd_q2_min, sgnd_q2_max, sgnd_q2_interp, ln_C_at_q);
 		interpolated_result = exp(interpolated_ln_result);
-debugger(__LINE__, __FILE__);
+//debugger(__LINE__, __FILE__);
 		// Clean up
 		delete [] sgnd_q2_interp;
 		delete [] sgnd_q2_min;
@@ -128,7 +103,7 @@ debugger(__LINE__, __FILE__);
 		*global_out_stream_ptr << "Warning: q_interp point was outside of computed grid!" << endl;
 		interpolated_result = 1.0;
 	}
-debugger(__LINE__, __FILE__);
+//debugger(__LINE__, __FILE__);
 	return (interpolated_result);
 }
 
@@ -180,49 +155,517 @@ void CorrelationFunction::Cal_correlationfunction()
 	return;
 }
 
-int CorrelationFunction::Read_correlationfunction(int iKT, int iKphi)
+//**************************************************************
+// Gaussian fit routines below
+//**************************************************************
+
+void CorrelationFunction::Fit_Correlationfunction3D(double *** Correl_3D)
 {
-   if(fabs(K_y) > 1e-16)
-   {
-       //cout<<"not support for y not equals 0 yet!" << endl;
-       return (0);
-   }
+	const size_t data_length = qnpts*qnpts*qnpts;  // # of points
+	const size_t n_para = 4;  // # of parameters
 
-   double local_K_T = K_T[iKT];
-   double localK_phi = K_phi[iKphi];
+	// allocate space for a covariance matrix of size p by p
+	gsl_matrix *covariance_ptr = gsl_matrix_alloc (n_para, n_para);
 
-ostringstream corrfn_stream;
-corrfn_stream << global_path;
+	// allocate and setup for generating gaussian distibuted random numbers
+	gsl_rng_env_setup ();
+	const gsl_rng_type *type = gsl_rng_default;
+	gsl_rng *rng_ptr = gsl_rng_alloc (type);
 
-if (fabs(local_K_T) < 1e-16) corrfn_stream << "/correlfunct1D" << "_" << particle_name << "_kt_0.0_phi_";
-else if (fabs(local_K_T - 1.) < 1e-16) corrfn_stream << "/correlfunct1D" << "_" << particle_name << "_kt_1.0_phi_";
-else corrfn_stream << "/correlfunct1D" << "_" << particle_name << "_kt_" << local_K_T << "_phi_";
+	//set up test data
+	struct Correlationfunction3D_data Correlfun3D_data;
+	Correlfun3D_data.data_length = data_length;
+	Correlfun3D_data.q_o = new double [data_length];
+	Correlfun3D_data.q_s = new double [data_length];
+	Correlfun3D_data.q_l = new double [data_length];
+	Correlfun3D_data.y = new double [data_length];
+	Correlfun3D_data.sigma = new double [data_length];
 
-if (fabs(localK_phi) < 1e-16) corrfn_stream << "0.0.dat";
-else corrfn_stream << localK_phi << ".dat";
+	int idx = 0;
+	for(int i = 0; i < qnpts; i++)
+	for(int j = 0; j < qnpts; j++)
+	for(int k = 0; k < qnpts; k++)
+	{
+		Correlfun3D_data.q_o[idx] = q_out[i];
+		Correlfun3D_data.q_s[idx] = q_side[j];
+		Correlfun3D_data.q_l[idx] = q_long[k];
+		// This sets up the data to be fitted, with gaussian noise added
+		// Correlfun3D_data.y[idx] = 1.0*exp( - 0.81*q_out[i]*q_out[i] - 1.21*q_side[j]*q_side[j] - 4.0*q_long[k]*q_long[k] - 0.25*q_out[i]*q_side[j]) + gsl_ran_gaussian(rng_ptr, 	error);
+		Correlfun3D_data.y[idx] = Correl_3D[i][j][k];
+		Correlfun3D_data.sigma[idx] = Correl_3D_err[i][j][k];
+		//Correlfun3D_data.sigma[idx] = 1e-2;
+		idx++;
+	}
 
-if ( !fexists( corrfn_stream.str().c_str() ) )
+	double para_init[n_para] = { 1.0, 1.0, 1.0, 1.0 };  // initial guesses of parameters
+
+	gsl_vector_view xvec_ptr = gsl_vector_view_array (para_init, n_para);
+  
+	// set up the function to be fit 
+	gsl_multifit_function_fdf target_func;
+	target_func.f = &Fittarget_correlfun3D_f;        // the function of residuals
+	target_func.df = &Fittarget_correlfun3D_df;      // the gradient of this function
+	target_func.fdf = &Fittarget_correlfun3D_fdf;    // combined function and gradient
+	target_func.n = data_length;              // number of points in the data set
+	target_func.p = n_para;              // number of parameters in the fit function
+	target_func.params = &Correlfun3D_data;  // structure with the data and error bars
+
+	const gsl_multifit_fdfsolver_type *type_ptr = gsl_multifit_fdfsolver_lmsder;
+	gsl_multifit_fdfsolver *solver_ptr = gsl_multifit_fdfsolver_alloc (type_ptr, data_length, n_para);
+	gsl_multifit_fdfsolver_set (solver_ptr, &target_func, &xvec_ptr.vector);
+
+	size_t iteration = 0;         // initialize iteration counter
+	print_fit_state_3D (iteration, solver_ptr);
+	int status;  		// return value from gsl function calls (e.g., error)
+	do
+	{
+		iteration++;
+      
+		// perform a single iteration of the fitting routine
+		status = gsl_multifit_fdfsolver_iterate (solver_ptr);
+
+		// print out the status of the fit
+		cout << "status = " << gsl_strerror (status) << endl;
+
+		// customized routine to print out current parameters
+		print_fit_state_3D (iteration, solver_ptr);
+
+		if (status)    // check for a nonzero status code
+		{
+			break;  // this should only happen if an error code is returned 
+		}
+
+		// test for convergence with an absolute and relative error (see manual)
+		status = gsl_multifit_test_delta (solver_ptr->dx, solver_ptr->x, fit_tolarence, fit_tolarence);
+	}
+	while (status == GSL_CONTINUE && iteration < fit_max_iterations);
+
+	//cerr >> "iteration = " << iteration << endl;
+
+	// calculate the covariance matrix of the best-fit parameters
+	gsl_multifit_covar (solver_ptr->J, 0.0, covariance_ptr);
+
+	// print out the covariance matrix using the gsl function (not elegant!)
+	cout << endl << "Covariance matrix: " << endl;
+	gsl_matrix_fprintf (stdout, covariance_ptr, "%g");
+
+	cout.setf (ios::fixed, ios::floatfield);	// output in fixed format
+	cout.precision (5);		                // # of digits in doubles
+
+	int width = 7;		// setw width for output
+	cout << endl << "Best fit results:" << endl;
+	cout << "R2o = " << setw (width) << get_fit_results (0, solver_ptr)
+		<< " +/- " << setw (width) << get_fit_err (0, covariance_ptr) << endl;
+
+	cout << "R2s      = " << setw (width) << get_fit_results (1, solver_ptr)
+		<< " +/- " << setw (width) << get_fit_err (1, covariance_ptr) << endl;
+
+	cout << "R2l      = " << setw (width) << get_fit_results (2, solver_ptr)
+		<< " +/- " << setw (width) << get_fit_err (2, covariance_ptr) << endl;
+  
+	cout << "R2os      = " << setw (width) << get_fit_results (3, solver_ptr)
+		<< " +/- " << setw (width) << get_fit_err (3, covariance_ptr) << endl;
+    
+	cout << "status = " << gsl_strerror (status) << endl;
+	cout << "--------------------------------------------------------------------" << endl;
+
+	double chi = gsl_blas_dnrm2(solver_ptr->f);
+	double dof = data_length - n_para;
+	double c = GSL_MAX_DBL(1, chi/sqrt(dof));
+
+	lambda_Correl = 1.0;
+	lambda_Correl_err = 0.0;
+	R2_out = fabs(get_fit_results(0, solver_ptr))*hbarC*hbarC;
+	R2_side = fabs(get_fit_results(1, solver_ptr))*hbarC*hbarC;
+	R2_long = fabs(get_fit_results(2, solver_ptr))*hbarC*hbarC;
+	R2_outside = fabs(get_fit_results(3, solver_ptr))*hbarC*hbarC;
+	R2_out_err = c*get_fit_err(0, covariance_ptr)*hbarC*hbarC;
+	R2_side_err = c*get_fit_err(1, covariance_ptr)*hbarC*hbarC;
+	R2_long_err = c*get_fit_err(2, covariance_ptr)*hbarC*hbarC;
+	R2_outside_err = c*get_fit_err(3, covariance_ptr)*hbarC*hbarC;
+
+	cout << "final results: " << endl;
+	cout << scientific << setw(10) << setprecision(5) 
+		<< "chisq/dof = " << chi*chi/dof << endl;
+	cout << scientific << setw(10) << setprecision(5) 
+		<< " lambda = " << lambda_Correl << " +/- " << lambda_Correl_err << endl;
+	cout << " R2_out = " << R2_out << " +/- " << R2_out_err << endl;
+	cout << " R2_side = " << R2_side << " +/- " << R2_side_err << endl;
+	cout << " R2_long = " << R2_long << " +/- " << R2_long_err << endl;
+	cout << " R2_outside = " << R2_outside << " +/- " << R2_outside_err << endl;
+
+	//clean up
+	gsl_matrix_free (covariance_ptr);
+	gsl_rng_free (rng_ptr);
+
+	delete[] Correlfun3D_data.q_o;
+	delete[] Correlfun3D_data.q_s;
+	delete[] Correlfun3D_data.q_l;
+	delete[] Correlfun3D_data.y;
+	delete[] Correlfun3D_data.sigma;
+
+	gsl_multifit_fdfsolver_free (solver_ptr);  // free up the solver
+
+	return;
+}
+
+void CorrelationFunction::Fit_Correlationfunction3D_withlambda(double *** Correl_3D)
 {
-	cerr << corrfn_stream.str().c_str() << ": File not found" << endl;
-	*global_out_stream_ptr << corrfn_stream.str().c_str() << ": File not found" << endl;
-	return (1);
-}
-  ifstream corrfn(corrfn_stream.str().c_str());
+	const size_t data_length = qnpts*qnpts*qnpts;  // # of points
+	const size_t n_para = 5;  // # of parameters
 
-   for(int i = 0; i < qnpts; i++)
-   {
-            corrfn >> q_out[i];
-            corrfn >> Correl_1D_out[i];
-            corrfn >> Correl_1D_out_err[i];
-            corrfn >> q_side[i];
-            corrfn >> Correl_1D_side[i];
-            corrfn >> Correl_1D_side_err[i];
-            corrfn >> q_long[i];
-            corrfn >> Correl_1D_long[i];
-            corrfn >> Correl_1D_long_err[i];
-   }
+	// allocate space for a covariance matrix of size p by p
+	gsl_matrix *covariance_ptr = gsl_matrix_alloc (n_para, n_para);
 
-   return (0);
+	// allocate and setup for generating gaussian distibuted random numbers
+	gsl_rng_env_setup ();
+	const gsl_rng_type *type = gsl_rng_default;
+	gsl_rng *rng_ptr = gsl_rng_alloc (type);
+
+	//set up test data
+	struct Correlationfunction3D_data Correlfun3D_data;
+	Correlfun3D_data.data_length = data_length;
+	Correlfun3D_data.q_o = new double [data_length];
+	Correlfun3D_data.q_s = new double [data_length];
+	Correlfun3D_data.q_l = new double [data_length];
+	Correlfun3D_data.y = new double [data_length];
+	Correlfun3D_data.sigma = new double [data_length];
+
+	int idx = 0;
+	for(int i = 0; i < qnpts; i++)
+	for(int j = 0; j < qnpts; j++)
+	for(int k = 0; k < qnpts; k++)
+	{
+		Correlfun3D_data.q_o[idx] = q_out[i];
+		Correlfun3D_data.q_s[idx] = q_side[j];
+		Correlfun3D_data.q_l[idx] = q_long[k];
+		// This sets up the data to be fitted, with gaussian noise added
+		// Correlfun3D_data.y[idx] = 1.0*exp( - 0.81*q_out[i]*q_out[i] - 1.21*q_side[j]*q_side[j] - 4.0*q_long[k]*q_long[k] - 0.25*q_out[i]*q_side[j]) + gsl_ran_gaussian(rng_ptr, error);
+		Correlfun3D_data.y[idx] = Correl_3D[i][j][k];
+		Correlfun3D_data.sigma[idx] = Correl_3D_err[i][j][k];
+		idx++;
+	}
+	double para_init[n_para] = { 1.0, 1.0, 1.0, 1.0, 1.0 };  // initial guesses of parameters
+
+	gsl_vector_view xvec_ptr = gsl_vector_view_array (para_init, n_para);
+  
+	// set up the function to be fit 
+	gsl_multifit_function_fdf target_func;
+	target_func.f = &Fittarget_correlfun3D_f_withlambda;        // the function of residuals
+	target_func.df = &Fittarget_correlfun3D_df_withlambda;      // the gradient of this function
+	target_func.fdf = &Fittarget_correlfun3D_fdf_withlambda;    // combined function and gradient
+	target_func.n = data_length;              // number of points in the data set
+	target_func.p = n_para;              // number of parameters in the fit function
+	target_func.params = &Correlfun3D_data;  // structure with the data and error bars
+
+	const gsl_multifit_fdfsolver_type *type_ptr = gsl_multifit_fdfsolver_lmsder;
+	gsl_multifit_fdfsolver *solver_ptr = gsl_multifit_fdfsolver_alloc (type_ptr, data_length, n_para);
+	gsl_multifit_fdfsolver_set (solver_ptr, &target_func, &xvec_ptr.vector);
+
+	size_t iteration = 0;         // initialize iteration counter
+	print_fit_state_3D (iteration, solver_ptr);
+	int status;  		// return value from gsl function calls (e.g., error)
+	do
+	{
+		iteration++;
+      
+		// perform a single iteration of the fitting routine
+		status = gsl_multifit_fdfsolver_iterate (solver_ptr);
+
+		// print out the status of the fit
+		cout << "status = " << gsl_strerror (status) << endl;
+
+		// customized routine to print out current parameters
+		print_fit_state_3D (iteration, solver_ptr);
+
+		if (status)    // check for a nonzero status code
+		{
+			break;  // this should only happen if an error code is returned 
+		}
+
+		// test for convergence with an absolute and relative error (see manual)
+		status = gsl_multifit_test_delta (solver_ptr->dx, solver_ptr->x, fit_tolarence, fit_tolarence);
+	}
+	while (status == GSL_CONTINUE && iteration < fit_max_iterations);
+
+	// calculate the covariance matrix of the best-fit parameters
+	gsl_multifit_covar (solver_ptr->J, 0.0, covariance_ptr);
+
+	// print out the covariance matrix using the gsl function (not elegant!)
+	cout << endl << "Covariance matrix: " << endl;
+	gsl_matrix_fprintf (stdout, covariance_ptr, "%g");
+
+	cout.setf (ios::fixed, ios::floatfield);	// output in fixed format
+	cout.precision (5);		                // # of digits in doubles
+
+	int width = 7;		// setw width for output
+	cout << endl << "Best fit results:" << endl;
+	cout << "lambda      = " << setw (width) << get_fit_results (0, solver_ptr)
+		<< " +/- " << setw (width) << get_fit_err (0, covariance_ptr) << endl;
+
+	cout << "R2o = " << setw (width) << get_fit_results (1, solver_ptr)
+		<< " +/- " << setw (width) << get_fit_err (1, covariance_ptr) << endl;
+
+	cout << "R2s      = " << setw (width) << get_fit_results (2, solver_ptr)
+		<< " +/- " << setw (width) << get_fit_err (2, covariance_ptr) << endl;
+
+	cout << "R2l      = " << setw (width) << get_fit_results (3, solver_ptr)
+		<< " +/- " << setw (width) << get_fit_err (3, covariance_ptr) << endl;
+  
+	cout << "R2os      = " << setw (width) << get_fit_results (4, solver_ptr)
+		<< " +/- " << setw (width) << get_fit_err (4, covariance_ptr) << endl;
+    
+	cout << "status = " << gsl_strerror (status) << endl;
+	cout << "--------------------------------------------------------------------" << endl;
+
+	double chi = gsl_blas_dnrm2(solver_ptr->f);
+	double dof = data_length - n_para;
+	double c = GSL_MAX_DBL(1, chi/sqrt(dof));
+
+	lambda_Correl = get_fit_results(0, solver_ptr);
+	R2_out = fabs(get_fit_results(1, solver_ptr))*hbarC*hbarC;
+	R2_side = fabs(get_fit_results(2, solver_ptr))*hbarC*hbarC;
+	R2_long = fabs(get_fit_results(3, solver_ptr))*hbarC*hbarC;
+	R2_outside = fabs(get_fit_results(4, solver_ptr))*hbarC*hbarC;
+	lambda_Correl_err = c*get_fit_err(0, covariance_ptr);
+	R2_out_err = c*get_fit_err(1, covariance_ptr)*hbarC*hbarC;
+	R2_side_err = c*get_fit_err(2, covariance_ptr)*hbarC*hbarC;
+	R2_long_err = c*get_fit_err(3, covariance_ptr)*hbarC*hbarC;
+	R2_outside_err = c*get_fit_err(4, covariance_ptr)*hbarC*hbarC;
+
+	cout << "final results: " << endl;
+	cout << scientific << setw(10) << setprecision(5) 
+		<< "chisq/dof = " << chi*chi/dof << endl;
+	cout << scientific << setw(10) << setprecision(5) 
+		<< " lambda = " << lambda_Correl << " +/- " << lambda_Correl_err << endl;
+	cout << " R2_out = " << R2_out << " +/- " << R2_out_err << endl;
+	cout << " R2_side = " << R2_side << " +/- " << R2_side_err << endl;
+	cout << " R2_long = " << R2_long << " +/- " << R2_long_err << endl;
+	cout << " R2_outside = " << R2_outside << " +/- " << R2_outside_err << endl;
+
+	//clean up
+	gsl_matrix_free (covariance_ptr);
+	gsl_rng_free (rng_ptr);
+
+	delete[] Correlfun3D_data.q_o;
+	delete[] Correlfun3D_data.q_s;
+	delete[] Correlfun3D_data.q_l;
+	delete[] Correlfun3D_data.y;
+	delete[] Correlfun3D_data.sigma;
+
+	gsl_multifit_fdfsolver_free (solver_ptr);  // free up the solver
+
+	return;
 }
+
+//*********************************************************************
+// 3D case
+//*********************************************************************
+//  Simple function to print results of each iteration in nice format
+int CorrelationFunction::print_fit_state_3D (size_t iteration, gsl_multifit_fdfsolver * solver_ptr)
+{
+	cout.setf (ios::fixed, ios::floatfield);	// output in fixed format
+	cout.precision (5);		// digits in doubles
+
+	int width = 15;		// setw width for output
+	cout << scientific
+		<< "iteration " << iteration << ": "
+		<< "  x = {" << setw (width) << gsl_vector_get (solver_ptr->x, 0)
+		<< setw (width) << gsl_vector_get (solver_ptr->x, 1)
+		<< setw (width) << gsl_vector_get (solver_ptr->x, 2)
+		<< setw (width) << gsl_vector_get (solver_ptr->x, 3)
+		<< "}, |f(x)| = " << scientific << gsl_blas_dnrm2 (solver_ptr->f) 
+		<< endl << endl;
+
+	return 0;
+}
+//  Simple function to print results of each iteration in nice format
+int CorrelationFunction::print_fit_state_3D_withlambda (size_t iteration, gsl_multifit_fdfsolver * solver_ptr)
+{
+	cout.setf (ios::fixed, ios::floatfield);	// output in fixed format
+	cout.precision (5);		// digits in doubles
+
+	int width = 15;		// setw width for output
+	cout << scientific
+		<< "iteration " << iteration << ": "
+		<< "  x = {" << setw (width) << gsl_vector_get (solver_ptr->x, 0)
+		<< setw (width) << gsl_vector_get (solver_ptr->x, 1)
+		<< setw (width) << gsl_vector_get (solver_ptr->x, 2)
+		<< setw (width) << gsl_vector_get (solver_ptr->x, 3)
+		<< setw (width) << gsl_vector_get (solver_ptr->x, 4)
+		<< "}, |f(x)| = " << scientific << gsl_blas_dnrm2 (solver_ptr->f) 
+		<< endl << endl;
+
+	return 0;
+}
+//*********************************************************************
+//  Function returning the residuals for each point; that is, the 
+//  difference of the fit function using the current parameters
+//  and the data to be fit.
+int Fittarget_correlfun3D_f (const gsl_vector *xvec_ptr, void *params_ptr, gsl_vector *f_ptr)
+{
+	size_t n = ((struct Correlationfunction3D_data *) params_ptr)->data_length;
+	double * q_o = ((struct Correlationfunction3D_data *) params_ptr)->q_o;
+	double * q_s = ((struct Correlationfunction3D_data *) params_ptr)->q_s;
+	double * q_l = ((struct Correlationfunction3D_data *) params_ptr)->q_l;
+	double * y = ((struct Correlationfunction3D_data *) params_ptr)->y;
+	double * sigma = ((struct Correlationfunction3D_data *) params_ptr)->sigma;
+
+	//fit parameters
+	double R2_o = gsl_vector_get (xvec_ptr, 0);
+	double R2_s = gsl_vector_get (xvec_ptr, 1);
+	double R2_l = gsl_vector_get (xvec_ptr, 2);
+	double R2_os = gsl_vector_get (xvec_ptr, 3);
+
+	size_t i;
+
+	for (i = 0; i < n; i++)
+	{
+		double Yi = exp(- q_l[i]*q_l[i]*R2_l - q_s[i]*q_s[i]*R2_s - q_o[i]*q_o[i]*R2_o - 2.*q_o[i]*q_s[i]*R2_os);
+		gsl_vector_set (f_ptr, i, (Yi - y[i]) / sigma[i]);
+	}
+
+	return GSL_SUCCESS;
+}
+
+int Fittarget_correlfun3D_f_withlambda (const gsl_vector *xvec_ptr, void *params_ptr, gsl_vector *f_ptr)
+{
+	size_t n = ((struct Correlationfunction3D_data *) params_ptr)->data_length;
+	double * q_o = ((struct Correlationfunction3D_data *) params_ptr)->q_o;
+	double * q_s = ((struct Correlationfunction3D_data *) params_ptr)->q_s;
+	double * q_l = ((struct Correlationfunction3D_data *) params_ptr)->q_l;
+	double * y = ((struct Correlationfunction3D_data *) params_ptr)->y;
+	double * sigma = ((struct Correlationfunction3D_data *) params_ptr)->sigma;
+
+	//fit parameters
+	double lambda = gsl_vector_get (xvec_ptr, 0);
+	double R2_o = gsl_vector_get (xvec_ptr, 1);
+	double R2_s = gsl_vector_get (xvec_ptr, 2);
+	double R2_l = gsl_vector_get (xvec_ptr, 3);
+	double R2_os = gsl_vector_get (xvec_ptr, 4);
+
+	size_t i;
+
+	for (i = 0; i < n; i++)
+	{
+		//double Yi = lambda*exp(- q_l[i]*q_l[i]*R_l*R_l - q_s[i]*q_s[i]*R_s*R_s
+		//             - q_o[i]*q_o[i]*R_o*R_o - q_o[i]*q_s[i]*R_os*R_os);
+		double Yi = lambda*exp(- q_l[i]*q_l[i]*R2_l - q_s[i]*q_s[i]*R2_s - q_o[i]*q_o[i]*R2_o - 2.*q_o[i]*q_s[i]*R2_os);
+		gsl_vector_set (f_ptr, i, (Yi - y[i]) / sigma[i]);
+	}
+
+	return GSL_SUCCESS;
+}
+
+//*********************************************************************
+//  Function returning the Jacobian of the residual function
+int Fittarget_correlfun3D_df (const gsl_vector *xvec_ptr, void *params_ptr,  gsl_matrix *Jacobian_ptr)
+{
+	size_t n = ((struct Correlationfunction3D_data *) params_ptr)->data_length;
+	double * q_o = ((struct Correlationfunction3D_data *) params_ptr)->q_o;
+	double * q_s = ((struct Correlationfunction3D_data *) params_ptr)->q_s;
+	double * q_l = ((struct Correlationfunction3D_data *) params_ptr)->q_l;
+	double * sigma = ((struct Correlationfunction3D_data *) params_ptr)->sigma;
+
+	//fit parameters
+	double R2_o = gsl_vector_get (xvec_ptr, 0);
+	double R2_s = gsl_vector_get (xvec_ptr, 1);
+	double R2_l = gsl_vector_get (xvec_ptr, 2);
+	double R2_os = gsl_vector_get (xvec_ptr, 3);
+
+	size_t i;
+
+	for (i = 0; i < n; i++)
+	{
+		// Jacobian matrix J(i,j) = dfi / dxj, 
+		// where fi = (Yi - yi)/sigma[i],      
+		//       Yi = A * exp(-lambda * i) + b 
+		// and the xj are the parameters (A,lambda,b) 
+		double sig = sigma[i];
+
+		// derivatives
+		// double common_elemt = exp(- q_l[i]*q_l[i]*R_l*R_l - q_s[i]*q_s[i]*R_s*R_s - q_o[i]*q_o[i]*R_o*R_o - q_o[i]*q_s[i]*R_os*R_os);
+		double common_elemt = exp(- q_l[i]*q_l[i]*R2_l - q_s[i]*q_s[i]*R2_s - q_o[i]*q_o[i]*R2_o - 2.*q_o[i]*q_s[i]*R2_os);
+      
+		gsl_matrix_set (Jacobian_ptr, i, 0, - q_o[i]*q_o[i]*common_elemt/sig);
+		gsl_matrix_set (Jacobian_ptr, i, 1, - q_s[i]*q_s[i]*common_elemt/sig);
+		gsl_matrix_set (Jacobian_ptr, i, 2, - q_l[i]*q_l[i]*common_elemt/sig);
+		gsl_matrix_set (Jacobian_ptr, i, 3, - 2.*q_o[i]*q_s[i]*common_elemt/sig);
+	}
+
+	return GSL_SUCCESS;
+}
+
+int Fittarget_correlfun3D_df_withlambda (const gsl_vector *xvec_ptr, void *params_ptr,  gsl_matrix *Jacobian_ptr)
+{
+	size_t n = ((struct Correlationfunction3D_data *) params_ptr)->data_length;
+	double * q_o = ((struct Correlationfunction3D_data *) params_ptr)->q_o;
+	double * q_s = ((struct Correlationfunction3D_data *) params_ptr)->q_s;
+	double * q_l = ((struct Correlationfunction3D_data *) params_ptr)->q_l;
+	double * sigma = ((struct Correlationfunction3D_data *) params_ptr)->sigma;
+
+	//fit parameters
+	double lambda = gsl_vector_get (xvec_ptr, 0);
+	double R2_o = gsl_vector_get (xvec_ptr, 1);
+	double R2_s = gsl_vector_get (xvec_ptr, 2);
+	double R2_l = gsl_vector_get (xvec_ptr, 3);
+	double R2_os = gsl_vector_get (xvec_ptr, 4);
+
+	size_t i;
+
+	for (i = 0; i < n; i++)
+	{
+		// Jacobian matrix J(i,j) = dfi / dxj, 
+		// where fi = (Yi - yi)/sigma[i],      
+		//       Yi = A * exp(-lambda * i) + b 
+		// and the xj are the parameters (A,lambda,b) 
+		double sig = sigma[i];
+
+		//derivatives
+		double common_elemt = exp(- q_l[i]*q_l[i]*R2_l - q_s[i]*q_s[i]*R2_s - q_o[i]*q_o[i]*R2_o - 2.*q_o[i]*q_s[i]*R2_os);
+      
+		gsl_matrix_set (Jacobian_ptr, i, 0, common_elemt/sig);
+		gsl_matrix_set (Jacobian_ptr, i, 1, - lambda*q_o[i]*q_o[i]*common_elemt/sig);
+		gsl_matrix_set (Jacobian_ptr, i, 2, - lambda*q_s[i]*q_s[i]*common_elemt/sig);
+		gsl_matrix_set (Jacobian_ptr, i, 3, - lambda*q_l[i]*q_l[i]*common_elemt/sig);
+		gsl_matrix_set (Jacobian_ptr, i, 4, - 2.*lambda*q_o[i]*q_s[i]*common_elemt/sig);
+	}
+
+	return GSL_SUCCESS;
+}
+
+//*********************************************************************
+//  Function combining the residual function and its Jacobian
+int Fittarget_correlfun3D_fdf (const gsl_vector* xvec_ptr, void *params_ptr, gsl_vector* f_ptr, gsl_matrix* Jacobian_ptr)
+{
+	Fittarget_correlfun3D_f(xvec_ptr, params_ptr, f_ptr);
+	Fittarget_correlfun3D_df(xvec_ptr, params_ptr, Jacobian_ptr);
+
+	return GSL_SUCCESS;
+}
+int Fittarget_correlfun3D_fdf_withlambda (const gsl_vector* xvec_ptr, void *params_ptr, gsl_vector* f_ptr, gsl_matrix* Jacobian_ptr)
+{
+	Fittarget_correlfun3D_f_withlambda(xvec_ptr, params_ptr, f_ptr);
+	Fittarget_correlfun3D_df_withlambda(xvec_ptr, params_ptr, Jacobian_ptr);
+
+	return GSL_SUCCESS;
+}
+
+//*********************************************************************
+//  Function to return the i'th best-fit parameter
+inline double CorrelationFunction::get_fit_results(int i, gsl_multifit_fdfsolver * solver_ptr)
+{
+	return gsl_vector_get (solver_ptr->x, i);
+}
+
+//*********************************************************************
+//  Function to retrieve the square root of the diagonal elements of
+//   the covariance matrix.
+inline double CorrelationFunction::get_fit_err (int i, gsl_matrix * covariance_ptr)
+{
+	return sqrt (gsl_matrix_get (covariance_ptr, i, i));
+}
+
+/************************************************************************/
 
 //End of file
