@@ -61,11 +61,7 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 	Stopwatch BIGsw;
 	int decay_channel_loop_cutoff = n_decay_channels;			//loop over direct pions and decay_channels
 
-	int HDFInitializationSuccess = 0;
-	if (USE_2D_HDF5)
-		HDFInitializationSuccess = Initialize_2D_resonance_HDF_array();
-	else
-		HDFInitializationSuccess = Initialize_resonance_HDF_array();
+	int HDFInitializationSuccess = Initialize_resonance_HDF_array();
 	if (HDFInitializationSuccess < 0)
 	{
 		cerr << "Failed to initialize HDF array of resonances!  Exiting..." << endl;
@@ -110,6 +106,8 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 	
 	if (SPACETIME_MOMENTS_ONLY || thermal_pions_only)
 		return;
+	//else if (thermal_pions_only)
+	//	goto correlation_function_calculation;
 
 	*global_out_stream_ptr << "Computing all phase-space integrals..." << endl;
 	BIGsw.tic();
@@ -144,12 +142,17 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 				continue;
 			Set_current_daughter_info(idc, idc_DI);
 			Do_resonance_integrals(current_resonance_particle_id, daughter_resonance_particle_id, idc);
+debugger(__LINE__, __FILE__);
 		}
 
 		Update_daughter_spectra();
-
+debugger(__LINE__, __FILE__);
 		Delete_decay_channel_info();				// free up memory
 	}											// END of decay channel loop
+
+//correlation_function_calculation:
+	// Now, with all resonance contributions to correlation function computed, do the actual calculation
+	//Cal_correlationfunction();
 
    return;
 }
@@ -443,11 +446,7 @@ bool CorrelationFunction::particles_are_the_same(int reso_idx1, int reso_idx2)
 
 void CorrelationFunction::Recycle_spacetime_moments()
 {
-	int HDFcopyChunkSuccess = 0;
-	if (USE_2D_HDF5)
-		HDFcopyChunkSuccess = Copy_2D_chunk(current_resonance_particle_id, reso_particle_id_of_moments_to_recycle);
-	else
-		HDFcopyChunkSuccess = Copy_chunk(current_resonance_particle_id, reso_particle_id_of_moments_to_recycle);
+	int HDFcopyChunkSuccess = Copy_chunk(current_resonance_particle_id, reso_particle_id_of_moments_to_recycle);
 
 	return;
 }
@@ -456,12 +455,8 @@ void CorrelationFunction::Recycle_spacetime_moments()
 //**************************************************************
 void CorrelationFunction::Load_resonance_and_daughter_spectra(int local_pid)
 {
-	int getHDFresonanceSpectra = 0;
 	// get parent resonance spectra, set logs and signs arrays that are needed for interpolation
-	if (USE_2D_HDF5)
-		getHDFresonanceSpectra = Get_2D_resonance_from_HDF_array(local_pid, current_dN_dypTdpTdphi_moments);
-	else
-		getHDFresonanceSpectra = Get_resonance_from_HDF_array(local_pid, current_dN_dypTdpTdphi_moments);
+	int getHDFresonanceSpectra = Get_resonance_from_HDF_array(local_pid, current_dN_dypTdpTdphi_moments);
 	Set_current_resonance_logs_and_signs();
 
 	// get spectra for all daughters, set all of the logs and signs arrays that are needed for interpolation
@@ -476,10 +471,7 @@ void CorrelationFunction::Load_resonance_and_daughter_spectra(int local_pid)
 		for (set<int>::iterator it = daughter_resonance_indices.begin(); it != daughter_resonance_indices.end(); ++it)
 		{
 			int daughter_pid = *it;		//daughter pid is pointed to by iterator
-			if (USE_2D_HDF5)
-				getHDFresonanceSpectra = Get_2D_resonance_from_HDF_array(daughter_pid, current_daughters_dN_dypTdpTdphi_moments[d_idx]);
-			else
-				getHDFresonanceSpectra = Get_resonance_from_HDF_array(daughter_pid, current_daughters_dN_dypTdpTdphi_moments[d_idx]);
+			getHDFresonanceSpectra = Get_resonance_from_HDF_array(daughter_pid, current_daughters_dN_dypTdpTdphi_moments[d_idx]);
 			++d_idx;
 		}
 	
@@ -500,11 +492,12 @@ void CorrelationFunction::Update_daughter_spectra()
 	for (set<int>::iterator it = daughter_resonance_indices.begin(); it != daughter_resonance_indices.end(); ++it)
 	{
 		int daughter_pid = *it;		//daughter pid is pointed to by iterator
-		int setHDFresonanceSpectra = 0;
-		if (USE_2D_HDF5)
-			setHDFresonanceSpectra = Set_2D_resonance_in_HDF_array(daughter_pid, current_daughters_dN_dypTdpTdphi_moments[d_idx]);
-		else
-			setHDFresonanceSpectra = Set_resonance_in_HDF_array(daughter_pid, current_daughters_dN_dypTdpTdphi_moments[d_idx]);
+		int setHDFresonanceSpectra = Set_resonance_in_HDF_array(daughter_pid, current_daughters_dN_dypTdpTdphi_moments[d_idx]);
+
+		for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+		for (int iphi = 0; iphi < n_interp_pphi_pts; ++iphi)
+			spectra[daughter_pid][ipt][iphi] = current_daughters_dN_dypTdpTdphi_moments[d_idx][ipt][iphi][iqt0][iqx0][iqy0][iqz0][0];
+
 		++d_idx;
 	}
 
@@ -648,11 +641,7 @@ void CorrelationFunction::Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int lo
 	*global_out_stream_ptr << "CP#2: Took " << sw.printTime() << " seconds." << endl;
 
 	// store in HDF5 file
-	int setHDFresonanceSpectra = 0;
-	if (USE_2D_HDF5)
-		setHDFresonanceSpectra = Set_2D_resonance_in_HDF_array(local_pid, current_dN_dypTdpTdphi_moments);
-	else
-		setHDFresonanceSpectra = Set_resonance_in_HDF_array(local_pid, current_dN_dypTdpTdphi_moments);
+	int setHDFresonanceSpectra = Set_resonance_in_HDF_array(local_pid, current_dN_dypTdpTdphi_moments);
 	if (setHDFresonanceSpectra < 0)
 	{
 		cerr << "Failed to initialize HDF array of resonances!  Exiting..." << endl;

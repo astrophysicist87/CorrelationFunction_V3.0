@@ -328,280 +328,10 @@ debugger(__LINE__, __FILE__);
 }
 
 //*******************************************
-// 2D versions of HDF array for resonances
+// HDF array for resonances
 //*******************************************
 
 int CorrelationFunction::Initialize_resonance_HDF_array()
-{
-	double * resonance_chunk = new double [chunk_size];
-
-	ostringstream filename_stream_ra;
-	filename_stream_ra << global_path << "/resonance_spectra.h5";
-	H5std_string RESONANCE_FILE_NAME(filename_stream_ra.str().c_str());
-	H5std_string RESONANCE_DATASET_NAME("ra");
-
-	try
-    {
-		Exception::dontPrint();
-	
-		resonance_file = new H5::H5File(RESONANCE_FILE_NAME, H5F_ACC_TRUNC);
-
-		DSetCreatPropList cparms;
-		hsize_t chunk_dims[RANK] = {chunk_size};
-		cparms.setChunk( RANK, chunk_dims );
-
-		hsize_t dims[RANK] = {Nparticle * chunk_size};
-		resonance_dataspace = new H5::DataSpace (RANK, dims);
-
-		resonance_dataset = new H5::DataSet( resonance_file->createDataSet(RESONANCE_DATASET_NAME, PredType::NATIVE_DOUBLE, *resonance_dataspace, cparms) );
-
-		hsize_t count[RANK] = {chunk_size};
-		hsize_t dimsm[RANK] = {chunk_size};
-		hsize_t offset[RANK] = {0};
-
-		resonance_memspace = new H5::DataSpace (RANK, dimsm, NULL);
-		for (int ir = 0; ir < Nparticle; ++ir)
-		{
-			offset[0] = ir * chunk_size;
-			resonance_dataspace->selectHyperslab(H5S_SELECT_SET, count, offset);
-
-			for (int iidx = 0; iidx < chunk_size; ++iidx)
-				resonance_chunk[iidx] = 0.0;
-
-			//initialize everything with zeros
-			resonance_dataset->write(resonance_chunk, PredType::NATIVE_DOUBLE, *resonance_memspace, *resonance_dataspace);
-		}
-		resonance_memspace->close();
-		resonance_dataset->close();
-		resonance_file->close();
-		delete resonance_memspace;
-		delete resonance_file;
-		delete resonance_dataset;
-		resonance_file = new H5::H5File(RESONANCE_FILE_NAME, H5F_ACC_RDWR);
-		resonance_dataset = new H5::DataSet( resonance_file->openDataSet( RESONANCE_DATASET_NAME ) );
-		resonance_memspace = new H5::DataSpace (RANK, dimsm, NULL);
-    }
-
-    catch(FileIException error)
-    {
-		error.printError();
-		cerr << "FileIException error!" << endl;
-debugger(__LINE__, __FILE__);
-		return -1;
-    }
-
-    catch(H5::DataSetIException error)
-    {
-		error.printError();
-		cerr << "DataSetIException error!" << endl;
-debugger(__LINE__, __FILE__);
-		return -2;
-    }
-
-    catch(H5::DataSpaceIException error)
-    {
-		error.printError();
-		cerr << "DataSpaceIException error!" << endl;
-debugger(__LINE__, __FILE__);
-		return -3;
-    }
-
-	delete [] resonance_chunk;
-
-	return (0);
-}
-
-int CorrelationFunction::Set_resonance_in_HDF_array(int local_pid, double ******* resonance_array_to_use)
-{
-	double * resonance_chunk = new double [chunk_size];
-
-	ostringstream filename_stream_ra;
-	filename_stream_ra << global_path << "/resonance_spectra.h5";
-	H5std_string RESONANCE_FILE_NAME(filename_stream_ra.str().c_str());
-	H5std_string RESONANCE_DATASET_NAME("ra");
-
-	try
-    {
-		Exception::dontPrint();
-	
-		hsize_t offset[RANK] = {local_pid * chunk_size};
-		hsize_t count[RANK] = {chunk_size};				// == chunk_dims
-		resonance_dataspace->selectHyperslab(H5S_SELECT_SET, count, offset);
-
-		// use loaded chunk to fill resonance_array_to_fill
-		int iidx = 0;
-		for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-		for (int iphi = 0; iphi < n_interp_pphi_pts; ++iphi)
-		for (int iqt = 0; iqt < qnpts; ++iqt)
-		for (int iqx = 0; iqx < qnpts; ++iqx)
-		for (int iqy = 0; iqy < qnpts; ++iqy)
-		for (int iqz = 0; iqz < qnpts; ++iqz)
-		for (int itrig = 0; itrig < ntrig; ++itrig)
-		{
-			double temp = resonance_array_to_use[ipt][iphi][iqt][iqx][iqy][iqz][itrig];
-			resonance_chunk[iidx] = temp;
-			++iidx;
-		}
-
-		resonance_dataset->write(resonance_chunk, PredType::NATIVE_DOUBLE, *resonance_memspace, *resonance_dataspace);
-   }
-
-    catch(FileIException error)
-    {
-		error.printError();
-		cerr << "FileIException error!" << endl;
-debugger(__LINE__, __FILE__);
-		return -1;
-    }
-
-    catch(H5::DataSetIException error)
-    {
-		error.printError();
-		cerr << "DataSetIException error!" << endl;
-debugger(__LINE__, __FILE__);
-		return -2;
-    }
-
-    catch(H5::DataSpaceIException error)
-    {
-		error.printError();
-		cerr << "DataSpaceIException error!" << endl;
-debugger(__LINE__, __FILE__);
-		return -3;
-    }
-
-	delete [] resonance_chunk;
-
-	return (0);
-}
-
-int CorrelationFunction::Get_resonance_from_HDF_array(int local_pid, double ******* resonance_array_to_fill)
-{
-	double * resonance_chunk = new double [chunk_size];
-
-	ostringstream filename_stream_ra;
-	filename_stream_ra << global_path << "/resonance_spectra.h5";
-	H5std_string RESONANCE_FILE_NAME(filename_stream_ra.str().c_str());
-	H5std_string RESONANCE_DATASET_NAME("ra");
-
-	try
-    {
-		Exception::dontPrint();
-	
-		hsize_t offset[RANK] = {local_pid * chunk_size};
-		hsize_t count[RANK] = {chunk_size};				// == chunk_dims
-		resonance_dataspace->selectHyperslab(H5S_SELECT_SET, count, offset);
-
-		resonance_dataset->read(resonance_chunk, PredType::NATIVE_DOUBLE, *resonance_memspace, *resonance_dataspace);
-
-		// use loaded chunk to fill resonance_array_to_fill
-		int iidx = 0;
-		for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-		for (int iphi = 0; iphi < n_interp_pphi_pts; ++iphi)
-		for (int iqt = 0; iqt < qnpts; ++iqt)
-		for (int iqx = 0; iqx < qnpts; ++iqx)
-		for (int iqy = 0; iqy < qnpts; ++iqy)
-		for (int iqz = 0; iqz < qnpts; ++iqz)
-		for (int itrig = 0; itrig < ntrig; ++itrig)
-		{
-			double temp = resonance_chunk[iidx];
-			//cerr << "INFODUMP: " << local_pid << "   " << ipt << "   " << iphi << "   " << iqt << "   "
-			//	<< iqx << "   " << iqy << "   " << iqz << "   " << itrig << "   " << temp << endl;
-			resonance_array_to_fill[ipt][iphi][iqt][iqx][iqy][iqz][itrig] = temp;
-			++iidx;
-		}
-
-   }
-
-    catch(FileIException error)
-    {
-		error.printError();
-		cerr << "FileIException error!" << endl;
-debugger(__LINE__, __FILE__);
-		return -1;
-    }
-
-    catch(H5::DataSetIException error)
-    {
-		error.printError();
-		cerr << "DataSetIException error!" << endl;
-debugger(__LINE__, __FILE__);
-		return -2;
-    }
-
-    catch(H5::DataSpaceIException error)
-    {
-		error.printError();
-		cerr << "DataSpaceIException error!" << endl;
-debugger(__LINE__, __FILE__);
-		return -3;
-    }
-
-	delete [] resonance_chunk;
-
-	return (0);
-}
-
-int CorrelationFunction::Copy_chunk(int current_resonance_index, int reso_idx_to_be_copied)
-{
-	double * resonance_chunk = new double [chunk_size];
-
-	ostringstream filename_stream_ra;
-	filename_stream_ra << global_path << "/resonance_spectra.h5";
-	H5std_string RESONANCE_FILE_NAME(filename_stream_ra.str().c_str());
-	H5std_string RESONANCE_DATASET_NAME("ra");
-
-	try
-    {
-		Exception::dontPrint();
-	
-		hsize_t offset[RANK] = {reso_idx_to_be_copied * chunk_size};
-		hsize_t count[RANK] = {chunk_size};
-		resonance_dataspace->selectHyperslab(H5S_SELECT_SET, count, offset);
-
-		// load resonance to be copied first
-		resonance_dataset->read(resonance_chunk, PredType::NATIVE_DOUBLE, *resonance_memspace, *resonance_dataspace);
-
-		// now set this to current resonance
-		offset[0] = current_resonance_index * chunk_size;
-		resonance_dataspace->selectHyperslab(H5S_SELECT_SET, count, offset);
-		resonance_dataset->write(resonance_chunk, PredType::NATIVE_DOUBLE, *resonance_memspace, *resonance_dataspace);
-   }
-
-    catch(FileIException error)
-    {
-		error.printError();
-		cerr << "FileIException error!" << endl;
-debugger(__LINE__, __FILE__);
-		return -1;
-    }
-
-    catch(H5::DataSetIException error)
-    {
-		error.printError();
-		cerr << "DataSetIException error!" << endl;
-debugger(__LINE__, __FILE__);
-		return -2;
-    }
-
-    catch(H5::DataSpaceIException error)
-    {
-		error.printError();
-		cerr << "DataSpaceIException error!" << endl;
-debugger(__LINE__, __FILE__);
-		return -3;
-    }
-
-	delete [] resonance_chunk;
-
-	return (0);
-}
-
-//*******************************************
-// 2D versions of HDF array for resonances
-//*******************************************
-
-int CorrelationFunction::Initialize_2D_resonance_HDF_array()
 {
 	double * resonance_chunk = new double [chunk_size];
 
@@ -681,7 +411,7 @@ debugger(__LINE__, __FILE__);
 	return (0);
 }
 
-int CorrelationFunction::Set_2D_resonance_in_HDF_array(int local_pid, double ******* resonance_array_to_use)
+int CorrelationFunction::Set_resonance_in_HDF_array(int local_pid, double ******* resonance_array_to_use)
 {
 	double * resonance_chunk = new double [chunk_size];
 
@@ -745,7 +475,7 @@ debugger(__LINE__, __FILE__);
 	return (0);
 }
 
-int CorrelationFunction::Get_2D_resonance_from_HDF_array(int local_pid, double ******* resonance_array_to_fill)
+int CorrelationFunction::Get_resonance_from_HDF_array(int local_pid, double ******* resonance_array_to_fill)
 {
 	double * resonance_chunk = new double [chunk_size];
 
@@ -812,7 +542,7 @@ debugger(__LINE__, __FILE__);
 	return (0);
 }
 
-int CorrelationFunction::Copy_2D_chunk(int current_resonance_index, int reso_idx_to_be_copied)
+int CorrelationFunction::Copy_chunk(int current_resonance_index, int reso_idx_to_be_copied)
 {
 	double * resonance_chunk = new double [chunk_size];
 

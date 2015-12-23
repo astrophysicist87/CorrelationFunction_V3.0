@@ -182,10 +182,11 @@ class CorrelationFunction
 		int Emissionfunction_length;
 		
 		double *** spectra, *** abs_spectra;
-		double **** CFvals;
+		double ***** CFvals;
 		
 		double * qo_pts, * qs_pts, * ql_pts, * q_pts, * q_axes, * qt_pts, * qx_pts, * qy_pts, * qz_pts;
 		double * q_out, * q_side, * q_long;
+		int iqt0, iqx0, iqy0, iqz0;
 		
 		//store correlation functions
 		double * Correl_1D_out;
@@ -244,10 +245,6 @@ class CorrelationFunction
 		int Set_resonance_in_HDF_array(int local_pid, double ******* resonance_array_to_use);
 		int Initialize_resonance_HDF_array();
 		int Copy_chunk(int current_resonance_index, int reso_idx_to_be_copied);
-		int Get_2D_resonance_from_HDF_array(int local_pid, double ******* resonance_array_to_fill);
-		int Set_2D_resonance_in_HDF_array(int local_pid, double ******* resonance_array_to_use);
-		int Initialize_2D_resonance_HDF_array();
-		int Copy_2D_chunk(int current_resonance_index, int reso_idx_to_be_copied);
 
 		void Set_giant_array_slice(int iqt, int iqx, int iqy, int iqz);
 		void addElementToQueue(priority_queue<pair<double, size_t> >& p, pair<double, size_t> elem, size_t max_size);
@@ -307,6 +304,7 @@ class CorrelationFunction
 		static inline double lin_int(double x_m_x1, double one_by_x2_m_x1, double f1, double f2);
 		void Edndp3(double ptr, double phir, double * results);
 		void Set_q_points();
+		void Set_correlation_function_q_pts();
 		void Get_q_points(double qo, double qs, double ql, double KT, double Kphi, double * qgridpts);
 		void Allocate_resonance_running_sum_vectors();
 		void Delete_resonance_running_sum_vectors();
@@ -326,6 +324,8 @@ class CorrelationFunction
 		int Read_correlationfunction(int iKT, int iKphi);
 		inline double get_fit_results(int i, gsl_multifit_fdfsolver * solver_ptr);
 		inline double get_fit_err (int i, gsl_matrix * covariance_ptr);
+		double Compute_correlationfunction(int ipt, int ipphi, double * q_interp);
+		double interpolate_4D(double * x_min, double * x_max, double * x_interp, double (*vals) [2][2][2]);
 
 		// input and output function prototypes
 		void Output_dN_dypTdpTdphi(int folderindex);

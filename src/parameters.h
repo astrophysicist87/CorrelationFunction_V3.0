@@ -20,7 +20,6 @@ using namespace std;
 #define SPACETIME_MOMENTS_ONLY		false		// duh
 #define DO_ALL_DECAY_CHANNELS		false		// duh
 #define USE_HDF5			false		// utilizes HDF5 software to store large arrays
-#define USE_2D_HDF5			true		// duh
 
 #ifndef H5_NO_NAMESPACE
     using namespace H5;

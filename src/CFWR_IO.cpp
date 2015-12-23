@@ -147,21 +147,22 @@ void CorrelationFunction::Readin_daughter_spectra(int resonance_pid, int folderi
 
 void CorrelationFunction::Output_correlationfunction(int folderindex)
 {
-	ostringstream oCorrFunc_1D_stream;
+	ostringstream oCorrFunc_stream;
 	string temp_particle_name = particle_name;
 	replace_parentheses(temp_particle_name);
-	oCorrFunc_1D_stream << global_path << "/correlfunct1D" << "_" << temp_particle_name << ".dat";
-	ofstream oCorrFunc_1D;
-	//oCorrFunc_1D.open(oCorrFunc_1D_stream.str().c_str(), ios::app);
-	oCorrFunc_1D.open(oCorrFunc_1D_stream.str().c_str());
+	oCorrFunc_stream << global_path << "/correlfunct1D" << "_" << temp_particle_name << ".dat";
+	ofstream oCorrFunc;
+	oCorrFunc.open(oCorrFunc_stream.str().c_str());
 
-	for(int ipt = 0; ipt < n_interp_pT_pts; ipt++)
-	for(int ipphi = 0; ipphi < n_interp_pphi_pts; ipphi++)
-	for(int i = 0; i < qnpts; ++i)
-		oCorrFunc_1D << scientific << setprecision(7) << setw(15)
-			<< SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   " << q_pts[i] << "   "
-			<< CFvals[ipt][ipphi][i][0] << "   " << CFvals[ipt][ipphi][i][1] << "   " << CFvals[ipt][ipphi][i][2] << endl;
-
+	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+	for (int iqo = 0; iqo < qonpts; ++iqo)
+	for (int iqs = 0; iqs < qsnpts; ++iqs)
+	for (int iql = 0; iql < qlnpts; ++iql)
+		oCorrFunc << scientific << setprecision(7) << setw(15)
+			<< SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   " << qo_pts[iqo] << "   "
+			<< qs_pts[iqs] << "   " << ql_pts[iql] << "   " << CFvals[ipt][ipphi][iqo][iqs][iql] << endl;
+				
 	return;
 }
 
@@ -241,11 +242,7 @@ void CorrelationFunction::Output_total_target_eiqx_dN_dypTdpTdphi(int folderinde
 	filename_stream_target_dN_dypTdpTdphi << global_path << "/total_" << local_name << "_eiqx_dN_dypTdpTdphi_ev" << folderindex << no_df_stem << ".dat";
 	ofstream output_target_dN_dypTdpTdphi(filename_stream_target_dN_dypTdpTdphi.str().c_str());
 
-	int HDFloadTargetSuccess = 0;
-	if (USE_2D_HDF5)
-		HDFloadTargetSuccess = Get_2D_resonance_from_HDF_array(target_particle_id, current_dN_dypTdpTdphi_moments);
-	else
-		HDFloadTargetSuccess = Get_resonance_from_HDF_array(target_particle_id, current_dN_dypTdpTdphi_moments);
+	int HDFloadTargetSuccess = Get_resonance_from_HDF_array(target_particle_id, current_dN_dypTdpTdphi_moments);
 
 	for (int iqt = 0; iqt < qnpts; ++iqt)
 	for (int iqx = 0; iqx < qnpts; ++iqx)
@@ -259,11 +256,7 @@ void CorrelationFunction::Output_total_target_eiqx_dN_dypTdpTdphi(int folderinde
 			current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1] = 0.0;
 
 		// output all FT'd spectra
-		double nonFTd_spectra;
-		if (thermal_pions_only)
-			nonFTd_spectra = spectra[target_particle_id][ipt][ipphi];
-		else
-			nonFTd_spectra = spectra[target_particle_id][ipt][ipphi] / fraction_of_resonances;
+		double nonFTd_spectra = spectra[target_particle_id][ipt][ipphi];
 		double cos_transf_spectra = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
 		double sin_transf_spectra = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
 		output_target_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12)

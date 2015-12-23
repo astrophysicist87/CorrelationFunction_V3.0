@@ -273,18 +273,22 @@ debugger(__LINE__, __FILE__);
 		}
 	}
 
-	CFvals = new double *** [n_interp_pT_pts];
+	CFvals = new double **** [n_interp_pT_pts];
 	for (int ipT = 0; ipT < n_interp_pT_pts; ++ipT)
 	{
-		CFvals[ipT] = new double ** [n_interp_pphi_pts];
+		CFvals[ipT] = new double *** [n_interp_pphi_pts];
 		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 		{
-			CFvals[ipT][ipphi] = new double * [qnpts];
-			for (int iq = 0; iq < qnpts; ++iq)
+			CFvals[ipT][ipphi] = new double ** [qonpts];
+			for (int iqo = 0; iqo < qonpts; ++iqo)
 			{
-				CFvals[ipT][ipphi][iq] = new double [3];
-				for (int iqax = 0; iqax < 3; ++iqax)
-					CFvals[ipT][ipphi][iq][iqax] = 0.0;
+				CFvals[ipT][ipphi][iqo] = new double * [qsnpts];
+				for (int iqs = 0; iqs < qsnpts; ++iqs)
+				{
+					CFvals[ipT][ipphi][iqo][iqs] = new double [qlnpts];
+					for (int iql = 0; iql < qlnpts; ++iql)
+						CFvals[ipT][ipphi][iqo][iqs][iql] = 0.0;
+				}
 			}
 		}
 	}
@@ -911,21 +915,46 @@ void CorrelationFunction::Set_q_points()
 		qx_pts[iq] = init_q + (double)iq * delta_q;
 		qy_pts[iq] = init_q + (double)iq * delta_q;
 		qz_pts[iq] = init_q + (double)iq * delta_q;
+		if (abs(qt_pts[iq]) < tol)
+			iqt0 = iq;
+		if (abs(qx_pts[iq]) < tol)
+			iqx0 = iq;
+		if (abs(qy_pts[iq]) < tol)
+			iqy0 = iq;
+		if (abs(qz_pts[iq]) < tol)
+			iqz0 = iq;
 	}
 
 	return;
 }
 
+// sets points in q-space for computing weighted spectra grid
+void CorrelationFunction::Set_correlation_function_q_pts()
+{
+	qo_pts = new double [qonpts];
+	qs_pts = new double [qsnpts];
+	ql_pts = new double [qlnpts];
+	for (int iq = 0; iq < qonpts; ++iq)
+		qo_pts[iq] = init_q + (double)iq * delta_q;
+	for (int iq = 0; iq < qsnpts; ++iq)
+		qs_pts[iq] = init_q + (double)iq * delta_q;
+	for (int iq = 0; iq < qlnpts; ++iq)
+		ql_pts[iq] = init_q + (double)iq * delta_q;
+
+	return;
+}
+
+
 // returns points in q-space for computing weighted spectra grid corresponding to to given q and K choices
 // weighted spectra grid thus needs to be interpolated at point returned in qgridpts
-void CorrelationFunction::Get_q_points(double qo, double qs, double ql, double KT, double Kphi, double * qgridpts)
+void CorrelationFunction::Get_q_points(double qo, double qs, double ql, double pT, double pphi, double * qgridpts)
 {
 	double mtarget = all_particles[target_particle_id].mass;
-	double xi2 = 0.25*mtarget*mtarget + KT*KT + qo*qo + qs*qs + ql*ql;
-	double ckp = cos(Kphi), skp = sin(Kphi);
+	double xi2 = 0.25*mtarget*mtarget + pT*pT + qo*qo + qs*qs + ql*ql;
+	double ckp = cos(pphi), skp = sin(pphi);
 
 	// set qpts at which to interpolate spectra
-	qgridpts[0] = sqrt(xi2 + qo*KT) - sqrt(xi2 - qo*KT);	//set qt component
+	qgridpts[0] = sqrt(xi2 + qo*pT) - sqrt(xi2 - qo*pT);	//set qt component
 	qgridpts[1] = qo*ckp - qs*skp;							//set qx component
 	qgridpts[2] = qo*skp + qs*ckp;							//set qy component
 	qgridpts[3] = ql;										//set qz component, since qz = ql
