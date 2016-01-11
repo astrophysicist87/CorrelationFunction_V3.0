@@ -990,7 +990,6 @@ sw2.Start();
 					double S_p = prefactor*(p0*da0 + px*da1 + py*da2)*f0*(1.+deltaf);
 
 					// store values to recycle later
-					//S_p_withweight_array[ipt][ipphi][isurf][ieta] = S_p*tau*eta_s_weight[ieta];
 					tmp_S_p_withweight_array[iFOcell] = S_p*tau*eta_s_weight[ieta];
 
 					//ignore points where delta f is large or emission function goes negative from pdsigma
@@ -998,7 +997,9 @@ sw2.Start();
 					{
 						//zero_FOcell_flag[ipt][ipphi][isurf][ieta] = true;
 						S_p = 0.0;
-						//continue;
+						tmp_S_p_withweight_array[iFOcell] = 0.0;
+						++iFOcell;			// N.B. - iFOcell == isurf * eta_s_npts + ieta
+						continue;
 					}
 
 					double S_p_withweight = S_p*tau*eta_s_weight[ieta];		//don't include eta_s_symmetry_factor here, for consistency with later calculations...
@@ -1021,7 +1022,6 @@ sw2.Start();
 			double running_sum = 0.0;
 			vector<size_t> most_impt_FOcells_vec;
 			size_t FOcells_PQ_size = FOcells_PQ.size();
-			//number_of_FOcells_above_cutoff_array[ipt][ipphi] = FOcells_PQ_size;
 			for (int ii = 0; ii < FOcells_PQ_size; ii++)
 			{
 				pair<double, size_t> tmp = FOcells_PQ.top();
@@ -1040,12 +1040,12 @@ sw2.Start();
 			FOcells_PQ_size = number_of_FOcells_above_cutoff_array[ipt][ipphi];
 
 			// define this array so that it's smaller at run-time...
-			S_p_withweight_array[ipt][ipphi] = new double [ number_of_FOcells_above_cutoff_array[ipt][ipphi] ];
-			most_important_FOcells[ipt][ipphi] = new size_t [ number_of_FOcells_above_cutoff_array[ipt][ipphi] ];
+			S_p_withweight_array[ipt][ipphi] = new double [FOcells_PQ_size];
+			most_important_FOcells[ipt][ipphi] = new size_t [FOcells_PQ_size];
 
 
 			// copy over sorted results
-			for (int ii = 0; ii < FOcells_PQ_size; ii++)
+			for (int ii = 0; ii < FOcells_PQ_size; ++ii)
 			{
 				size_t topFOcell = most_impt_FOcells_vec[ii];
 				//most_important_FOcells[ipt][ipphi][FOcells_PQ_size - 1 - ii] = topFOcell;
@@ -1337,8 +1337,6 @@ sw_set_giant_array_slice.Stop();
 		}
 
 		// Clean up
-		//for (int isurf = 0; isurf < FO_length; ++isurf)
-		//	delete [] giant_array_slice[isurf];
 		delete [] giant_array_C;
 		delete [] giant_array_S;
 
@@ -1353,9 +1351,8 @@ sw_set_giant_array_slice.Stop();
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 	{
-		//for (int ii = 0; ii < number_of_FOcells_above_cutoff_array[ipt][ipphi]; ++ii)
-		//	delete [] S_p_withweight_array[ipt][ipphi][ii];
 		delete [] S_p_withweight_array[ipt][ipphi];
+		delete [] most_important_FOcells[ipt][ipphi];
 	}
 	Reset_zero_FOcell_flag_array();
 
