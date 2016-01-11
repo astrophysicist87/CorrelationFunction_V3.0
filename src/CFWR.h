@@ -14,10 +14,10 @@
 
 #include<gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_errno.h>
-#include <gsl/gsl_rng.h>// gsl random number generators
-#include <gsl/gsl_randist.h>  // gsl random number distributions
-#include <gsl/gsl_vector.h>   // gsl vector and matrix definitions
-#include <gsl/gsl_blas.h>     // gsl linear algebra stuff
+#include <gsl/gsl_rng.h>            // gsl random number generators
+#include <gsl/gsl_randist.h>        // gsl random number distributions
+#include <gsl/gsl_vector.h>         // gsl vector and matrix definitions
+#include <gsl/gsl_blas.h>           // gsl linear algebra stuff
 #include <gsl/gsl_multifit_nlin.h>  // gsl multidimensional fitting
 
 #include "H5Cpp.h"
@@ -84,16 +84,9 @@ class CorrelationFunction
 		int current_level_of_output;
 		int qspace_cs_slice_length;
 		int full_FO_length;
+		int FO_length;
 		int nFO_cutoff;
-
-		int n_zeta_pts, n_v_pts, n_s_pts;
-		double v_min, v_max, zeta_min, zeta_max, s_min, s_max;
-		
-		//integrated space-time moments vars.
-		double S_r_to_part, S_xs_r_to_part, S_xo_r_to_part, S_xl_r_to_part, S_t_r_to_part;
-		double S_xs2_r_to_part, S_xo2_r_to_part, S_xl2_r_to_part, S_t2_r_to_part;
-		double S_xs_xo_r_to_part, S_xs_xl_r_to_part, S_xs_t_r_to_part, S_xo_xl_r_to_part, S_xo_t_r_to_part, S_xl_t_r_to_part;
-		
+				
 		//array to hold previous and current resonance info
 		decay_info * decay_channels;
 		int current_decay_channel_idx, current_resonance_particle_id, previous_resonance_idx, current_resonance_idx, current_reso_nbody;
@@ -117,38 +110,26 @@ class CorrelationFunction
 		double **** osc0, *** osc1, *** osc2, **** osc3;
 	
 		//needed for resonance calculations
-		//kinematic info
-		double pstar, Estar, Yp, Ym, DeltaY;
-		double MTbar, DeltaMT, MTp, MTm;
-		double Qfunc;
-		//pair momentum info, currently assumes pT != 0
-		double p_y, pT, pphi, mT, mass;
-		double ch_p_y, sh_p_y;
-		//resonance momentum info
-		double P_Y, PT, PPhi, MT, Mres, PPhip, PPhim;
-		double m2, m3, Gamma, br, m2Gamma, m3Gamma;
-		double * Pp;
-		double * Pm;
+		//	kinematic info
+		double pstar, Estar, Yp, Ym, DeltaY, MTbar, DeltaMT, MTp, MTm, Qfunc;
+		//	pair momentum info, currently assumes pT != 0
+		double p_y, pT, pphi, mT, mass, ch_p_y, sh_p_y;
+		//	resonance momentum info
+		double P_Y, PT, PPhi, MT, Mres, PPhip, PPhim, m2, m3, Gamma, br, m2Gamma, m3Gamma;
+		double * Pp, * Pm;
 
 		//SP momentum arrays for interpolation grid
-		double * SPinterp_pT;
-		double * SPinterp_pphi;
-		double * sin_SPinterp_pphi;
-		double * cos_SPinterp_pphi;
+		double * SPinterp_pT, * SPinterp_pphi;
+		double * sin_SPinterp_pphi, * cos_SPinterp_pphi;
 		double ** SPinterp_p0, ** SPinterp_p0_Transpose;
 		double ** SPinterp_pz, ** SPinterp_pz_Transpose;
 
+		//Freeze-out surface information
 		FO_surf* current_FOsurf_ptr;
-		//FO surface info that is constant - to save time
-		double Tdec, Edec, Pdec, muRES, signRES, gRES;
-		double S_prefactor;
+		double Tdec, Edec, Pdec, muRES, signRES, gRES, S_prefactor;
 	
 		//single particle spectra for plane angle determination
-		//int n_order;
-		double SP_p_y, global_plane_psi, mean_pT;
-		double * SP_pT, * SP_pphi, * SP_pT_weight, * SP_pphi_weight, * dN_dypTdpT;
-		double * dN_dydphi, * pTdN_dydphi, * plane_angle;
-		double ** dN_dypTdpTdphi, ** cosine_iorder, ** sine_iorder;
+		double SP_p_y;
 		size_t *** most_important_FOcells;
 		double * giant_array, ** giant_array_slice;
 		int ** number_of_FOcells_above_cutoff_array;
@@ -163,11 +144,13 @@ class CorrelationFunction
 		double * eta_s, * ch_eta_s, * sh_eta_s, * eta_s_weight;
 
 		//points and weights for resonance integrals
+		int n_zeta_pts, n_v_pts, n_s_pts;
+		double v_min, v_max, zeta_min, zeta_max, s_min, s_max;
 		double * zeta_pts, * v_pts, ** s_pts, * NEW_s_pts;
 		double * zeta_wts, * v_wts, ** s_wts, * NEW_s_wts;
 
 		//some arrays to save unnecessary multiple calculations for resonances
-		//use these for n_body = 2
+		//	use these for n_body = 2
 		double VEC_n2_spt, VEC_n2_pstar, VEC_n2_Estar, VEC_n2_psBmT, VEC_n2_DeltaY, VEC_n2_Yp, VEC_n2_Ym;
 		double * VEC_n2_P_Y, * VEC_n2_MTbar, * VEC_n2_DeltaMT, * VEC_n2_MTp, * VEC_n2_MTm;
 		double ** VEC_n2_MT, ** VEC_n2_PPhi_tilde, ** VEC_n2_PPhi_tildeFLIP, ** VEC_n2_PT;
@@ -175,40 +158,30 @@ class CorrelationFunction
 		double * VEC_n2_v_factor;
 		double ** VEC_n2_zeta_factor;
 		double VEC_n2_g_s;
-		//use these for n_body = 3
+		//	use these for n_body = 3
 		double * VEC_pstar, * VEC_Estar, * VEC_DeltaY, * VEC_Yp, * VEC_Ym, * VEC_s_factor, * VEC_g_s;
 		double ** VEC_P_Y, ** VEC_MTbar, ** VEC_DeltaMT, ** VEC_MTp, ** VEC_MTm, ** VEC_v_factor;
 		double *** VEC_MT, *** VEC_PPhi_tilde, *** VEC_PPhi_tildeFLIP, *** VEC_PT, *** VEC_zeta_factor;
 		double * ssum_vec, * vsum_vec, * zetasum_vec, * Csum_vec;
 		
-		//Emission function
-		int FO_length;
-		int Emissionfunction_length;
-		
 		double *** spectra, *** abs_spectra;
-		double ***** CFvals;
 		
+		// relative momentum information
 		double * qo_pts, * qs_pts, * ql_pts, * q_pts, * q_axes, * qt_pts, * qx_pts, * qy_pts, * qz_pts;
 		double * q_out, * q_side, * q_long;
 		int iqt0, iqx0, iqy0, iqz0;
 		
 		//store correlation functions
 		//double *** Correl_3D;
+		double ***** CFvals;
 		double *** Correl_3D_err;
 		double ** lambda_Correl, ** lambda_Correl_err;
 
 		//HBT radii coefficients
 		double **R2_side, **R2_out, **R2_long, **R2_outside, **R2_sidelong, **R2_outlong;
 		double **R2_side_err, **R2_out_err, **R2_long_err, **R2_outside_err, **R2_sidelong_err, **R2_outlong_err;
-		double **R2_side_C, **R2_side_S;
-		double **R2_out_C, **R2_out_S;
-		double **R2_long_C, **R2_long_S;
-		double **R2_outside_C, **R2_outside_S;
-		double **R2_outlong_C, **R2_outlong_S;
-		double **R2_sidelong_C, **R2_sidelong_S;
 
 		double *** res_sign_info, *** res_log_info, *** res_moments_info;
-		double ***** local_temp_moments, ******* temp_moments_array;
 
 		double **** S_p_withweight_array;
 		bool **** zero_FOcell_flag;
@@ -250,13 +223,11 @@ class CorrelationFunction
 
 		void Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int dc_idx);
 		void Cal_dN_dypTdpTdphi(double** SP_p0, double** SP_px, double** SP_py, double** SP_pz, FO_surf* FOsurf_ptr);
-		void Cal_dN_dypTdpTdphi_heap(FO_surf* FOsurf_ptr, int local_pid);
-		void Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, int local_pid, double cutoff);
+		void Cal_dN_dypTdpTdphi_heap(FO_surf* FOsurf_ptr, int local_pid, double cutoff);
+		void Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, int local_pid);
 		double Cal_dN_dypTdpTdphi_function(FO_surf* FOsurf_ptr, int local_pid, double pT, double pphi);
 		void Do_resonance_integrals(int iKT, int iKphi, int dc_idx);
 		void Flatten_dN_dypTdpTdphi_moments();
-		void get_rapidity_dependence(double * rap_indep_vector, double * rap_dep_vector, double rap_val);
-		void combine_sourcevariances(double * output, double * input, double * alpha_vec);
 		void Set_current_daughter_info(int dc_idx, int daughter_idx);
 		void Set_current_particle_info(int dc_idx);
 		bool Do_this_decay_channel(int dc_idx);
@@ -270,19 +241,9 @@ class CorrelationFunction
 		void Allocate_decay_channel_info();
 		void Load_decay_channel_info(int dc_idx, double K_T_local, double K_phi_local);
 		void Delete_decay_channel_info();
-		void Compute_source_variances(int iKT, int iKphi);
 		int Set_daughter_list(int parent_resonance_index);
 
 		void form_trig_sign_z(int isurf, int ieta, int iqt, int iqx, int iqy, int iqz, int ii, double * results);
-
-		void Get_source_variances(int, int);
-		void Calculate_R2_side(int, int);
-		void Calculate_R2_out(int, int);
-		void Calculate_R2_long(int, int);
-		void Calculate_R2_outside(int, int);
-		void Calculate_R2_sidelong(int, int);
-		void Calculate_R2_outlong(int, int);
-		void R2_Fourier_transform(int iKT, double plane_psi);
 
 		//miscellaneous
 		void Set_ofstream(ofstream& myout);
@@ -316,11 +277,12 @@ class CorrelationFunction
 		void Reset_zero_FOcell_flag_array();
 
 		// Gaussian fit / correlation function routines
+		void Allocate_CFvals();
 		void Get_GF_HBTradii(FO_surf* FOsurf_ptr, int folderindex);
 		void Cal_correlationfunction();
-		void Fit_Correlationfunction3D(double *** Correl_3D);
+		void Fit_Correlationfunction3D(double *** Correl_3D, int ipt, int ipphi);
 		int print_fit_state_3D (size_t iteration, gsl_multifit_fdfsolver * solver_ptr);
-		void Fit_Correlationfunction3D_withlambda(double *** Correl_3D);
+		void Fit_Correlationfunction3D_withlambda(double *** Correl_3D, int ipt, int ipphi);
 		int print_fit_state_3D_withlambda (size_t iteration, gsl_multifit_fdfsolver * solver_ptr);
 		//int Read_correlationfunction(int iKT, int iKphi);
 		inline double get_fit_results(int i, gsl_multifit_fdfsolver * solver_ptr);

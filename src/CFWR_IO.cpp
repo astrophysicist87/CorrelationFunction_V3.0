@@ -7,13 +7,13 @@
 #include<vector>
 #include<stdio.h>
 
-#include<gsl/gsl_sf_bessel.h>
+/*#include<gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_rng.h>            // gsl random number generators
 #include <gsl/gsl_randist.h>        // gsl random number distributions
 #include <gsl/gsl_vector.h>         // gsl vector and matrix definitions
 #include <gsl/gsl_blas.h>           // gsl linear algebra stuff
-#include <gsl/gsl_multifit_nlin.h>  // gsl multidimensional fitting
+#include <gsl/gsl_multifit_nlin.h>  // gsl multidimensional fitting*/
 
 #include "CFWR.h"
 #include "Arsenal.h"
@@ -40,33 +40,20 @@ void replace_parentheses(std::string & tempstring)
 void CorrelationFunction::Output_results(int folderindex)
 {
 	ostringstream filename_stream_HBT;
-	filename_stream_HBT << global_path << "/HBTradii_ev" << folderindex << no_df_stem << ".dat";
+	filename_stream_HBT << global_path << "/HBTradii_GF_ev" << folderindex << no_df_stem << ".dat";
 	ofstream outputHBT;
 	outputHBT.open(filename_stream_HBT.str().c_str());
-	ostringstream filename_stream_HBTcfs;
-	filename_stream_HBTcfs << global_path << "/HBTradii_cfs_ev" << folderindex << no_df_stem << ".dat";
-	ofstream outputHBTcoeffs(filename_stream_HBTcfs.str().c_str());
 
-	for(int iKT = 0; iKT < n_localp_T; iKT++)
+	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 	{
-		for(int Morder=0; Morder<n_order; Morder++)
-		{
-			outputHBTcoeffs << folderindex << "  " << K_T[iKT] << "  " << Morder
-				<< "  " << R2_side_C[iKT][Morder] << "   " << R2_side_S[iKT][Morder] << "  " << R2_out_C[iKT][Morder] << "  " << R2_out_S[iKT][Morder]
-				<< "  " << R2_outside_C[iKT][Morder] << "   " << R2_outside_S[iKT][Morder] << "  " << R2_long_C[iKT][Morder] << "  " << R2_long_S[iKT][Morder]
-				<< "  " << R2_sidelong_C[iKT][Morder] << "   " << R2_sidelong_S[iKT][Morder] << "  " << R2_outlong_C[iKT][Morder] << "  " << R2_outlong_S[iKT][Morder] << endl;
-		}
-		for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
-		{
-			outputHBT << folderindex << "  " << K_T[iKT] << "  " << K_phi[iKphi]
-				<< "  " << R2_side[iKT][iKphi] << "  " << R2_out[iKT][iKphi]
-				<< "  " << R2_outside[iKT][iKphi] << "  " << R2_long[iKT][iKphi]
-				<< "  " << R2_sidelong[iKT][iKphi] << "  " << R2_outlong[iKT][iKphi] << endl;
-		}
+		outputHBT << SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi]
+			<< "   " << R2_side[ipt][ipphi] << "   " << R2_out[ipt][ipphi]
+			<< "   " << R2_outside[ipt][ipphi] << "   " << R2_long[ipt][ipphi]
+			<< "   " << R2_sidelong[ipt][ipphi] << "   " << R2_outlong[ipt][ipphi] << endl;
 	}
 
 	outputHBT.close();
-	outputHBTcoeffs.close();
 
 	return;
 }
@@ -96,8 +83,8 @@ void CorrelationFunction::Output_resonance_spectra(int resonance_pid, int folder
 					{
 						double * CRS_s5a = CRS_s4a[ipt];
 						double * CRS_s5b = CRS_s4a[ipt];
-						for (int iphi = 0; iphi < n_interp_pphi_pts; ++iphi)
-							fprintf(out, "%lf   %lf   ", CRS_s5a[iphi], CRS_s5b[iphi]);
+						for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+							fprintf(out, "%lf   %lf   ", CRS_s5a[ipphi], CRS_s5b[ipphi]);
 						fprintf(out, "\n");
 					}
 				}
@@ -119,9 +106,9 @@ void CorrelationFunction::Readin_resonance_spectra(int resonance_pid, int folder
 	for (int iqy = 0; iqy < qnpts; ++iqy)
 	for (int iqz = 0; iqz < qnpts; ++iqz)
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-	for (int iphi = 0; iphi < n_interp_pphi_pts; ++iphi)
-		fscanf(in, "%lf", &resonance_spectra[iqt][iqx][iqy][iqz][0][ipt][iphi]
-                            &resonance_spectra[iqt][iqx][iqy][iqz][1][ipt][iphi]);
+	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		fscanf(in, "%lf", &resonance_spectra[iqt][iqx][iqy][iqz][0][ipt][ipphi]
+                            &resonance_spectra[iqt][iqx][iqy][iqz][1][ipt][ipphi]);
 
 	return(fclose(in));
 }
@@ -137,9 +124,9 @@ void CorrelationFunction::Readin_daughter_spectra(int resonance_pid, int folderi
 	for (int iqy = 0; iqy < qnpts; ++iqy)
 	for (int iqz = 0; iqz < qnpts; ++iqz)
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-	for (int iphi = 0; iphi < n_interp_pphi_pts; ++iphi)
-		fscanf(in, "%lf", &resonance_spectra[iqt][iqx][iqy][iqz][0][ipt][iphi]
-                            &resonance_spectra[iqt][iqx][iqy][iqz][1][ipt][iphi]);
+	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		fscanf(in, "%lf", &resonance_spectra[iqt][iqx][iqy][iqz][0][ipt][ipphi]
+                            &resonance_spectra[iqt][iqx][iqy][iqz][1][ipt][ipphi]);
 
 	return(fclose(in));
 }
@@ -150,7 +137,7 @@ void CorrelationFunction::Output_correlationfunction(int folderindex)
 	ostringstream oCorrFunc_stream;
 	string temp_particle_name = particle_name;
 	replace_parentheses(temp_particle_name);
-	oCorrFunc_stream << global_path << "/correlfunct1D" << "_" << temp_particle_name << ".dat";
+	oCorrFunc_stream << global_path << "/correlfunct3D" << "_" << temp_particle_name << ".dat";
 	ofstream oCorrFunc;
 	oCorrFunc.open(oCorrFunc_stream.str().c_str());
 
@@ -162,32 +149,31 @@ void CorrelationFunction::Output_correlationfunction(int folderindex)
 		oCorrFunc << scientific << setprecision(7) << setw(15)
 			<< SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   " << qo_pts[iqo] << "   "
 			<< qs_pts[iqs] << "   " << ql_pts[iql] << "   " << CFvals[ipt][ipphi][iqo][iqs][iql] << endl;
+
+	oCorrFunc.close();
 				
 	return;
 }
 
 void CorrelationFunction::Readin_results(int folderindex)
 {
-double dummy;
+	double dummy;
 	ostringstream filename_stream_HBT;
-	filename_stream_HBT << global_path << "/HBTradii_ev" << folderindex << no_df_stem << ".dat";
+	filename_stream_HBT << global_path << "/HBTradii_GF_ev" << folderindex << no_df_stem << ".dat";
 	ifstream inputHBT(filename_stream_HBT.str().c_str());
 
-for(int iKT = 0; iKT < n_localp_T; iKT++)
-{
-	for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 	{
-		inputHBT >> dummy;
-		inputHBT >> dummy;
-        	inputHBT >> dummy;
-		inputHBT >> R2_side[iKT][iKphi];
-		inputHBT >> R2_out[iKT][iKphi];
-		inputHBT >> R2_outside[iKT][iKphi];
-		inputHBT >> R2_long[iKT][iKphi];
-		inputHBT >> R2_sidelong[iKT][iKphi];
-		inputHBT >> R2_outlong[iKT][iKphi];
+		inputHBT >> dummy;	//pt value
+		inputHBT >> dummy;	//pphi value
+		inputHBT >> R2_side[ipt][ipphi];
+		inputHBT >> R2_out[ipt][ipphi];
+		inputHBT >> R2_outside[ipt][ipphi];
+		inputHBT >> R2_long[ipt][ipphi];
+		inputHBT >> R2_sidelong[ipt][ipphi];
+		inputHBT >> R2_outlong[ipt][ipphi];
 	}
-}
 
 	inputHBT.close();
 
@@ -222,10 +208,10 @@ void CorrelationFunction::Output_total_target_dN_dypTdpTdphi(int folderindex)
 	filename_stream_target_dN_dypTdpTdphi << global_path << "/total_" << local_name << "_dN_dypTdpTdphi_ev" << folderindex << no_df_stem << ".dat";
 	ofstream output_target_dN_dypTdpTdphi(filename_stream_target_dN_dypTdpTdphi.str().c_str());
 
-	for(int iphi = 0; iphi < n_interp_pphi_pts; iphi++)
+	for(int ipphi = 0; ipphi < n_interp_pphi_pts; ipphi++)
 	{
 		for(int ipt = 0; ipt < n_interp_pT_pts; ipt++)
-			output_target_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12) << spectra[target_particle_id][ipt][iphi] << "   ";
+			output_target_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12) << spectra[target_particle_id][ipt][ipphi] << "   ";
 		output_target_dN_dypTdpTdphi << endl;
 	}
 

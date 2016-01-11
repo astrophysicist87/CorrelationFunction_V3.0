@@ -431,14 +431,14 @@ int CorrelationFunction::Set_resonance_in_HDF_array(int local_pid, double ******
 		// use loaded chunk to fill resonance_array_to_fill
 		int iidx = 0;
 		for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-		for (int iphi = 0; iphi < n_interp_pphi_pts; ++iphi)
+		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 		for (int iqt = 0; iqt < qnpts; ++iqt)
 		for (int iqx = 0; iqx < qnpts; ++iqx)
 		for (int iqy = 0; iqy < qnpts; ++iqy)
 		for (int iqz = 0; iqz < qnpts; ++iqz)
 		for (int itrig = 0; itrig < ntrig; ++itrig)
 		{
-			double temp = resonance_array_to_use[ipt][iphi][iqt][iqx][iqy][iqz][itrig];
+			double temp = resonance_array_to_use[ipt][ipphi][iqt][iqx][iqy][iqz][itrig];
 			resonance_chunk[iidx] = temp;
 			++iidx;
 		}
@@ -497,7 +497,7 @@ int CorrelationFunction::Get_resonance_from_HDF_array(int local_pid, double ****
 		// use loaded chunk to fill resonance_array_to_fill
 		int iidx = 0;
 		for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-		for (int iphi = 0; iphi < n_interp_pphi_pts; ++iphi)
+		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 		for (int iqt = 0; iqt < qnpts; ++iqt)
 		for (int iqx = 0; iqx < qnpts; ++iqx)
 		for (int iqy = 0; iqy < qnpts; ++iqy)
@@ -505,9 +505,9 @@ int CorrelationFunction::Get_resonance_from_HDF_array(int local_pid, double ****
 		for (int itrig = 0; itrig < ntrig; ++itrig)
 		{
 			double temp = resonance_chunk[iidx];
-			//cerr << "INFODUMP: " << local_pid << "   " << ipt << "   " << iphi << "   " << iqt << "   "
+			//cerr << "INFODUMP: " << local_pid << "   " << ipt << "   " << ipphi << "   " << iqt << "   "
 			//	<< iqx << "   " << iqy << "   " << iqz << "   " << itrig << "   " << temp << endl;
-			resonance_array_to_fill[ipt][iphi][iqt][iqx][iqy][iqz][itrig] = temp;
+			resonance_array_to_fill[ipt][ipphi][iqt][iqx][iqy][iqz][itrig] = temp;
 			++iidx;
 		}
 

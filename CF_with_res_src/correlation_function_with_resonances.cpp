@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
 	for(int i=0; i<N_stableparticle; i++)
 	for(int j=0; j<FO_length; j++)
 		particle_mu[i][j] = 0.0;
-	if(N_stableparticle >0)
+	if(N_stableparticle > 0)
 	{
 		//if(hydropara_ptr->IEOS==7)       //for s95p_PCE
 		read_decdat_mu(FO_length, N_stableparticle, particle_mu, currentworkingdirectory);
@@ -190,11 +190,15 @@ if (1) return (0);*/
    
 	correlation_function.Output_total_target_dN_dypTdpTdphi(folderindex);
 	correlation_function.Output_total_target_eiqx_dN_dypTdpTdphi(folderindex);
-	if (qnpts == 1)
+
+	if (1)
+		return(0);
+
+	if (qnpts > 1)
 		correlation_function.Output_correlationfunction(folderindex);
 	//correlation_function.Output_all_dN_dypTdpTdphi(folderindex);
 	//correlation_function.Output_chosen_resonances();
-	//correlation_function.Output_results(folderindex);
+	correlation_function.Output_results(folderindex);
 	output << "Finished calculating HBT radii via Gaussian fit method" << endl;
 
 

@@ -17,7 +17,7 @@ using namespace std;
 #define TRUNCATE_COOPER_FRYE		false		// ignore contributions to CF integral which are extremely small --> speeds up code by factor of 3-4
 #define VERBOSE 			1		// specifies level of output - 0 is lowest (no output)
 #define DEBUG				false		// flag for output of debugging statements
-#define SPACETIME_MOMENTS_ONLY		false		// duh
+#define SPACETIME_MOMENTS_ONLY		true		// duh
 #define DO_ALL_DECAY_CHANNELS		false		// duh
 #define USE_HDF5			false		// utilizes HDF5 software to store large arrays
 #define USE_LAMBDA			false		// fit correlation function with adjustable intercept parameter
@@ -47,21 +47,24 @@ const double eta_s_i = 0.0;
 const double eta_s_f = 4.0;
 
 //relative momentum information
-const int qonpts = 10;
-const int qsnpts = 10;
-const int qlnpts = 10;
+const int qonpts = 51;
+const int qsnpts = 51;
+const int qlnpts = 51;
 //const int qnpts = 11;
-//const double delta_q = 0.005;
+//const double delta_q = 0.02;
 //const double init_q = -5.0*delta_q;
-//const int qnpts = 7;
-//const double delta_q = 0.05;
-//const double init_q = -3.0*delta_q;
+const int qnpts = 7;
+const double delta_q = 0.02;
+const double init_q = -3.0*delta_q;
 //const int qnpts = 6;
 //const double delta_q = 0.05;
 //const double init_q = -2.5*delta_q;
-const int qnpts = 3;
-const double delta_q = 0.05;
-const double init_q = -delta_q;
+//const int qnpts = 3;
+//const double delta_q = 0.05;
+//const double init_q = -delta_q;
+//const int qnpts = 2;
+//const double delta_q = 0.05;
+//const double init_q = -0.5*delta_q;
 //const int qnpts = 1;
 //const double delta_q = 0.005;
 //const double init_q = 0.0;
@@ -99,7 +102,7 @@ const double localp_phi_max = 2*M_PI;
 const int n_order = 1;
 
 const double tol = 0.0;		//tolerance
-const int flagneg = 0;		//neglect all points that are negative
+const int flagneg = 1;		//neglect all points that are negative
 				//choose flagneg == 0 to agree with iS.e
 				//choose flagneg == 1 for the real world
 

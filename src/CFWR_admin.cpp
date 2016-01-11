@@ -10,13 +10,13 @@
 #include<algorithm>
 #include <set>
 
-#include<gsl/gsl_sf_bessel.h>
+/*#include<gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_rng.h>            // gsl random number generators
 #include <gsl/gsl_randist.h>        // gsl random number distributions
 #include <gsl/gsl_vector.h>         // gsl vector and matrix definitions
 #include <gsl/gsl_blas.h>           // gsl linear algebra stuff
-#include <gsl/gsl_multifit_nlin.h>  // gsl multidimensional fitting
+#include <gsl/gsl_multifit_nlin.h>  // gsl multidimensional fitting*/
 
 #include "CFWR.h"
 #include "Arsenal.h"
@@ -273,26 +273,6 @@ debugger(__LINE__, __FILE__);
 		}
 	}
 
-	CFvals = new double **** [n_interp_pT_pts];
-	for (int ipT = 0; ipT < n_interp_pT_pts; ++ipT)
-	{
-		CFvals[ipT] = new double *** [n_interp_pphi_pts];
-		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-		{
-			CFvals[ipT][ipphi] = new double ** [qonpts];
-			for (int iqo = 0; iqo < qonpts; ++iqo)
-			{
-				CFvals[ipT][ipphi][iqo] = new double * [qsnpts];
-				for (int iqs = 0; iqs < qsnpts; ++iqs)
-				{
-					CFvals[ipT][ipphi][iqo][iqs] = new double [qlnpts];
-					for (int iql = 0; iql < qlnpts; ++iql)
-						CFvals[ipT][ipphi][iqo][iqs][iql] = 0.0;
-				}
-			}
-		}
-	}
-
 	// used for keeping track of how many FO cells are important for given pT, pphi
 	number_of_FOcells_above_cutoff_array = new int * [n_interp_pT_pts];
 	for (int ipT = 0; ipT < n_interp_pT_pts; ++ipT)
@@ -333,12 +313,12 @@ debugger(__LINE__, __FILE__);
 		gauss_quadrature(n_s_pts, 1, 0.0, 0.0, s_min_temp, s_max_temp, s_pts[idc], s_wts[idc]);
 	}	
    //single particle spectra for plane angle determination
-   SP_pT = new double [n_SP_pT];
+   /*SP_pT = new double [n_SP_pT];
    SP_pT_weight = new double [n_SP_pT];
    gauss_quadrature(n_SP_pT, 1, 0.0, 0.0, SP_pT_min, SP_pT_max, SP_pT, SP_pT_weight);
    SP_pphi = new double [n_SP_pphi];
    SP_pphi_weight = new double [n_SP_pphi];
-   gauss_quadrature(n_SP_pphi, 1, 0.0, 0.0, 0.0, 2.*M_PI, SP_pphi, SP_pphi_weight);
+   gauss_quadrature(n_SP_pphi, 1, 0.0, 0.0, 0.0, 2.*M_PI, SP_pphi, SP_pphi_weight);*/
    SP_p_y = 0.0e0;
 //initialize and set evenly spaced grid of px-py points in transverse plane,
 //and corresponding p0 and pz points
@@ -347,8 +327,8 @@ debugger(__LINE__, __FILE__);
 	SPinterp_pphi = new double [n_interp_pphi_pts];
 	sin_SPinterp_pphi = new double [n_interp_pphi_pts];
 	cos_SPinterp_pphi = new double [n_interp_pphi_pts];
-	SPinterp_p0 = new double* [n_interp_pT_pts];
-	SPinterp_pz = new double* [n_interp_pT_pts];
+	SPinterp_p0 = new double * [n_interp_pT_pts];
+	SPinterp_pz = new double * [n_interp_pT_pts];
 	for(int ipt=0; ipt<n_interp_pT_pts; ipt++)
 	{
 		SPinterp_p0[ipt] = new double [eta_s_npts];
@@ -397,35 +377,6 @@ debugger(__LINE__, __FILE__);
 	}
 
 debugger(__LINE__, __FILE__);
-	dN_dypTdpTdphi = new double* [n_SP_pT];
-	cosine_iorder = new double* [n_SP_pT];
-	sine_iorder = new double* [n_SP_pT];
-	for(int i=0; i<n_SP_pT; i++)
-	{
-		dN_dypTdpTdphi[i] = new double [n_SP_pphi];
-		cosine_iorder[i] = new double [n_order];
-		sine_iorder[i] = new double [n_order];
-	}
-	dN_dydphi = new double [n_SP_pphi];
-	dN_dypTdpT = new double [n_SP_pT];
-	pTdN_dydphi = new double [n_SP_pphi];
-	for(int i=0; i<n_SP_pphi; i++)
-	{
-		dN_dydphi[i] = 0.0e0;
-		pTdN_dydphi[i] = 0.0e0;
-		for(int j=0; j<n_SP_pT; j++)
-			dN_dypTdpTdphi[j][i] = 0.0e0;
-	}
-	for(int i=0; i<n_SP_pT; i++)
-	{
-		dN_dypTdpT[i] = 0.0e0;
-		for(int j=0; j<n_order; j++)
-		{
-			cosine_iorder[i][j] = 0.0e0;
-			sine_iorder[i][j] = 0.0e0;
-		}
-	}
-	plane_angle = new double [n_order];
 
 	//pair momentum
 	K_T = new double [n_localp_T];
@@ -451,104 +402,66 @@ debugger(__LINE__, __FILE__);
 		ch_eta_s[ieta] = cosh(eta_s[ieta]);
 		sh_eta_s[ieta] = sinh(eta_s[ieta]);
 	}
+
 debugger(__LINE__, __FILE__);
-	R2_side = new double* [n_localp_T];
-	R2_side_C = new double* [n_localp_T];
-	R2_side_S = new double* [n_localp_T];
-	R2_out = new double* [n_localp_T];
-	R2_out_C = new double* [n_localp_T];
-	R2_out_S = new double* [n_localp_T];
-	R2_long = new double* [n_localp_T];
-	R2_long_C = new double* [n_localp_T];
-	R2_long_S = new double* [n_localp_T];
-	R2_outside = new double* [n_localp_T];
-	R2_outside_C = new double* [n_localp_T];
-	R2_outside_S = new double* [n_localp_T];
-	R2_sidelong = new double* [n_localp_T];
-	R2_sidelong_C = new double* [n_localp_T];
-	R2_sidelong_S = new double* [n_localp_T];
-	R2_outlong = new double* [n_localp_T];
-	R2_outlong_C = new double* [n_localp_T];
-	R2_outlong_S = new double* [n_localp_T];
+	R2_side = new double * [n_interp_pT_pts];
+	R2_out = new double * [n_interp_pT_pts];
+	R2_long = new double * [n_interp_pT_pts];
+	R2_outside = new double * [n_interp_pT_pts];
+	R2_sidelong = new double * [n_interp_pT_pts];
+	R2_outlong = new double * [n_interp_pT_pts];
 
-	R2_side_err = new double* [n_localp_T];
-	R2_out_err = new double* [n_localp_T];
-	R2_long_err = new double* [n_localp_T];
-	R2_outside_err = new double* [n_localp_T];
-	R2_sidelong_err = new double* [n_localp_T];
-	R2_outlong_err = new double* [n_localp_T];
+	R2_side_err = new double * [n_interp_pT_pts];
+	R2_out_err = new double * [n_interp_pT_pts];
+	R2_long_err = new double * [n_interp_pT_pts];
+	R2_outside_err = new double * [n_interp_pT_pts];
+	R2_sidelong_err = new double * [n_interp_pT_pts];
+	R2_outlong_err = new double * [n_interp_pT_pts];
 
-	lambda_Correl = new double * [n_localp_T];
-	lambda_Correl_err = new double * [n_localp_T];
+	lambda_Correl = new double * [n_interp_pT_pts];
+	lambda_Correl_err = new double * [n_interp_pT_pts];
 
-	for(int i=0; i<n_localp_T; i++)
+	for(int ipt=0; ipt<n_interp_pT_pts; ipt++)
 	{
-		R2_side[i] = new double [n_localp_phi];
-		R2_side_C[i] = new double [n_order];
-		R2_side_S[i] = new double [n_order];
-		R2_out[i] = new double [n_localp_phi];
-		R2_out_C[i] = new double [n_order];
-		R2_out_S[i] = new double [n_order];
-		R2_outside[i] = new double [n_localp_phi];
-		R2_outside_C[i] = new double [n_order];
-		R2_outside_S[i] = new double [n_order];
-		R2_long[i] = new double [n_localp_phi];
-		R2_long_C[i] = new double [n_order];
-		R2_long_S[i] = new double [n_order];
-		R2_sidelong[i] = new double [n_localp_phi];
-		R2_sidelong_C[i] = new double [n_order];
-		R2_sidelong_S[i] = new double [n_order];
-		R2_outlong[i] = new double [n_localp_phi];
-		R2_outlong_C[i] = new double [n_order];
-		R2_outlong_S[i] = new double [n_order];
+		R2_side[ipt] = new double [n_interp_pphi_pts];
+		R2_out[ipt] = new double [n_interp_pphi_pts];
+		R2_outside[ipt] = new double [n_interp_pphi_pts];
+		R2_long[ipt] = new double [n_interp_pphi_pts];
+		R2_sidelong[ipt] = new double [n_interp_pphi_pts];
+		R2_outlong[ipt] = new double [n_interp_pphi_pts];
 
-		R2_side_err[i] = new double [n_localp_phi];
-		R2_out_err[i] = new double [n_localp_phi];
-		R2_long_err[i] = new double [n_localp_phi];
-		R2_outside_err[i] = new double [n_localp_phi];
-		R2_sidelong_err[i] = new double [n_localp_phi];
-		R2_outlong_err[i] = new double [n_localp_phi];
+		R2_side_err[ipt] = new double [n_interp_pphi_pts];
+		R2_out_err[ipt] = new double [n_interp_pphi_pts];
+		R2_long_err[ipt] = new double [n_interp_pphi_pts];
+		R2_outside_err[ipt] = new double [n_interp_pphi_pts];
+		R2_sidelong_err[ipt] = new double [n_interp_pphi_pts];
+		R2_outlong_err[ipt] = new double [n_interp_pphi_pts];
 
-		lambda_Correl[i] = new double [n_localp_phi];
-		lambda_Correl_err[i] = new double [n_localp_phi];
+		lambda_Correl[ipt] = new double [n_interp_pphi_pts];
+		lambda_Correl_err[ipt] = new double [n_interp_pphi_pts];
 	}
 debugger(__LINE__, __FILE__);
 	//initialize all source variances and HBT radii/coeffs
-	for(int i=0; i<n_localp_T; i++)
+	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 	{
-		for(int j=0; j<n_localp_phi; j++)
+		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 		{
-			R2_side[i][j] = 0.;
-			R2_out[i][j] = 0.;
-			R2_long[i][j] = 0.;
-			R2_outside[i][j] = 0.;
-			R2_sidelong[i][j] = 0.;
-			R2_outlong[i][j] = 0.;
+			R2_side[ipt][ipphi] = 0.;
+			R2_out[ipt][ipphi] = 0.;
+			R2_long[ipt][ipphi] = 0.;
+			R2_outside[ipt][ipphi] = 0.;
+			R2_sidelong[ipt][ipphi] = 0.;
+			R2_outlong[ipt][ipphi] = 0.;
 
-			R2_side_err[i][j] = 0.;
-			R2_out_err[i][j] = 0.;
-			R2_long_err[i][j] = 0.;
-			R2_outside_err[i][j] = 0.;
-			R2_sidelong_err[i][j] = 0.;
-			R2_outlong_err[i][j] = 0.;
+			R2_side_err[ipt][ipphi] = 0.;
+			R2_out_err[ipt][ipphi] = 0.;
+			R2_long_err[ipt][ipphi] = 0.;
+			R2_outside_err[ipt][ipphi] = 0.;
+			R2_sidelong_err[ipt][ipphi] = 0.;
+			R2_outlong_err[ipt][ipphi] = 0.;
 
-			lambda_Correl[i][j] = 0.0;
-			lambda_Correl_err[i][j] = 0.0;
-		}
-		for(int j=0; j<n_order; j++)
-		{
-			R2_side_C[i][j] = 0.;
-			R2_side_S[i][j] = 0.;
-			R2_out_C[i][j] = 0.;
-			R2_out_S[i][j] = 0.;
-			R2_outside_C[i][j] = 0.;
-			R2_outside_S[i][j] = 0.;
-			R2_long_C[i][j] = 0.;
-			R2_long_S[i][j] = 0.;
-			R2_sidelong_C[i][j] = 0.;
-			R2_sidelong_S[i][j] = 0.;
-			R2_outlong_C[i][j] = 0.;
-			R2_outlong_S[i][j] = 0.;
+			lambda_Correl[ipt][ipphi] = 0.0;
+			lambda_Correl_err[ipt][ipphi] = 0.0;
 		}
 	}
 
@@ -641,21 +554,6 @@ void CorrelationFunction::Update_sourcefunction(particle_info* particle, int FOa
 
 	*global_out_stream_ptr << "Inside Update_sourcefunction(...): using fraction_of_resonances = " << fraction_of_resonances << endl;
 
-   //erase contents of single - and two-particle spectra
-   for(int i=0; i<n_SP_pphi; i++)
-   {
-      dN_dydphi[i] = 0.0e0;
-      pTdN_dydphi[i] = 0.0e0;
-      for(int j=0; j<n_SP_pT; j++) dN_dypTdpTdphi[j][i] = 0.0e0;
-   }
-   //erase anisotropic flows
-   for(int i=0; i<n_SP_pT; i++)
-   for(int j=0; j<n_order; j++)
-   {
-      cosine_iorder[i][j] = 0.0e0;
-      sine_iorder[i][j] = 0.0e0;
-   }
-
    FO_length = FOarray_length;
 
 	// set the rest later
@@ -667,64 +565,76 @@ void CorrelationFunction::Update_sourcefunction(particle_info* particle, int FOa
 			most_important_FOcells[ipt][ipphi] = new size_t [FO_length];
 	}
 
-
-//reset only EBE source variances and EBE HBT radii/coeffs
-for(int i=0; i<n_localp_T; i++)
-{
-	for(int j=0; j<n_order; j++)
-	{
-		R2_side_C[i][j] = 0.;
-		R2_side_S[i][j] = 0.;
-		R2_out_C[i][j] = 0.;
-		R2_out_S[i][j] = 0.;
-		R2_outside_C[i][j] = 0.;
-		R2_outside_S[i][j] = 0.;
-		R2_long_C[i][j] = 0.;
-		R2_long_S[i][j] = 0.;
-		R2_sidelong_C[i][j] = 0.;
-		R2_sidelong_S[i][j] = 0.;
-		R2_outlong_C[i][j] = 0.;
-		R2_outlong_S[i][j] = 0.;
-	}
-}
-
    return;
 }
 
 CorrelationFunction::~CorrelationFunction()
 {
-   delete[] SP_pT;
-   delete[] SP_pT_weight;
-   delete[] SP_pphi;
-   delete[] SP_pphi_weight;
-   delete[] dN_dydphi;
-   delete[] dN_dypTdpT;
-   delete[] pTdN_dydphi;
-   for(int i=0; i<n_SP_pT; i++)
-   {
-      delete[] dN_dypTdpTdphi[i];
-      delete[] cosine_iorder[i];
-      delete[] sine_iorder[i];
-   }
-   delete[] dN_dypTdpTdphi;
-   delete[] cosine_iorder;
-   delete[] sine_iorder;
-   delete[] plane_angle;
+   delete [] K_T;
+   delete [] K_phi;
+   delete [] K_phi_weight;
+   delete [] eta_s;
+   delete [] eta_s_weight;
 
-   delete[] K_T;
-   delete[] K_phi;
-   delete[] K_phi_weight;
-   delete[] eta_s;
-   delete[] eta_s_weight;
+	for(int ipt=0; ipt<n_interp_pT_pts; ipt++)
+	{
+		delete [] lambda_Correl[ipt];
+		delete [] R2_side[ipt];
+		delete [] R2_out[ipt];
+		delete [] R2_long[ipt];
+		delete [] R2_outside[ipt];
+		delete [] R2_sidelong[ipt];
+		delete [] R2_outlong[ipt];
 
-   for(int i=0; i<n_localp_T; i++)
-   {
-      delete[] R2_side[i];
-   }
+		delete [] lambda_Correl_err[ipt];
+		delete [] R2_side_err[ipt];
+		delete [] R2_out_err[ipt];
+		delete [] R2_long_err[ipt];
+		delete [] R2_outside_err[ipt];
+		delete [] R2_sidelong_err[ipt];
+		delete [] R2_outlong_err[ipt];
+	}
 
-   delete[] R2_side;
+	delete [] R2_side;
+	delete [] R2_out;
+	delete [] R2_long;
+	delete [] R2_outside;
+	delete [] R2_sidelong;
+	delete [] R2_outlong;
+
+	delete [] lambda_Correl_err;
+	delete [] R2_side_err;
+	delete [] R2_out_err;
+	delete [] R2_long_err;
+	delete [] R2_outside_err;
+	delete [] R2_sidelong_err;
+	delete [] R2_outlong_err;
 
    return;
+}
+
+void CorrelationFunction::Allocate_CFvals()
+{
+	CFvals = new double **** [n_interp_pT_pts];
+	for (int ipT = 0; ipT < n_interp_pT_pts; ++ipT)
+	{
+		CFvals[ipT] = new double *** [n_interp_pphi_pts];
+		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		{
+			CFvals[ipT][ipphi] = new double ** [qonpts];
+			for (int iqo = 0; iqo < qonpts; ++iqo)
+			{
+				CFvals[ipT][ipphi][iqo] = new double * [qsnpts];
+				for (int iqs = 0; iqs < qsnpts; ++iqs)
+				{
+					CFvals[ipT][ipphi][iqo][iqs] = new double [qlnpts];
+					for (int iql = 0; iql < qlnpts; ++iql)
+						CFvals[ipT][ipphi][iqo][iqs][iql] = 0.0;
+				}
+			}
+		}
+	}
+	return;
 }
 
 void CorrelationFunction::Delete_S_p_withweight_array()
@@ -927,7 +837,7 @@ void CorrelationFunction::Set_q_points()
 
 	cerr << "Output iq*0 = " << iqt0 << "   " << iqx0 << "   " << iqy0 << "   " << iqz0 << endl;
 
-if (1) exit;
+//if (1) exit;
 
 	return;
 }
@@ -938,23 +848,27 @@ void CorrelationFunction::Set_correlation_function_q_pts()
 	qo_pts = new double [qonpts];
 	qs_pts = new double [qsnpts];
 	ql_pts = new double [qlnpts];
+
+	double q_osl_init = init_q/sqrt(2.0);	//sqrt(2) is a cheat to keep q_interp inside range already calculated for qt-qx-qy-qz
+	double delta_q_osl = double(qnpts-1)*delta_q/(sqrt(2.0)*double(qonpts-1));
+
 	for (int iq = 0; iq < qonpts; ++iq)
-		qo_pts[iq] = init_q + (double)iq * delta_q;
+		qo_pts[iq] = q_osl_init + (double)iq * delta_q_osl;
 	for (int iq = 0; iq < qsnpts; ++iq)
-		qs_pts[iq] = init_q + (double)iq * delta_q;
+		qs_pts[iq] = q_osl_init + (double)iq * delta_q_osl;
 	for (int iq = 0; iq < qlnpts; ++iq)
-		ql_pts[iq] = init_q + (double)iq * delta_q;
+		ql_pts[iq] = q_osl_init + (double)iq * delta_q_osl;
 
 	// initialize error matrix
-	Correl_3D_err = new double [qonpts];
+	Correl_3D_err = new double ** [qonpts];
 	for (int iqo = 0; iqo < qonpts; ++iqo)
 	{
-		Correl_3D_err[iqo] = new double [qsnpts];
+		Correl_3D_err[iqo] = new double * [qsnpts];
 		for (int iqs = 0; iqs < qsnpts; ++iqs)
 		{
 			Correl_3D_err[iqo][iqs] = new double [qlnpts];
 			for (int iql = 0; iql < qlnpts; ++iql)
-				Correl_3D_err[iqo][iqs][iql] = 0.0;
+				Correl_3D_err[iqo][iqs][iql] = 1e-2;	//naive choice for now
 		}
 	}
 
@@ -1106,108 +1020,6 @@ int CorrelationFunction::lookup_resonance_idx_from_particle_id(int pid)
 	return (result);
 }
 
-void CorrelationFunction::Setup_temp_arrays(double ***** local_temp_moments, double ******* temp_moments_array)
-{
-	//set first argument
-	local_temp_moments = new double **** [qnpts];
-	for (int iqt = 0; iqt < qnpts; ++iqt)
-	{
-		local_temp_moments[iqt] = new double *** [qnpts];
-		for (int iqx = 0; iqx < qnpts; ++iqx)
-		{
-			local_temp_moments[iqt][iqx] = new double ** [qnpts];
-			for (int iqy = 0; iqy < qnpts; ++iqy)
-			{
-				local_temp_moments[iqt][iqx][iqy] = new double * [qnpts];
-				for (int iqz = 0; iqz < qnpts; ++iqz)
-				{
-					local_temp_moments[iqt][iqx][iqy][iqz] = new double [2];
-					for (int itrig = 0; itrig < 2; ++itrig)
-						local_temp_moments[iqt][iqx][iqy][iqz][itrig] = 0.0;
-				}
-			}
-		}
-	}
-	
-	// set second argument
-	temp_moments_array = new double ****** [n_interp_pT_pts];
-	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-	{
-		temp_moments_array[ipt] = new double ***** [n_interp_pphi_pts];
-		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-		{
-			temp_moments_array[ipt][ipphi] = new double **** [qnpts];
-			for (int iqt = 0; iqt < qnpts; ++iqt)
-			{
-				temp_moments_array[ipt][ipphi][iqt] = new double *** [qnpts];
-				for (int iqx = 0; iqx < qnpts; ++iqx)
-				{
-					temp_moments_array[ipt][ipphi][iqt][iqx] = new double ** [qnpts];
-					for (int iqy = 0; iqy < qnpts; ++iqy)
-					{
-						temp_moments_array[ipt][ipphi][iqt][iqx][iqy] = new double * [qnpts];
-						for (int iqz = 0; iqz < qnpts; ++iqz)
-						{
-							temp_moments_array[ipt][ipphi][iqt][iqx][iqy][iqz] = new double [2];
-							for (int itrig = 0; itrig < 2; ++itrig)
-								temp_moments_array[ipt][ipphi][iqt][iqx][iqy][iqz][itrig] = 0.0;
-						}
-					}
-				}
-			}
-		}
-	}
-
-	return;
-}
-
-void CorrelationFunction::Teardown_temp_arrays(double ***** local_temp_moments, double ******* temp_moments_array)
-{
-	//clean up first argument
-	for (int iqt = 0; iqt < qnpts; ++iqt)
-	{
-		for (int iqx = 0; iqx < qnpts; ++iqx)
-		{
-			for (int iqy = 0; iqy < qnpts; ++iqy)
-			{
-				for (int iqz = 0; iqz < qnpts; ++iqz)
-					delete [] local_temp_moments[iqt][iqx][iqy][iqz];
-				delete [] local_temp_moments[iqt][iqx][iqy];
-			}
-			delete [] local_temp_moments[iqt][iqx];
-		}
-		delete [] local_temp_moments[iqt];
-	}
-	delete [] local_temp_moments;
-
-	//clean up second argument
-	for(int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-	{
-		for(int iphi = 0; iphi < n_interp_pphi_pts; ++iphi)
-		{
-			for (int iqt = 0; iqt < qnpts; ++iqt)
-			{
-				for (int iqx = 0; iqx < qnpts; ++iqx)
-				{
-					for (int iqy = 0; iqy < qnpts; ++iqy)
-					{
-						for (int iqz = 0; iqz < qnpts; ++iqz)
-							delete [] temp_moments_array[ipt][iphi][iqt][iqx][iqy][iqz];
-						delete [] temp_moments_array[ipt][iphi][iqt][iqx][iqy];
-					}
-					delete [] temp_moments_array[ipt][iphi][iqt][iqx];
-				}
-				delete [] temp_moments_array[ipt][iphi][iqt];
-			}
-			delete [] temp_moments_array[ipt][iphi];
-		}
-		delete [] temp_moments_array[ipt];
-	}
-	delete [] temp_moments_array;
-
-	return;
-}
-
 void CorrelationFunction::Allocate_resonance_running_sum_vectors()
 {
     ssum_vec = new double [qspace_cs_slice_length];
@@ -1292,7 +1104,7 @@ void CorrelationFunction::Cleanup_current_daughters_dN_dypTdpTdphi_moments(int n
 	{
 		for(int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 		{
-			for(int iphi = 0; iphi < n_interp_pphi_pts; ++iphi)
+			for(int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 			{
 				for (int iqt = 0; iqt < qnpts; ++iqt)
 				{
@@ -1302,25 +1114,25 @@ void CorrelationFunction::Cleanup_current_daughters_dN_dypTdpTdphi_moments(int n
 						{
 							for (int iqz = 0; iqz < qnpts; ++iqz)
 							{
-								delete [] current_daughters_dN_dypTdpTdphi_moments[id][ipt][iphi][iqt][iqx][iqy][iqz];
-								delete [] current_daughters_ln_dN_dypTdpTdphi_moments[id][ipt][iphi][iqt][iqx][iqy][iqz];
-								delete [] current_daughters_sign_of_dN_dypTdpTdphi_moments[id][ipt][iphi][iqt][iqx][iqy][iqz];
+								delete [] current_daughters_dN_dypTdpTdphi_moments[id][ipt][ipphi][iqt][iqx][iqy][iqz];
+								delete [] current_daughters_ln_dN_dypTdpTdphi_moments[id][ipt][ipphi][iqt][iqx][iqy][iqz];
+								delete [] current_daughters_sign_of_dN_dypTdpTdphi_moments[id][ipt][ipphi][iqt][iqx][iqy][iqz];
 							}
-							delete [] current_daughters_dN_dypTdpTdphi_moments[id][ipt][iphi][iqt][iqx][iqy];
-							delete [] current_daughters_ln_dN_dypTdpTdphi_moments[id][ipt][iphi][iqt][iqx][iqy];
-							delete [] current_daughters_sign_of_dN_dypTdpTdphi_moments[id][ipt][iphi][iqt][iqx][iqy];
+							delete [] current_daughters_dN_dypTdpTdphi_moments[id][ipt][ipphi][iqt][iqx][iqy];
+							delete [] current_daughters_ln_dN_dypTdpTdphi_moments[id][ipt][ipphi][iqt][iqx][iqy];
+							delete [] current_daughters_sign_of_dN_dypTdpTdphi_moments[id][ipt][ipphi][iqt][iqx][iqy];
 						}
-						delete [] current_daughters_dN_dypTdpTdphi_moments[id][ipt][iphi][iqt][iqx];
-						delete [] current_daughters_ln_dN_dypTdpTdphi_moments[id][ipt][iphi][iqt][iqx];
-						delete [] current_daughters_sign_of_dN_dypTdpTdphi_moments[id][ipt][iphi][iqt][iqx];
+						delete [] current_daughters_dN_dypTdpTdphi_moments[id][ipt][ipphi][iqt][iqx];
+						delete [] current_daughters_ln_dN_dypTdpTdphi_moments[id][ipt][ipphi][iqt][iqx];
+						delete [] current_daughters_sign_of_dN_dypTdpTdphi_moments[id][ipt][ipphi][iqt][iqx];
 					}
-					delete [] current_daughters_dN_dypTdpTdphi_moments[id][ipt][iphi][iqt];
-					delete [] current_daughters_ln_dN_dypTdpTdphi_moments[id][ipt][iphi][iqt];
-					delete [] current_daughters_sign_of_dN_dypTdpTdphi_moments[id][ipt][iphi][iqt];
+					delete [] current_daughters_dN_dypTdpTdphi_moments[id][ipt][ipphi][iqt];
+					delete [] current_daughters_ln_dN_dypTdpTdphi_moments[id][ipt][ipphi][iqt];
+					delete [] current_daughters_sign_of_dN_dypTdpTdphi_moments[id][ipt][ipphi][iqt];
 				}
-				delete [] current_daughters_dN_dypTdpTdphi_moments[id][ipt][iphi];
-				delete [] current_daughters_ln_dN_dypTdpTdphi_moments[id][ipt][iphi];
-				delete [] current_daughters_sign_of_dN_dypTdpTdphi_moments[id][ipt][iphi];
+				delete [] current_daughters_dN_dypTdpTdphi_moments[id][ipt][ipphi];
+				delete [] current_daughters_ln_dN_dypTdpTdphi_moments[id][ipt][ipphi];
+				delete [] current_daughters_sign_of_dN_dypTdpTdphi_moments[id][ipt][ipphi];
 			}
 			delete [] current_daughters_dN_dypTdpTdphi_moments[id][ipt];
 			delete [] current_daughters_ln_dN_dypTdpTdphi_moments[id][ipt];
