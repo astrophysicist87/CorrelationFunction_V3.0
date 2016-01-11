@@ -131,7 +131,7 @@ class CorrelationFunction
 		//single particle spectra for plane angle determination
 		double SP_p_y;
 		size_t *** most_important_FOcells;
-		double * giant_array, ** giant_array_slice;
+		double * giant_array_C, * giant_array_S, ** giant_array_slice;
 		int ** number_of_FOcells_above_cutoff_array;
 
 		//pair momentum
@@ -183,8 +183,9 @@ class CorrelationFunction
 
 		double *** res_sign_info, *** res_log_info, *** res_moments_info;
 
-		double **** S_p_withweight_array;
-		bool **** zero_FOcell_flag;
+		//double **** S_p_withweight_array;
+		double *** S_p_withweight_array;
+		//bool **** zero_FOcell_flag;
 		
 		//miscellaneous
 		ofstream * global_out_stream_ptr;
@@ -219,12 +220,15 @@ class CorrelationFunction
 		int Copy_chunk(int current_resonance_index, int reso_idx_to_be_copied);
 
 		void Set_giant_array_slice(int iqt, int iqx, int iqy, int iqz);
+		void Set_giant_arrays(int iqt, int iqx, int iqy, int iqz);
 		void addElementToQueue(priority_queue<pair<double, size_t> >& p, pair<double, size_t> elem, size_t max_size);
 
 		void Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int dc_idx);
 		void Cal_dN_dypTdpTdphi(double** SP_p0, double** SP_px, double** SP_py, double** SP_pz, FO_surf* FOsurf_ptr);
-		void Cal_dN_dypTdpTdphi_heap(FO_surf* FOsurf_ptr, int local_pid, double cutoff);
-		void Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, int local_pid);
+		//void Cal_dN_dypTdpTdphi_heap(FO_surf* FOsurf_ptr, int local_pid, double cutoff);
+		//void Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, int local_pid);
+		void Cal_dN_dypTdpTdphi_heap_v2(FO_surf* FOsurf_ptr, int local_pid, double cutoff);
+		void Cal_dN_dypTdpTdphi_with_weights_v2(FO_surf* FOsurf_ptr, int local_pid);
 		double Cal_dN_dypTdpTdphi_function(FO_surf* FOsurf_ptr, int local_pid, double pT, double pphi);
 		void Do_resonance_integrals(int iKT, int iKphi, int dc_idx);
 		void Flatten_dN_dypTdpTdphi_moments();
