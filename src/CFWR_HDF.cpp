@@ -53,10 +53,10 @@ int CorrelationFunction::Set_giant_HDF_array()
 			dataspace->selectHyperslab(H5S_SELECT_SET, count, offset);
 			double * giant_FOslice_array = new double [giant_FOslice_array_size];
 			for (int ieta = 0; ieta < eta_s_npts; ++ieta)
-			for (int iqt = 0; iqt < qnpts; ++iqt)
-			for (int iqx = 0; iqx < qnpts; ++iqx)
-			for (int iqy = 0; iqy < qnpts; ++iqy)
-			for (int iqz = 0; iqz < qnpts; ++iqz)
+			for (int iqt = 0; iqt < qtnpts; ++iqt)
+			for (int iqx = 0; iqx < qxnpts; ++iqx)
+			for (int iqy = 0; iqy < qynpts; ++iqy)
+			for (int iqz = 0; iqz < qznpts; ++iqz)
 			{
 				form_trig_sign_z(isurf, ieta, iqt, iqx, iqy, iqz, 0, tmp_results_ii0);
 				form_trig_sign_z(isurf, ieta, iqt, iqx, iqy, iqz, 1, tmp_results_ii1);
@@ -231,10 +231,10 @@ int CorrelationFunction::Set_giant_chunked_HDF_array()
 			offset[0] = isurf * giant_FOslice_array_size;
 			dataspace->selectHyperslab(H5S_SELECT_SET, count, offset);
 			for (int ieta = 0; ieta < eta_s_npts; ++ieta)
-			for (int iqt = 0; iqt < qnpts; ++iqt)
-			for (int iqx = 0; iqx < qnpts; ++iqx)
-			for (int iqy = 0; iqy < qnpts; ++iqy)
-			for (int iqz = 0; iqz < qnpts; ++iqz)
+			for (int iqt = 0; iqt < qtnpts; ++iqt)
+			for (int iqx = 0; iqx < qxnpts; ++iqx)
+			for (int iqy = 0; iqy < qynpts; ++iqy)
+			for (int iqz = 0; iqz < qznpts; ++iqz)
 			{
 				form_trig_sign_z(isurf, ieta, iqt, iqx, iqy, iqz, 0, tmp_results_ii0);
 				form_trig_sign_z(isurf, ieta, iqt, iqx, iqy, iqz, 1, tmp_results_ii1);
@@ -432,10 +432,10 @@ int CorrelationFunction::Set_resonance_in_HDF_array(int local_pid, double ******
 		int iidx = 0;
 		for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-		for (int iqt = 0; iqt < qnpts; ++iqt)
-		for (int iqx = 0; iqx < qnpts; ++iqx)
-		for (int iqy = 0; iqy < qnpts; ++iqy)
-		for (int iqz = 0; iqz < qnpts; ++iqz)
+		for (int iqt = 0; iqt < qtnpts; ++iqt)
+		for (int iqx = 0; iqx < qxnpts; ++iqx)
+		for (int iqy = 0; iqy < qynpts; ++iqy)
+		for (int iqz = 0; iqz < qznpts; ++iqz)
 		for (int itrig = 0; itrig < ntrig; ++itrig)
 		{
 			double temp = resonance_array_to_use[ipt][ipphi][iqt][iqx][iqy][iqz][itrig];
@@ -498,10 +498,10 @@ int CorrelationFunction::Get_resonance_from_HDF_array(int local_pid, double ****
 		int iidx = 0;
 		for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-		for (int iqt = 0; iqt < qnpts; ++iqt)
-		for (int iqx = 0; iqx < qnpts; ++iqx)
-		for (int iqy = 0; iqy < qnpts; ++iqy)
-		for (int iqz = 0; iqz < qnpts; ++iqz)
+		for (int iqt = 0; iqt < qtnpts; ++iqt)
+		for (int iqx = 0; iqx < qxnpts; ++iqx)
+		for (int iqy = 0; iqy < qynpts; ++iqy)
+		for (int iqz = 0; iqz < qznpts; ++iqz)
 		for (int itrig = 0; itrig < ntrig; ++itrig)
 		{
 			double temp = resonance_chunk[iidx];

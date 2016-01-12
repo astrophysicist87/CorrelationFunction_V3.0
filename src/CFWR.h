@@ -217,7 +217,6 @@ class CorrelationFunction
 		int Initialize_resonance_HDF_array();
 		int Copy_chunk(int current_resonance_index, int reso_idx_to_be_copied);
 
-		void Set_giant_array_slice(int iqt, int iqx, int iqy, int iqz);
 		void Set_giant_arrays(int iqt, int iqx, int iqy, int iqz);
 		void addElementToQueue(priority_queue<pair<double, size_t> >& p, pair<double, size_t> elem, size_t max_size);
 
@@ -274,7 +273,6 @@ class CorrelationFunction
 		void Setup_current_daughters_dN_dypTdpTdphi_moments(int n_daughter);
 		void Cleanup_current_daughters_dN_dypTdpTdphi_moments(int n_daughter);
 		void Delete_S_p_withweight_array();
-		void Reset_zero_FOcell_flag_array();
 
 		// Gaussian fit / correlation function routines
 		void Allocate_CFvals();

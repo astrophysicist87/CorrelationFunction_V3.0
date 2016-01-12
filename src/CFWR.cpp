@@ -509,10 +509,10 @@ void CorrelationFunction::Set_current_resonance_logs_and_signs()
 {
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-	for (int iqt = 0; iqt < qnpts; ++iqt)
-	for (int iqx = 0; iqx < qnpts; ++iqx)
-	for (int iqy = 0; iqy < qnpts; ++iqy)
-	for (int iqz = 0; iqz < qnpts; ++iqz)
+	for (int iqt = 0; iqt < qtnpts; ++iqt)
+	for (int iqx = 0; iqx < qxnpts; ++iqx)
+	for (int iqy = 0; iqy < qynpts; ++iqy)
+	for (int iqz = 0; iqz < qznpts; ++iqz)
 	for (int itrig = 0; itrig < 2; ++itrig)
 	{
 		double temp = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][itrig];
@@ -528,10 +528,10 @@ void CorrelationFunction::Set_current_daughters_resonance_logs_and_signs(int n_d
 	for (int idaughter = 0; idaughter < n_daughters; ++idaughter)
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-	for (int iqt = 0; iqt < qnpts; ++iqt)
-	for (int iqx = 0; iqx < qnpts; ++iqx)
-	for (int iqy = 0; iqy < qnpts; ++iqy)
-	for (int iqz = 0; iqz < qnpts; ++iqz)
+	for (int iqt = 0; iqt < qtnpts; ++iqt)
+	for (int iqx = 0; iqx < qxnpts; ++iqx)
+	for (int iqy = 0; iqy < qynpts; ++iqy)
+	for (int iqz = 0; iqz < qznpts; ++iqz)
 	for (int itrig = 0; itrig < 2; ++itrig)
 	{
 		double temp = current_daughters_dN_dypTdpTdphi_moments[idaughter][ipt][ipphi][iqt][iqx][iqy][iqz][itrig];
@@ -625,7 +625,7 @@ void CorrelationFunction::Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int lo
 	*global_out_stream_ptr << "Computing spectra..." << endl;
 	CPStopwatch sw;
 	sw.Start();
-	Cal_dN_dypTdpTdphi_heap(FOsurf_ptr, local_pid, 0.99);
+	Cal_dN_dypTdpTdphi_heap(FOsurf_ptr, local_pid, 1.0);
 	sw.Stop();
 	*global_out_stream_ptr << "CP#1: Took " << sw.printTime() << " seconds." << endl;
 
@@ -792,7 +792,6 @@ sw2.Start();
 					//ignore points where delta f is large or emission function goes negative from pdsigma
 					if ((1. + deltaf < 0.0) || (flagneg == 1 && S_p < tol))
 					{
-						//zero_FOcell_flag[ipt][ipphi][isurf][ieta] = true;
 						S_p = 0.0;
 						tmp_S_p_withweight_array[iFOcell] = 0.0;
 						++iFOcell;			// N.B. - iFOcell == isurf * eta_s_npts + ieta
@@ -804,7 +803,6 @@ sw2.Start();
 					tempsum += S_p_withweight;
 					tempabssum += abs(S_p_withweight);
 					addElementToQueue(FOcells_PQ, pair<double, size_t>(-abs(S_p_withweight), iFOcell), number_of_FOcells_above_cutoff_array[ipt][ipphi]);
-					//addElementToQueue(FOcells_PQ, pair<double, size_t>(abs(S_p_withweight), iFOcell), number_of_FOcells_above_cutoff_array[ipt][ipphi]);
 					++iFOcell;			// N.B. - iFOcell == isurf * eta_s_npts + ieta
 
 				}
@@ -852,10 +850,6 @@ sw2.Start();
 			// finally, chop off whatever is left
 			most_impt_FOcells_vec.erase ( most_impt_FOcells_vec.begin() + breaker, most_impt_FOcells_vec.end() );
 			most_impt_FOcells_vals_vec.erase ( most_impt_FOcells_vals_vec.begin() + breaker, most_impt_FOcells_vals_vec.end() );
-
-			//for (int i = 0; i < most_impt_FOcells_vec.size(); ++i)
-			//	cerr << "TEST: " << most_impt_FOcells_vec[i] << "   " << most_impt_FOcells_vals_vec[i] << endl;
-
 
 //*global_out_stream_ptr << "COMP(ipt = " << ipt << " , ipphi = " << ipphi << "): Need " << most_impt_FOcells_vec.size() << " of " << FOcells_PQ_size 
 //			<< " vs. " << number_of_FOcells_above_cutoff_array[ipt][ipphi] << endl;
@@ -908,32 +902,6 @@ sw2.Stop();
 }
 
 // this function sets the FT phase factor which depends on all q pts. and all x pts., but no K or p pts.
-void CorrelationFunction::Set_giant_array_slice(int iqt, int iqx, int iqy, int iqz)
-{
-	giant_array_slice = new double * [FO_length];
-
-	double * tmp_results_ii0 = new double [ntrig];
-	double * tmp_results_ii1 = new double [ntrig];
-
-	for (int isurf = 0; isurf < FO_length; ++isurf)
-	{
-		giant_array_slice[isurf] = new double [eta_s_npts * ntrig];
-		for (int ieta = 0; ieta < eta_s_npts; ++ieta)
-		{
-			form_trig_sign_z(isurf, ieta, iqt, iqx, iqy, iqz, 0, tmp_results_ii0);
-			form_trig_sign_z(isurf, ieta, iqt, iqx, iqy, iqz, 1, tmp_results_ii1);
-			giant_array_slice[isurf][ntrig*ieta+0] = tmp_results_ii0[0] + tmp_results_ii1[0];
-			giant_array_slice[isurf][ntrig*ieta+1] = tmp_results_ii0[1] + tmp_results_ii1[1];
-		}
-	}
-
-	delete [] tmp_results_ii0;
-	delete [] tmp_results_ii1;
-
-	return;
-}
-
-// this function sets the FT phase factor which depends on all q pts. and all x pts., but no K or p pts.
 void CorrelationFunction::Set_giant_arrays(int iqt, int iqx, int iqy, int iqz)
 {
 	giant_array_C = new double [FO_length * eta_s_npts];
@@ -966,20 +934,19 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 
 	int temp_moms_lin_arr_length = n_interp_pT_pts * n_interp_pphi_pts * ntrig;
 
-	double eta_s_symmetry_factor = 2.0;
-
 	int lin_TMLAL_idx = 0;
 
 	double * temp_moms_linear_array = new double [temp_moms_lin_arr_length];
 
 	double correction_factors[n_interp_pT_pts][n_interp_pphi_pts];
 
-	for (int iqt = 0; iqt < qnpts; ++iqt)
-	for (int iqx = 0; iqx < qnpts; ++iqx)
-	for (int iqy = 0; iqy < qnpts; ++iqy)
-	for (int iqz = 0; iqz < qnpts; ++iqz)
+	//for (int iqt = 0; iqt < qtnpts; ++iqt)
+	for (int iqt = 0; iqt < (qtnpts / 2) + 1; ++iqt)	//assumes each central q point is zero!!!
+	for (int iqx = 0; iqx < qxnpts; ++iqx)
+	for (int iqy = 0; iqy < qynpts; ++iqy)
+	for (int iqz = 0; iqz < qznpts; ++iqz)
 	{	
-		*global_out_stream_ptr << "Working on (iqt, iqx, iqy, iqz) = (" << iqt << ", " << iqx << ", " << iqy << ", " << iqz << ")..." << endl;
+		*global_out_stream_ptr << "Working on (iqt, iqx, iqy, iqz) = (" << iqt << ", " << iqx << ", " << iqy << ", " << iqz << ") DIRECTLY..." << endl;
 		debug_sw2.Reset();
 	
 sw_set_giant_array_slice.Start();
@@ -1001,29 +968,20 @@ sw_set_giant_array_slice.Stop();
 				size_t * most_important_FOcells_for_current_pt_and_pphi = mif1[ipphi];
 
 				int ptphi_index = ipt * n_interp_pphi_pts + ipphi;
-				double running_sum = 0.0;
-
 				int maxFOnum = number_of_FOcells_above_cutoff_array[ipt][ipphi];
-				//*global_out_stream_ptr << "At (iqt, iqx, iqy, iqz, ipt, ipphi) = ("
-				//	<< iqt << ", " << iqx << ", " << iqy << ", " << iqz << ", " << ipt << ", " << ipphi << "): "
-				//	<< "number_of_FOcells_above_cutoff = " << maxFOnum << "/" << FO_length * eta_s_npts << endl;
-
+				double running_sum = 0.0;
 				double tmla_C = 0.0, tmla_S = 0.0;
 				double current_abs_spectra = abs_spectra[local_pid][ipt][ipphi];
-				double last_S_p_withweight = 1.e10;
 
 				for (int iFO = 0; iFO < maxFOnum; ++iFO)	//this sum is over entire surface, up to possibly FO_length*eta_s_npts
 				{
 					size_t next_most_important_FOindex = most_important_FOcells_for_current_pt_and_pphi[iFO];
 					double S_p_withweight = slice2[iFO];
-					if ( S_p_withweight > last_S_p_withweight )
-						cerr << "WARNING: S VALS NOT PROPERLY SORTED!!!" << endl;
 
 					tmla_C += giant_array_C[next_most_important_FOindex] * S_p_withweight;
 					tmla_S += giant_array_S[next_most_important_FOindex] * S_p_withweight;
 
 					running_sum += abs(S_p_withweight);
-					last_S_p_withweight = S_p_withweight;
 				}
 
 				correction_factors[ipt][ipphi] = running_sum / current_abs_spectra;
@@ -1053,7 +1011,24 @@ sw_set_giant_array_slice.Stop();
 		*global_out_stream_ptr << "   --> Finished (iqt, iqx, iqy, iqz) = ("
 								<< iqt << ", " << iqx << ", " << iqy << ", " << iqz
 								<< ") in " << debug_sw2.printTime() << " seconds." << endl;
-	}		//end of q-loops
+	}		//end of first set of q-loops
+
+	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	// !!!!!  USE SYMMETRY IN Q-SPACE TO GET SPECTRA FOR ALL +VE QT POINTS FROM -VE QT POINTS  !!!!!
+	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+	//for (int iqt = 0; iqt < qtnpts; ++iqt)
+	for (int iqt = (qtnpts / 2) + 1; iqt < qtnpts; ++iqt)	//assumes each central q point is zero!!!
+	for (int iqx = 0; iqx < qxnpts; ++iqx)
+	for (int iqy = 0; iqy < qynpts; ++iqy)
+	for (int iqz = 0; iqz < qznpts; ++iqz)
+	for (int itrig = 0; itrig < ntrig; ++itrig)
+	{
+		*global_out_stream_ptr << "Working on (iqt, iqx, iqy, iqz) = (" << iqt << ", " << iqx << ", " << iqy << ", " << iqz << ") INDIRECTLY..." << endl;
+		current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][itrig]
+			= (1.0 - 2.0 * itrig) * current_dN_dypTdpTdphi_moments[ipt][ipphi][qtnpts - iqt - 1][qxnpts - iqx - 1][qynpts - iqy - 1][qznpts - iqz - 1][itrig];
+	}		//end of second set of q-loops
 
 	*global_out_stream_ptr << "Spent " << sw_set_giant_array_slice.printTime() << " seconds setting giant_array_slice." << endl;
 
@@ -1063,8 +1038,6 @@ sw_set_giant_array_slice.Stop();
 		delete [] S_p_withweight_array[ipt][ipphi];
 		delete [] most_important_FOcells[ipt][ipphi];
 	}
-	Reset_zero_FOcell_flag_array();
-
 
 	delete [] temp_moms_linear_array;
 

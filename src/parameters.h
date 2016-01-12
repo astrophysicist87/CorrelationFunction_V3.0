@@ -69,6 +69,11 @@ const double init_q = -delta_q;
 //const double delta_q = 0.005;
 //const double init_q = 0.0;
 
+//all q points here
+const int qtnpts = qnpts;
+const int qxnpts = qnpts;
+const int qynpts = qnpts;
+const int qznpts = qnpts;
 
 //single particle spectra info
 const int n_SP_pT = 15;

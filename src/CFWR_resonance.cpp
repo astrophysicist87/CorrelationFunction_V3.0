@@ -112,10 +112,10 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 
 			//update all gridpoints for all daughter moments
 			int qpt_cs_idx = 0;
-			for (int iqt = 0; iqt < qnpts; ++iqt)
-			for (int iqx = 0; iqx < qnpts; ++iqx)
-			for (int iqy = 0; iqy < qnpts; ++iqy)
-			for (int iqz = 0; iqz < qnpts; ++iqz)
+			for (int iqt = 0; iqt < qtnpts; ++iqt)
+			for (int iqx = 0; iqx < qxnpts; ++iqx)
+			for (int iqy = 0; iqy < qynpts; ++iqy)
+			for (int iqz = 0; iqz < qznpts; ++iqz)
 			for (int itrig = 0; itrig < 2; ++itrig)
 			{
 				current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt][iqx][iqy][iqz][itrig] += ssum_vec[qpt_cs_idx] / fraction_of_resonances;
@@ -193,10 +193,10 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 			}													// end of s sum
 			//update all gridpoints for daughter moments
 			int qpt_cs_idx = 0;
-			for (int iqt = 0; iqt < qnpts; ++iqt)
-			for (int iqx = 0; iqx < qnpts; ++iqx)
-			for (int iqy = 0; iqy < qnpts; ++iqy)
-			for (int iqz = 0; iqz < qnpts; ++iqz)
+			for (int iqt = 0; iqt < qtnpts; ++iqt)
+			for (int iqx = 0; iqx < qxnpts; ++iqx)
+			for (int iqy = 0; iqy < qynpts; ++iqy)
+			for (int iqz = 0; iqz < qznpts; ++iqz)
 			for (int itrig = 0; itrig < 2; ++itrig)
 			{
 				current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt][iqx][iqy][iqz][itrig] += ssum_vec[qpt_cs_idx] / fraction_of_resonances;
@@ -252,10 +252,10 @@ void CorrelationFunction::Flatten_dN_dypTdpTdphi_moments()
 		int qpt_cs_idx = 0;
 		
 		// flatten arrays, since these are quicker to process
-		for (int iqt = 0; iqt < qnpts; ++iqt)
-		for (int iqx = 0; iqx < qnpts; ++iqx)
-		for (int iqy = 0; iqy < qnpts; ++iqy)
-		for (int iqz = 0; iqz < qnpts; ++iqz)
+		for (int iqt = 0; iqt < qtnpts; ++iqt)
+		for (int iqx = 0; iqx < qxnpts; ++iqx)
+		for (int iqy = 0; iqy < qynpts; ++iqy)
+		for (int iqz = 0; iqz < qznpts; ++iqz)
 		for (int itrig = 0; itrig < 2; ++itrig)
 		{
 			res_sign_info[ipt][ipphi][qpt_cs_idx] = current_sign_of_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][itrig];

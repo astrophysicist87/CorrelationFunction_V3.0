@@ -65,16 +65,16 @@ void CorrelationFunction::Output_resonance_spectra(int resonance_pid, int folder
 	filename_stream << global_path << "/resonance_" << resonance_pid << "_spectra_ev" << folderindex << no_df_stem << ".dat";
 	FILE *out = fopen(filename_stream.str().c_str(), "w");
 
-	for (int iqt = 0; iqt < qnpts; ++iqt)
+	for (int iqt = 0; iqt < qtnpts; ++iqt)
 	{
 		double ****** CRS_s1 = resonance_spectra[iqt];
-		for (int iqx = 0; iqx < qnpts; ++iqx)
+		for (int iqx = 0; iqx < qxnpts; ++iqx)
 		{
 			double ***** CRS_s2 = CRS_s1[iqx];
-			for (int iqy = 0; iqy < qnpts; ++iqy)
+			for (int iqy = 0; iqy < qynpts; ++iqy)
 			{
 				double **** CRS_s3 = CRS_s2[iqy];
-				for (int iqz = 0; iqz < qnpts; ++iqz)
+				for (int iqz = 0; iqz < qznpts; ++iqz)
 				{
 					double *** CRS_s4 = CRS_s3[iqz];
 					double ** CRS_s4a = CRS_s4[0];	//itrig == 0
@@ -101,10 +101,10 @@ void CorrelationFunction::Readin_resonance_spectra(int resonance_pid, int folder
 	filename_stream << global_path << "/resonance_" << resonance_pid << "_spectra_ev" << folderindex << no_df_stem << ".dat";
 	FILE *in = fopen(filename_stream.str().c_str(), "r");
 
-	for (int iqt = 0; iqt < qnpts; ++iqt)
-	for (int iqx = 0; iqx < qnpts; ++iqx)
-	for (int iqy = 0; iqy < qnpts; ++iqy)
-	for (int iqz = 0; iqz < qnpts; ++iqz)
+	for (int iqt = 0; iqt < qtnpts; ++iqt)
+	for (int iqx = 0; iqx < qxnpts; ++iqx)
+	for (int iqy = 0; iqy < qynpts; ++iqy)
+	for (int iqz = 0; iqz < qznpts; ++iqz)
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 		fscanf(in, "%lf", &resonance_spectra[iqt][iqx][iqy][iqz][0][ipt][ipphi]
@@ -119,10 +119,10 @@ void CorrelationFunction::Readin_daughter_spectra(int resonance_pid, int folderi
 	filename_stream << global_path << "/resonance_" << resonance_pid << "_spectra_ev" << folderindex << no_df_stem << ".dat";
 	FILE *in = fopen(filename_stream.str().c_str(), "r");
 
-	for (int iqt = 0; iqt < qnpts; ++iqt)
-	for (int iqx = 0; iqx < qnpts; ++iqx)
-	for (int iqy = 0; iqy < qnpts; ++iqy)
-	for (int iqz = 0; iqz < qnpts; ++iqz)
+	for (int iqt = 0; iqt < qtnpts; ++iqt)
+	for (int iqx = 0; iqx < qxnpts; ++iqx)
+	for (int iqy = 0; iqy < qynpts; ++iqy)
+	for (int iqz = 0; iqz < qznpts; ++iqz)
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 		fscanf(in, "%lf", &resonance_spectra[iqt][iqx][iqy][iqz][0][ipt][ipphi]
@@ -230,10 +230,10 @@ void CorrelationFunction::Output_total_target_eiqx_dN_dypTdpTdphi(int folderinde
 
 	int HDFloadTargetSuccess = Get_resonance_from_HDF_array(target_particle_id, current_dN_dypTdpTdphi_moments);
 
-	for (int iqt = 0; iqt < qnpts; ++iqt)
-	for (int iqx = 0; iqx < qnpts; ++iqx)
-	for (int iqy = 0; iqy < qnpts; ++iqy)
-	for (int iqz = 0; iqz < qnpts; ++iqz)
+	for (int iqt = 0; iqt < qtnpts; ++iqt)
+	for (int iqx = 0; iqx < qxnpts; ++iqx)
+	for (int iqy = 0; iqy < qynpts; ++iqy)
+	for (int iqz = 0; iqz < qznpts; ++iqz)
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 	{
