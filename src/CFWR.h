@@ -183,9 +183,7 @@ class CorrelationFunction
 
 		double *** res_sign_info, *** res_log_info, *** res_moments_info;
 
-		//double **** S_p_withweight_array;
 		double *** S_p_withweight_array;
-		//bool **** zero_FOcell_flag;
 		
 		//miscellaneous
 		ofstream * global_out_stream_ptr;
@@ -225,10 +223,8 @@ class CorrelationFunction
 
 		void Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int dc_idx);
 		void Cal_dN_dypTdpTdphi(double** SP_p0, double** SP_px, double** SP_py, double** SP_pz, FO_surf* FOsurf_ptr);
-		//void Cal_dN_dypTdpTdphi_heap(FO_surf* FOsurf_ptr, int local_pid, double cutoff);
-		//void Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, int local_pid);
-		void Cal_dN_dypTdpTdphi_heap_v2(FO_surf* FOsurf_ptr, int local_pid, double cutoff);
-		void Cal_dN_dypTdpTdphi_with_weights_v2(FO_surf* FOsurf_ptr, int local_pid);
+		void Cal_dN_dypTdpTdphi_heap(FO_surf* FOsurf_ptr, int local_pid, double cutoff);
+		void Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, int local_pid);
 		double Cal_dN_dypTdpTdphi_function(FO_surf* FOsurf_ptr, int local_pid, double pT, double pphi);
 		void Do_resonance_integrals(int iKT, int iKphi, int dc_idx);
 		void Flatten_dN_dypTdpTdphi_moments();
