@@ -16,9 +16,9 @@ using namespace std;
 
 const int SPA_RANK = 2;
 const int RANK2D = 2;
-const int giant_FOslice_array_size = eta_s_npts * qnpts * qnpts * qnpts * qnpts * ntrig;
-const int chunk_size = n_interp_pT_pts * n_interp_pphi_pts * qnpts * qnpts * qnpts * qnpts * ntrig;
-const int small_array_size = qnpts * qnpts * qnpts * qnpts * ntrig;
+const int giant_FOslice_array_size = eta_s_npts * qtnpts * qxnpts * qynpts * qznpts * ntrig;
+const int chunk_size = n_interp_pT_pts * n_interp_pphi_pts * qtnpts * qxnpts * qynpts * qznpts * ntrig;
+const int small_array_size = qtnpts * qxnpts * qynpts * qznpts * ntrig;
 
 int CorrelationFunction::Set_giant_HDF_array()
 {

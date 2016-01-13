@@ -59,6 +59,9 @@ const int qlnpts = 51;
 //const int qnpts = 6;
 //const double delta_q = 0.05;
 //const double init_q = -2.5*delta_q;
+//const int qnpts = 5;
+//const double delta_q = 0.03;
+//const double init_q = -2.0 * delta_q;
 const int qnpts = 3;
 const double delta_q = 0.06;
 const double init_q = -delta_q;
@@ -69,11 +72,19 @@ const double init_q = -delta_q;
 //const double delta_q = 0.005;
 //const double init_q = 0.0;
 
-//all q points here
+//all direction-specific q points information here
 const int qtnpts = qnpts;
 const int qxnpts = qnpts;
 const int qynpts = qnpts;
 const int qznpts = qnpts;
+const double delta_qt = delta_q;
+const double delta_qx = delta_q;
+const double delta_qy = delta_q;
+const double delta_qz = delta_q;
+const double init_qt = init_q;
+const double init_qx = init_q;
+const double init_qy = init_q;
+const double init_qz = init_q;
 
 //single particle spectra info
 const int n_SP_pT = 15;

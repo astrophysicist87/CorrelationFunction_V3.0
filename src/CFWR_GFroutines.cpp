@@ -48,10 +48,10 @@ double CorrelationFunction::Compute_correlationfunction(int ipt, int ipphi, doub
 	double nonFTd_spectra = spectra[target_particle_id][ipt][ipphi];
 
 	int * qidx = new int [4];
-	qidx[0] = binarySearch(qt_pts, qnpts, q_interp[0]);
-	qidx[1] = binarySearch(qx_pts, qnpts, q_interp[1]);
-	qidx[2] = binarySearch(qy_pts, qnpts, q_interp[2]);
-	qidx[3] = binarySearch(qz_pts, qnpts, q_interp[3]);
+	qidx[0] = binarySearch(qt_pts, qtnpts, q_interp[0]);
+	qidx[1] = binarySearch(qx_pts, qxnpts, q_interp[1]);
+	qidx[2] = binarySearch(qy_pts, qynpts, q_interp[2]);
+	qidx[3] = binarySearch(qz_pts, qznpts, q_interp[3]);
 
 	bool q_point_is_outside_grid = ( qidx[0] == -1 ) || ( qidx[1] == -1 ) || ( qidx[2] == -1 ) || ( qidx[3] == -1 );
 
@@ -138,7 +138,7 @@ double CorrelationFunction::interpolate_4D(double * x_min, double * x_max, doubl
 void CorrelationFunction::Cal_correlationfunction()
 {
 	// Can't interpolate if there's only one point in q-space!
-	if (qnpts == 1)
+	if (qtnpts == 1 || qxnpts == 1 || qynpts == 1 || qznpts == 1)
 		return;
 
 	// chooses the qo, qs, ql points at which to evaluate correlation function,

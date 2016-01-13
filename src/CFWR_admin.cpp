@@ -10,14 +10,6 @@
 #include<algorithm>
 #include <set>
 
-/*#include<gsl/gsl_sf_bessel.h>
-#include <gsl/gsl_errno.h>
-#include <gsl/gsl_rng.h>            // gsl random number generators
-#include <gsl/gsl_randist.h>        // gsl random number distributions
-#include <gsl/gsl_vector.h>         // gsl vector and matrix definitions
-#include <gsl/gsl_blas.h>           // gsl linear algebra stuff
-#include <gsl/gsl_multifit_nlin.h>  // gsl multidimensional fitting*/
-
 #include "CFWR.h"
 #include "Arsenal.h"
 #include "gauss_quadrature.h"
@@ -55,7 +47,8 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
 	output_all_dN_dypTdpTdphi = true;
 	currentfolderindex = -1;
 	current_level_of_output = 0;
-	qspace_cs_slice_length = qnpts*qnpts*qnpts*qnpts*2;		//factor of 2 for sin or cos
+	//qspace_cs_slice_length = qnpts*qnpts*qnpts*qnpts*2;		//factor of 2 for sin or cos
+	qspace_cs_slice_length = qtnpts*qxnpts*qynpts*qznpts*2;		//factor of 2 for sin or cos
 
 	Set_q_points();
 
@@ -202,24 +195,24 @@ debugger(__LINE__, __FILE__);
 		current_sign_of_dN_dypTdpTdphi_moments[ipt] = new double ***** [n_interp_pphi_pts];
 		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 		{
-			current_dN_dypTdpTdphi_moments[ipt][ipphi] = new double **** [qnpts];
-			current_ln_dN_dypTdpTdphi_moments[ipt][ipphi] = new double **** [qnpts];
-			current_sign_of_dN_dypTdpTdphi_moments[ipt][ipphi] = new double **** [qnpts];
+			current_dN_dypTdpTdphi_moments[ipt][ipphi] = new double **** [qtnpts];
+			current_ln_dN_dypTdpTdphi_moments[ipt][ipphi] = new double **** [qtnpts];
+			current_sign_of_dN_dypTdpTdphi_moments[ipt][ipphi] = new double **** [qtnpts];
 			for (int iqt = 0; iqt < qtnpts; ++iqt)
 			{
-				current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt] = new double *** [qnpts];
-				current_ln_dN_dypTdpTdphi_moments[ipt][ipphi][iqt] = new double *** [qnpts];
-				current_sign_of_dN_dypTdpTdphi_moments[ipt][ipphi][iqt] = new double *** [qnpts];
+				current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt] = new double *** [qxnpts];
+				current_ln_dN_dypTdpTdphi_moments[ipt][ipphi][iqt] = new double *** [qxnpts];
+				current_sign_of_dN_dypTdpTdphi_moments[ipt][ipphi][iqt] = new double *** [qxnpts];
 				for (int iqx = 0; iqx < qxnpts; ++iqx)
 				{
-					current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx] = new double ** [qnpts];
-					current_ln_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx] = new double ** [qnpts];
-					current_sign_of_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx] = new double ** [qnpts];
+					current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx] = new double ** [qynpts];
+					current_ln_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx] = new double ** [qynpts];
+					current_sign_of_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx] = new double ** [qynpts];
 					for (int iqy = 0; iqy < qynpts; ++iqy)
 					{
-						current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy] = new double * [qnpts];
-						current_ln_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy] = new double * [qnpts];
-						current_sign_of_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy] = new double * [qnpts];
+						current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy] = new double * [qznpts];
+						current_ln_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy] = new double * [qznpts];
+						current_sign_of_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy] = new double * [qznpts];
 						for (int iqz = 0; iqz < qznpts; ++iqz)
 						{
 							current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz] = new double [2];
@@ -486,19 +479,22 @@ void CorrelationFunction::Update_sourcefunction(particle_info* particle, int FOa
 		double ypt = surf->ypt;
 
 		osc0[isurf] = new double ** [eta_s_npts];
-		osc1[isurf] = new double * [qnpts];
-		osc2[isurf] = new double * [qnpts];
+		osc1[isurf] = new double * [qxnpts];
+		osc2[isurf] = new double * [qynpts];
 		osc3[isurf] = new double ** [eta_s_npts];
 
-		for (int iq = 0; iq < qnpts; ++iq)
+		for (int iqx = 0; iqx < qxnpts; ++iqx)
 		{
-			osc1[isurf][iq] = new double [2];
-			osc2[isurf][iq] = new double [2];
+			osc1[isurf][iqx] = new double [2];
+			osc1[isurf][iqx][0] = cos(hbarCm1*qx_pts[iqx]*xpt);
+			osc1[isurf][iqx][1] = sin(hbarCm1*qx_pts[iqx]*xpt);
+		}
 
-			osc1[isurf][iq][0] = cos(hbarCm1*qx_pts[iq]*xpt);
-			osc2[isurf][iq][0] = cos(hbarCm1*qy_pts[iq]*ypt);
-			osc1[isurf][iq][1] = sin(hbarCm1*qx_pts[iq]*xpt);
-			osc2[isurf][iq][1] = sin(hbarCm1*qy_pts[iq]*ypt);
+		for (int iqy = 0; iqy < qynpts; ++iqy)
+		{
+			osc2[isurf][iqy] = new double [2];
+			osc2[isurf][iqy][0] = cos(hbarCm1*qy_pts[iqy]*ypt);
+			osc2[isurf][iqy][1] = sin(hbarCm1*qy_pts[iqy]*ypt);
 		}
 
 		for (int ieta = 0; ieta < eta_s_npts; ++ieta)
@@ -506,18 +502,21 @@ void CorrelationFunction::Update_sourcefunction(particle_info* particle, int FOa
 			double tpt = tau*ch_eta_s[ieta];
 			double zpt = tau*sh_eta_s[ieta];
 
-			osc0[isurf][ieta] = new double * [qnpts];
-			osc3[isurf][ieta] = new double * [qnpts];
+			osc0[isurf][ieta] = new double * [qtnpts];
+			osc3[isurf][ieta] = new double * [qznpts];
 
-			for (int iq = 0; iq < qnpts; ++iq)
+			for (int iqt = 0; iqt < qtnpts; ++iqt)
 			{
-				osc0[isurf][ieta][iq] = new double [2];
-				osc3[isurf][ieta][iq] = new double [2];
+				osc0[isurf][ieta][iqt] = new double [2];
+				osc0[isurf][ieta][iqt][0] = cos(hbarCm1*qt_pts[iqt]*tpt);
+				osc0[isurf][ieta][iqt][1] = sin(hbarCm1*qt_pts[iqt]*tpt);
+			}
 
-				osc0[isurf][ieta][iq][0] = cos(hbarCm1*qt_pts[iq]*tpt);
-				osc3[isurf][ieta][iq][0] = cos(hbarCm1*qz_pts[iq]*zpt);
-				osc0[isurf][ieta][iq][1] = sin(hbarCm1*qt_pts[iq]*tpt);
-				osc3[isurf][ieta][iq][1] = sin(hbarCm1*qz_pts[iq]*zpt);
+			for (int iqz = 0; iqz < qznpts; ++iqz)
+			{
+				osc3[isurf][ieta][iqz] = new double [2];
+				osc3[isurf][ieta][iqz][0] = cos(hbarCm1*qz_pts[iqz]*zpt);
+				osc3[isurf][ieta][iqz][1] = sin(hbarCm1*qz_pts[iqz]*zpt);
 			}
 		}
 	}
@@ -774,25 +773,33 @@ void CorrelationFunction::Set_q_points()
 		q_pts[iq] = init_q + (double)iq * delta_q;
 	q_axes = new double [3];
 
-	qt_pts = new double [qnpts];
-	qx_pts = new double [qnpts];
-	qy_pts = new double [qnpts];
-	qz_pts = new double [qnpts];
-	for (int iq = 0; iq < qnpts; ++iq)
+	qt_pts = new double [qtnpts];
+	qx_pts = new double [qxnpts];
+	qy_pts = new double [qynpts];
+	qz_pts = new double [qznpts];
+	for (int iqt = 0; iqt < qtnpts; ++iqt)
 	{
-		qt_pts[iq] = init_q + (double)iq * delta_q;
-		//qt_pts[iq] = 0.0 + 0.5 * (double)iq * delta_q;
-		qx_pts[iq] = init_q + (double)iq * delta_q;
-		qy_pts[iq] = init_q + (double)iq * delta_q;
-		qz_pts[iq] = init_q + (double)iq * delta_q;
-		if (abs(qt_pts[iq]) < 1.e-15)
-			iqt0 = iq;
-		if (abs(qx_pts[iq]) < 1.e-15)
-			iqx0 = iq;
-		if (abs(qy_pts[iq]) < 1.e-15)
-			iqy0 = iq;
-		if (abs(qz_pts[iq]) < 1.e-15)
-			iqz0 = iq;
+		qt_pts[iqt] = init_qt + (double)iqt * delta_qt;
+		if (abs(qt_pts[iqt]) < 1.e-15)
+			iqt0 = iqt;
+	}
+	for (int iqx = 0; iqx < qxnpts; ++iqx)
+	{
+		qx_pts[iqx] = init_qx + (double)iqx * delta_qx;
+		if (abs(qx_pts[iqx]) < 1.e-15)
+			iqx0 = iqx;
+	}
+	for (int iqy = 0; iqy < qynpts; ++iqy)
+	{
+		qy_pts[iqy] = init_qy + (double)iqy * delta_qy;
+		if (abs(qy_pts[iqy]) < 1.e-15)
+			iqy0 = iqy;
+	}
+	for (int iqz = 0; iqz < qznpts; ++iqz)
+	{
+		qz_pts[iqz] = init_qz + (double)iqz * delta_qz;
+		if (abs(qz_pts[iqz]) < 1.e-15)
+			iqz0 = iqz;
 	}
 
 	cerr << "Output iq*0 = " << iqt0 << "   " << iqx0 << "   " << iqy0 << "   " << iqz0 << endl;
@@ -1019,24 +1026,24 @@ void CorrelationFunction::Setup_current_daughters_dN_dypTdpTdphi_moments(int n_d
 			current_daughters_sign_of_dN_dypTdpTdphi_moments[id][ipt] = new double ***** [n_interp_pphi_pts];
 			for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 			{
-				current_daughters_dN_dypTdpTdphi_moments[id][ipt][ipphi] = new double **** [qnpts];
-				current_daughters_ln_dN_dypTdpTdphi_moments[id][ipt][ipphi] = new double **** [qnpts];
-				current_daughters_sign_of_dN_dypTdpTdphi_moments[id][ipt][ipphi] = new double **** [qnpts];
+				current_daughters_dN_dypTdpTdphi_moments[id][ipt][ipphi] = new double **** [qtnpts];
+				current_daughters_ln_dN_dypTdpTdphi_moments[id][ipt][ipphi] = new double **** [qtnpts];
+				current_daughters_sign_of_dN_dypTdpTdphi_moments[id][ipt][ipphi] = new double **** [qtnpts];
 				for (int iqt = 0; iqt < qtnpts; ++iqt)
 				{
-					current_daughters_dN_dypTdpTdphi_moments[id][ipt][ipphi][iqt] = new double *** [qnpts];
-					current_daughters_ln_dN_dypTdpTdphi_moments[id][ipt][ipphi][iqt] = new double *** [qnpts];
-					current_daughters_sign_of_dN_dypTdpTdphi_moments[id][ipt][ipphi][iqt] = new double *** [qnpts];
+					current_daughters_dN_dypTdpTdphi_moments[id][ipt][ipphi][iqt] = new double *** [qxnpts];
+					current_daughters_ln_dN_dypTdpTdphi_moments[id][ipt][ipphi][iqt] = new double *** [qxnpts];
+					current_daughters_sign_of_dN_dypTdpTdphi_moments[id][ipt][ipphi][iqt] = new double *** [qxnpts];
 					for (int iqx = 0; iqx < qxnpts; ++iqx)
 					{
-						current_daughters_dN_dypTdpTdphi_moments[id][ipt][ipphi][iqt][iqx] = new double ** [qnpts];
-						current_daughters_ln_dN_dypTdpTdphi_moments[id][ipt][ipphi][iqt][iqx] = new double ** [qnpts];
-						current_daughters_sign_of_dN_dypTdpTdphi_moments[id][ipt][ipphi][iqt][iqx] = new double ** [qnpts];
+						current_daughters_dN_dypTdpTdphi_moments[id][ipt][ipphi][iqt][iqx] = new double ** [qynpts];
+						current_daughters_ln_dN_dypTdpTdphi_moments[id][ipt][ipphi][iqt][iqx] = new double ** [qynpts];
+						current_daughters_sign_of_dN_dypTdpTdphi_moments[id][ipt][ipphi][iqt][iqx] = new double ** [qynpts];
 						for (int iqy = 0; iqy < qynpts; ++iqy)
 						{
-							current_daughters_dN_dypTdpTdphi_moments[id][ipt][ipphi][iqt][iqx][iqy] = new double * [qnpts];
-							current_daughters_ln_dN_dypTdpTdphi_moments[id][ipt][ipphi][iqt][iqx][iqy] = new double * [qnpts];
-							current_daughters_sign_of_dN_dypTdpTdphi_moments[id][ipt][ipphi][iqt][iqx][iqy] = new double * [qnpts];
+							current_daughters_dN_dypTdpTdphi_moments[id][ipt][ipphi][iqt][iqx][iqy] = new double * [qznpts];
+							current_daughters_ln_dN_dypTdpTdphi_moments[id][ipt][ipphi][iqt][iqx][iqy] = new double * [qznpts];
+							current_daughters_sign_of_dN_dypTdpTdphi_moments[id][ipt][ipphi][iqt][iqx][iqy] = new double * [qznpts];
 							for (int iqz = 0; iqz < qznpts; ++iqz)
 							{
 								current_daughters_dN_dypTdpTdphi_moments[id][ipt][ipphi][iqt][iqx][iqy][iqz] = new double [2];

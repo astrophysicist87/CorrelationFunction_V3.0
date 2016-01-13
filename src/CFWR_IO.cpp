@@ -7,14 +7,6 @@
 #include<vector>
 #include<stdio.h>
 
-/*#include<gsl/gsl_sf_bessel.h>
-#include <gsl/gsl_errno.h>
-#include <gsl/gsl_rng.h>            // gsl random number generators
-#include <gsl/gsl_randist.h>        // gsl random number distributions
-#include <gsl/gsl_vector.h>         // gsl vector and matrix definitions
-#include <gsl/gsl_blas.h>           // gsl linear algebra stuff
-#include <gsl/gsl_multifit_nlin.h>  // gsl multidimensional fitting*/
-
 #include "CFWR.h"
 #include "Arsenal.h"
 #include "gauss_quadrature.h"
