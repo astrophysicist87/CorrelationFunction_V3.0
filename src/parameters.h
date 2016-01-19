@@ -85,6 +85,18 @@ const double init_qt = init_q;
 const double init_qx = init_q;
 const double init_qy = init_q;
 const double init_qz = init_q;
+/*const int qtnpts = 7;
+const int qxnpts = 13;
+const int qynpts = 13;
+const int qznpts = 11;
+const double delta_qt = -0.02;
+const double delta_qx = -0.02;
+const double delta_qy = -0.02;
+const double delta_qz = -0.02;
+const double init_qt = -3.0*delta_qt;
+const double init_qx = -6.0*delta_qt;
+const double init_qy = -6.0*delta_qt;
+const double init_qz = -5.0*delta_qt;*/
 
 //single particle spectra info
 const int n_SP_pT = 15;

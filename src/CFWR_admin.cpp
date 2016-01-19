@@ -49,6 +49,7 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
 	current_level_of_output = 0;
 	//qspace_cs_slice_length = qnpts*qnpts*qnpts*qnpts*2;		//factor of 2 for sin or cos
 	qspace_cs_slice_length = qtnpts*qxnpts*qynpts*qznpts*2;		//factor of 2 for sin or cos
+	number_of_percentage_markers = 10;
 
 	Set_q_points();
 
