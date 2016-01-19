@@ -7,6 +7,7 @@ unsigned long int random_seed();
 int sgn(double val);
 void logspace(double * x, double a, double b, int n);
 void linspace(double * x, double a, double b, int n);
+void linspace(vector<double> & x, double a, double b);
 void stratify_npts(double a, double b, int n1, int npts, double * x);
 void scalepoints(double * x, double a, double b, double scale, int n);
 
@@ -16,6 +17,7 @@ void get_1D_derivatives(double * x, double * f, double * derivatives, int length
 void get_2D_derivatives(double * x, double * y, double ** f, double ** f1, double ** f2, double ** f12, int x_length, int y_length, double default_edge_fill);
 void bcucof(double * y, double * y1, double * y2, double * y12, double d1, double d2, double ** c);
 void bcuint(double * y, double * y1, double * y2, double * y12, double x1l, double x1u, double x2l, double x2u, double x1, double x2, double &ansy, double &ansy1, double &ansy2);
+void ratint(double xa[], double ya[], int n, double x, double *y, double *dy);
 void polint(double xa[], double ya[], long n, double x, double *y, double *dy);
 void polin2(double * x1a, double * x2a, double ** ya, long m, long n, double x1, double x2, double *y, double *dy);
 

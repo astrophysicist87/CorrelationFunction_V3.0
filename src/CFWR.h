@@ -19,6 +19,7 @@
 #include <gsl/gsl_vector.h>         // gsl vector and matrix definitions
 #include <gsl/gsl_blas.h>           // gsl linear algebra stuff
 #include <gsl/gsl_multifit_nlin.h>  // gsl multidimensional fitting
+#include <gsl/gsl_multifit.h>
 
 #include "H5Cpp.h"
 
@@ -187,7 +188,8 @@ class CorrelationFunction
 		double *** S_p_withweight_array;
 
 		vector<vector<int> > cutoff_FOcells;
-		vector<vector<double> > cutoff_FOcell_vals;
+		vector<vector<double> > cutoff_FOcell_vals_C, cutoff_FOcell_vals_S;
+		vector<double> pc_cutoff_vals;
 		
 		//miscellaneous
 		ofstream * global_out_stream_ptr;
@@ -293,6 +295,7 @@ class CorrelationFunction
 		inline double get_fit_err (int i, gsl_matrix * covariance_ptr);
 		double Compute_correlationfunction(int ipt, int ipphi, double * q_interp);
 		double interpolate_4D(double * x_min, double * x_max, double * x_interp, double (*vals) [2][2][2]);
+		double gsl_polynomial_fit(const vector<double> &data_x, const vector<double> &data_y, const int order, double & chisq, bool verbose = false);
 
 		// input and output function prototypes
 		void Output_dN_dypTdpTdphi(int folderindex);

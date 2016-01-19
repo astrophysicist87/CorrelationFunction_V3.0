@@ -16,6 +16,8 @@
 
 using namespace std;
 
+#define TINY 1.0e-25
+
 unsigned long int random_seed()
 {
   unsigned long int seed = 0;
@@ -60,6 +62,20 @@ void linspace(double * x, double a, double b, int n)
 
 	return;
 }
+
+void linspace(vector<double> & x, double a, double b)
+{
+//returns vector x of n linearly spaced points, with a and b as endpoints
+	int n = x.size();
+	double Del_x = (b-a)/(double)(n-1);
+
+	//assume x has length n already
+	for (int i = 0; i < n; i++)
+		x[i] = a + Del_x * (double)i;
+
+	return;
+}
+
 
 void stratify_npts(double a, double b, int n1, int npts, double * x)
 {
@@ -296,6 +312,54 @@ double x1, double x2, double &ansy, double &ansy1, double &ansy2)
 	return;
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////
+
+void ratint(double xa[], double ya[], int n, double x, double *y, double *dy)
+{
+	int m,i,ns=1;
+	double w,t,hh,h,dd,*c,*d;
+	c = new double [n];
+	d = new double [n];
+	hh=fabs(x-xa[0]);
+	for (i=0;i<n;i++)
+	{
+		h=fabs(x-xa[i]);
+		if (h == 0.0)
+		{
+			*y=ya[i];
+			*dy=0.0;
+			return;
+		}
+		else if (h < hh)
+		{
+			ns=i+1;
+			hh=h;
+		}
+		c[i]=ya[i];
+		d[i]=ya[i]+TINY;
+	}
+	*y=ya[(ns--) - 1];
+	for (m=1;m<n;m++)
+	{
+		for (i=1;i<=n-m;i++)
+		{
+			w=c[i]-d[i-1];
+			h=xa[i+m-1]-x;
+			t=(xa[i-1]-x)*d[i-1]/h;
+			dd=t-c[i];
+			if (dd == 0.0) cerr << "Error in routine ratint" << endl;
+			dd=w/dd;
+			d[i-1]=c[i]*dd;
+			c[i-1]=t*dd;
+		}
+		*y += (*dy=(2*ns < (n-m) ? c[ns] : d[(ns--) - 1]));
+	}
+	
+	delete [] c;
+	delete [] d;
+
+	return;
+}
 
 
 /////////////////////////////////////////////////////////////////////////////////////////

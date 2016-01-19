@@ -11,6 +11,7 @@
 #include<time.h>
 #include<queue>
 #include<map>
+#include<numeric>
 
 #include "CFWR.h"
 #include "Arsenal.h"
@@ -941,7 +942,9 @@ CPStopwatch sw, sw2, sw3;
 
 sw2.Start();
 cutoff_FOcells.resize( n_interp_pT_pts * n_interp_pphi_pts );
-cutoff_FOcell_vals.resize( n_interp_pT_pts * n_interp_pphi_pts );
+cutoff_FOcell_vals_C.resize( n_interp_pT_pts * n_interp_pphi_pts );
+cutoff_FOcell_vals_S.resize( n_interp_pT_pts * n_interp_pphi_pts );
+pc_cutoff_vals.resize( number_of_percentage_markers );
 	for(int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 	{
 		//if (ipt > 0) continue;
@@ -1061,22 +1064,18 @@ cutoff_FOcell_vals.resize( n_interp_pT_pts * n_interp_pphi_pts );
 			int breaker = FOcells_PQ_size;
 			double abs_cutoff = cutoff * abs_temp_moments_array[ipt][ipphi];
 
-			//int number_of_percentage_markers = (int)floor( 100. * cutoff ) + 1;
 			int current_iPC = 0;
 			//int current_PC = 0, previous_PC = 0;
 			//cutoff_FOcells[ptphi_index].reserve( (int)floor( 100. * cutoff ) + 1 );
 			//cutoff_FOcell_vals[ptphi_index].reserve( (int)floor( 100. * cutoff ) + 1 );
 			cutoff_FOcells[ptphi_index].reserve( number_of_percentage_markers );
-			cutoff_FOcell_vals[ptphi_index].reserve( number_of_percentage_markers );
+			cutoff_FOcell_vals_C[ptphi_index].reserve( number_of_percentage_markers );
+			cutoff_FOcell_vals_S[ptphi_index].reserve( number_of_percentage_markers );
 			cutoff_FOcells[ptphi_index].push_back(0);		//always use sum over zero FO cells as trivial point
 
 			//set the cutoff %-age values here...
-			double * pc_cutoff_vals = new double [number_of_percentage_markers];
 			//just makes them equally spaced from 0% to cutoff
-			linspace(pc_cutoff_vals, 0.0, 100. * cutoff, number_of_percentage_markers);
-			cerr << "Working with the following %-age cutoffs:" << endl;
-			for (int ii = 0; ii < number_of_percentage_markers; ++ii)
-				cerr << ii << "   " << pc_cutoff_vals[ii] << endl;
+			linspace(pc_cutoff_vals, 0.0, cutoff);
 
 			for (int ii = 0; ii < FOcells_PQ_size; ii++)
 			{
@@ -1087,7 +1086,7 @@ cutoff_FOcell_vals.resize( n_interp_pT_pts * n_interp_pphi_pts );
 					breaker = ii + 1;	//marks where the final cutoff was reached
 					break;
 				}
-				else if (100. * running_sum > pc_cutoff_vals[current_iPC + 1] * tempabssum)
+				else if (running_sum > pc_cutoff_vals[current_iPC + 1] * tempabssum)
 				{
 					++current_iPC;
 					cutoff_FOcells[ptphi_index].push_back(ii);
@@ -1123,6 +1122,9 @@ cutoff_FOcell_vals.resize( n_interp_pT_pts * n_interp_pphi_pts );
 	}		// end of pt loop
 *global_out_stream_ptr << "\t\t\t*** Took total of " << sw3.printTime() << " seconds on ordering and copying." << endl;
 
+	cerr << "Working with the following %-age cutoffs:" << endl;
+	for (int ii = 0; ii < number_of_percentage_markers; ++ii)
+		cerr << ii << "   " << 100.0 * pc_cutoff_vals[ii] << endl;
 
 sw2.Stop();
 *global_out_stream_ptr << "\t\t\t*** Took " << sw2.printTime() << " seconds for whole function." << endl;
@@ -1341,7 +1343,9 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights_v2(FO_surf* FOsurf_ptr
 	
 				for (int ipc = 0; ipc < tmpvec.size() - 1; ++ipc)
 				{
-					cutoff_FOcell_vals[ptphi_index].push_back(tmla_C*tmla_C+tmla_S*tmla_S);
+					//cutoff_FOcell_vals[ptphi_index].push_back(tmla_C*tmla_C+tmla_S*tmla_S);
+					cutoff_FOcell_vals_C[ptphi_index].push_back(tmla_C);
+					cutoff_FOcell_vals_S[ptphi_index].push_back(tmla_S);
 					runsumvals.push_back(running_sum);
 
 					//*global_out_stream_ptr << "\t Summing from " << cutoff_FOcells[ptphi_index][ipc] << " to " << cutoff_FOcells[ptphi_index][ipc+1] << endl;
@@ -1356,25 +1360,40 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights_v2(FO_surf* FOsurf_ptr
 						running_sum += abs(S_p_withweight);
 					}
 				}
-	cutoff_FOcell_vals[ptphi_index].push_back(tmla_C*tmla_C+tmla_S*tmla_S);
+	cutoff_FOcell_vals_C[ptphi_index].push_back(tmla_C);
+	cutoff_FOcell_vals_S[ptphi_index].push_back(tmla_S);
 	runsumvals.push_back(running_sum);
 
-if (ipt==0 && ipphi==0 && iqt==1 && iqx==2 && iqy==1 && iqz==1)
+/*if (ipt==0 && ipphi==0 && iqt==1 && iqx==2 && iqy==1 && iqz==1)
 {
 	cerr << "cutoff_FOcells[" << ptphi_index << "].size() = " << cutoff_FOcells[ptphi_index].size() << endl;
-	cerr << "cutoff_FOcell_vals[" << ptphi_index << "].size() = " << cutoff_FOcell_vals[ptphi_index].size() << endl;
+	cerr << "cutoff_FOcell_vals_C[" << ptphi_index << "].size() = " << cutoff_FOcell_vals_C[ptphi_index].size() << endl;
+	cerr << "cutoff_FOcell_vals_S[" << ptphi_index << "].size() = " << cutoff_FOcell_vals_S[ptphi_index].size() << endl;
 	cerr << "runsumvals.size() = " << runsumvals.size() << endl;
-	for (int iii = 0; iii < cutoff_FOcell_vals[ptphi_index].size(); ++iii)
+	for (int iii = 0; iii < cutoff_FOcell_vals_C[ptphi_index].size(); ++iii)
+	{
+		double tmpC = cutoff_FOcell_vals_C[ptphi_index][iii];
+		double tmpS = cutoff_FOcell_vals_S[ptphi_index][iii];
 		cerr << "TESTING: " << iii << "   " << cutoff_FOcells[ptphi_index][iii] << "   " << runsumvals[iii] / current_abs_spectra << "   "
-			<< cutoff_FOcell_vals[ptphi_index][iii] / (spectra[local_pid][ipt][ipphi] * spectra[local_pid][ipt][ipphi]) << endl;
-}
-
+			<< tmpC << "   " << tmpS << "   " 
+			<< (tmpC*tmpC + tmpS*tmpS) / (spectra[local_pid][ipt][ipphi] * spectra[local_pid][ipt][ipphi]) << endl;
+	}
+}*/
 				//correction_factors[ipt][ipphi] = running_sum / current_abs_spectra;
 				correction_factors[ipt][ipphi] = 1.0;
-				temp_moms_linear_array[ntrig * ptphi_index + 0] += tmla_C;
-				temp_moms_linear_array[ntrig * ptphi_index + 1] += tmla_S;
 
-	cutoff_FOcell_vals[ptphi_index].clear();
+				//calculate ***PROJECTED*** tmla_C and tmla_S
+				double chisqC = 0.0, chisqS = 0.0;
+				double proj_tmla_C = gsl_polynomial_fit(pc_cutoff_vals, cutoff_FOcell_vals_C[ptphi_index], 4, chisqC);
+				double proj_tmla_S = gsl_polynomial_fit(pc_cutoff_vals, cutoff_FOcell_vals_S[ptphi_index], 4, chisqS);
+
+				//temp_moms_linear_array[ntrig * ptphi_index + 0] += tmla_C;
+				//temp_moms_linear_array[ntrig * ptphi_index + 1] += tmla_S;
+				temp_moms_linear_array[ntrig * ptphi_index + 0] = proj_tmla_C;
+				temp_moms_linear_array[ntrig * ptphi_index + 1] = proj_tmla_S;
+
+				cutoff_FOcell_vals_C[ptphi_index].clear();
+				cutoff_FOcell_vals_S[ptphi_index].clear();
 			}	//end of pphi-loop
 		}		//end of pt-loop
 	
@@ -1665,5 +1684,47 @@ double CorrelationFunction::Cal_dN_dypTdpTdphi_function(FO_surf* FOsurf_ptr, int
 	return dN_dypTdpTdphi;
 }
 
+//performs extrapolation of running_sum of FO integrals to unity (1) by polynomial fit
+double CorrelationFunction::gsl_polynomial_fit(const vector<double> &data_x, const vector<double> &data_y, const int order, double & chisq, bool verbose /* == false*/)
+{
+	const int n = data_x.size();
+	double * in_data_x = new double [n];
+	double * in_data_y = new double [n];
+	gsl_vector *y, *c;
+	gsl_matrix *X, *cov;
+	y = gsl_vector_alloc (n);
+	c = gsl_vector_alloc (order+1);
+	X   = gsl_matrix_alloc (n, order+1);
+	cov = gsl_matrix_alloc (order+1, order+1);
+
+	for (int i = 0; i < n; i++)
+	{
+		for (int j = 0; j < order+1; j++)
+		{
+			in_data_x[i] = data_x[i];
+			gsl_matrix_set (X, i, j, pow(in_data_x[i],j));
+		}
+		in_data_y[i] = data_y[i];
+		gsl_vector_set (y, i, in_data_y[i]);
+	}
+
+	gsl_multifit_linear_workspace * work = gsl_multifit_linear_alloc (n, order+1);
+	gsl_multifit_linear (X, y, c, cov, &chisq, work);
+	gsl_multifit_linear_free (work);
+
+	vector<double> vc;
+	for (int i = 0; i < order+1; i++)
+	{
+		vc.push_back(gsl_vector_get(c,i));
+		if (verbose) cerr << "In gsl_polynomial_fit(): vc[" << i << "] = " << vc[i] << endl;
+	}
+
+	gsl_vector_free (y);
+	gsl_vector_free (c);
+	gsl_matrix_free (X);
+	gsl_matrix_free (cov);
+
+	return ( accumulate(vc.begin(), vc.end(), 0.0) );
+}
 
 //End of file
