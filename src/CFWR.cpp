@@ -619,7 +619,7 @@ void CorrelationFunction::Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int lo
 	*global_out_stream_ptr << "Computing spectra..." << endl;
 	CPStopwatch sw;
 	sw.Start();
-	Cal_dN_dypTdpTdphi_heap(FOsurf_ptr, local_pid, 0.85);
+	Cal_dN_dypTdpTdphi_heap(FOsurf_ptr, local_pid, 0.9);
 	sw.Stop();
 	*global_out_stream_ptr << "CP#1: Took " << sw.printTime() << " seconds." << endl;
 
@@ -731,7 +731,7 @@ pc_cutoff_vals.resize( number_of_percentage_markers );
 			int ptphi_index = ipt * n_interp_pphi_pts + ipphi;
 			double sin_pphi = sin_SPinterp_pphi[ipphi];
 			double cos_pphi = cos_SPinterp_pphi[ipphi];
-			*global_out_stream_ptr << "\t\t--> Doing pT = " << pT << ", pphi = " << SPinterp_pphi[ipphi] << "..." << endl;
+			//*global_out_stream_ptr << "\t\t--> Doing pT = " << pT << ", pphi = " << SPinterp_pphi[ipphi] << "..." << endl;
 			double px = pT*cos_pphi;
 			double py = pT*sin_pphi;
 			number_of_FOcells_above_cutoff_array[ipt][ipphi] = FO_length * eta_s_npts;
@@ -838,9 +838,6 @@ pc_cutoff_vals.resize( number_of_percentage_markers );
 			double abs_cutoff = cutoff * abs_temp_moments_array[ipt][ipphi];
 
 			int current_iPC = 0;
-			//int current_PC = 0, previous_PC = 0;
-			//cutoff_FOcells[ptphi_index].reserve( (int)floor( 100. * cutoff ) + 1 );
-			//cutoff_FOcell_vals[ptphi_index].reserve( (int)floor( 100. * cutoff ) + 1 );
 			cutoff_FOcells[ptphi_index].reserve( number_of_percentage_markers );
 			cutoff_FOcell_vals_C[ptphi_index].reserve( number_of_percentage_markers );
 			cutoff_FOcell_vals_S[ptphi_index].reserve( number_of_percentage_markers );
@@ -853,7 +850,6 @@ pc_cutoff_vals.resize( number_of_percentage_markers );
 			for (int ii = 0; ii < FOcells_PQ_size; ii++)
 			{
 				running_sum += most_impt_FOcells_vals_vec[ii];	//starts with largest first...
-				//current_PC = (int)floor( 100. * running_sum / tempabssum );
 				if (running_sum >= abs_cutoff)	//cutoff-dependence only enters here
 				{
 					breaker = ii + 1;	//marks where the final cutoff was reached
@@ -862,10 +858,10 @@ pc_cutoff_vals.resize( number_of_percentage_markers );
 				else if (running_sum > pc_cutoff_vals[current_iPC + 1] * tempabssum)
 				{
 					++current_iPC;
-					cutoff_FOcells[ptphi_index].push_back(ii);
+					cutoff_FOcells[ptphi_index].push_back(ii+1);
 				}
 			}
-			cutoff_FOcells[ptphi_index].push_back(breaker-1);
+			cutoff_FOcells[ptphi_index].push_back(breaker);
 
 			// finally, chop off whatever is left
 			most_impt_FOcells_vec.erase ( most_impt_FOcells_vec.begin() + breaker, most_impt_FOcells_vec.end() );
@@ -897,7 +893,7 @@ pc_cutoff_vals.resize( number_of_percentage_markers );
 
 	cerr << "Working with the following %-age cutoffs:" << endl;
 	for (int ii = 0; ii < number_of_percentage_markers; ++ii)
-		cerr << ii << "   " << 100.0 * pc_cutoff_vals[ii] << endl;
+		cerr << ii << "   " << 100.0 * pc_cutoff_vals[ii] << "   " << cutoff_FOcells[0][ii] << " of " << number_of_FOcells_above_cutoff_array[0][0] << endl;
 
 sw2.Stop();
 *global_out_stream_ptr << "\t\t\t*** Took " << sw2.printTime() << " seconds for whole function." << endl;
@@ -1005,7 +1001,12 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 					{
 						size_t next_most_important_FOindex = most_important_FOcells_for_current_pt_and_pphi[iFO];
 						double S_p_withweight = slice2[iFO];
-	
+						//if (iqt==0 && iqx==0 && iqy==0 && iqz==0)
+						//{
+						//	cerr << "iFO = " << iFO << endl;
+						//	cerr << "next_most_important_FOindex = " << next_most_important_FOindex << endl;
+						//}
+
 						tmla_C += giant_array_C[next_most_important_FOindex] * S_p_withweight;
 						tmla_S += giant_array_S[next_most_important_FOindex] * S_p_withweight;
 	
@@ -1028,8 +1029,12 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 				temp_moms_linear_array[ntrig * ptphi_index + 0] = proj_tmla_C;
 				temp_moms_linear_array[ntrig * ptphi_index + 1] = proj_tmla_S;
 
+				//cutoff_FOcells[ptphi_index].clear();
 				cutoff_FOcell_vals_C[ptphi_index].clear();
 				cutoff_FOcell_vals_S[ptphi_index].clear();
+if (ipt==0 && ipphi == 0 && iqt==0 && iqx==0 && iqy==0 && iqz==0)
+	for (int ii = 0; ii < runsumvals.size(); ++ii)
+		cerr << "Now in Cal_dN_dypTdpTdphi_with_weights(): " << ii << "   " << runsumvals[ii]/current_abs_spectra << endl;
 			}	//end of pphi-loop
 		}		//end of pt-loop
 	
@@ -1063,7 +1068,7 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 	for (int iqz = 0; iqz < qznpts; ++iqz)
 	for (int itrig = 0; itrig < ntrig; ++itrig)
 	{
-		*global_out_stream_ptr << "Working on (iqt, iqx, iqy, iqz) = (" << iqt << ", " << iqx << ", " << iqy << ", " << iqz << ") INDIRECTLY..." << endl;
+		//*global_out_stream_ptr << "Working on (iqt, iqx, iqy, iqz) = (" << iqt << ", " << iqx << ", " << iqy << ", " << iqz << ") INDIRECTLY..." << endl;
 		current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][itrig]
 			= (1.0 - 2.0 * itrig) * current_dN_dypTdpTdphi_moments[ipt][ipphi][qtnpts - iqt - 1][qxnpts - iqx - 1][qynpts - iqy - 1][qznpts - iqz - 1][itrig];
 	}		//end of second set of q-loops
@@ -1075,6 +1080,8 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 	{
 		delete [] S_p_withweight_array[ipt][ipphi];
 		delete [] most_important_FOcells[ipt][ipphi];
+		int ptphi_index = ipt * n_interp_pphi_pts + ipphi;
+		cutoff_FOcells[ptphi_index].clear();
 	}
 
 	delete [] temp_moms_linear_array;

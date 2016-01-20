@@ -17,7 +17,7 @@ using namespace std;
 #define TRUNCATE_COOPER_FRYE		false		// ignore contributions to CF integral which are extremely small --> speeds up code by factor of 3-4
 #define VERBOSE 			1		// specifies level of output - 0 is lowest (no output)
 #define DEBUG				false		// flag for output of debugging statements
-#define SPACETIME_MOMENTS_ONLY		true		// duh
+#define SPACETIME_MOMENTS_ONLY		false		// duh
 #define DO_ALL_DECAY_CHANNELS		false		// duh
 #define USE_HDF5			false		// utilizes HDF5 software to store large arrays
 #define USE_LAMBDA			false		// fit correlation function with adjustable intercept parameter
@@ -86,11 +86,11 @@ const double init_qx = init_q;
 const double init_qy = init_q;
 const double init_qz = init_q;*/
 const int qtnpts = 3;
-const int qxnpts = 25;
+const int qxnpts = 7;
 const int qynpts = 3;
 const int qznpts = 3;
 const double delta_qt = -0.02;
-const double delta_qx = -0.01;
+const double delta_qx = -0.04;
 const double delta_qy = -0.02;
 const double delta_qz = -0.02;
 const double init_qt = -0.5*double(qtnpts-1)*delta_qt;
