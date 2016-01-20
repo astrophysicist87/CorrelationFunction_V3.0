@@ -18,6 +18,7 @@ void get_2D_derivatives(double * x, double * y, double ** f, double ** f1, doubl
 void bcucof(double * y, double * y1, double * y2, double * y12, double d1, double d2, double ** c);
 void bcuint(double * y, double * y1, double * y2, double * y12, double x1l, double x1u, double x2l, double x2u, double x1, double x2, double &ansy, double &ansy1, double &ansy2);
 void ratint(double xa[], double ya[], int n, double x, double *y, double *dy);
+void ratint(vector<double> & xa, vector<double> & ya, double x, double *y, double *dy);
 void polint(double xa[], double ya[], long n, double x, double *y, double *dy);
 void polin2(double * x1a, double * x2a, double ** ya, long m, long n, double x1, double x2, double *y, double *dy);
 

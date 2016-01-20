@@ -364,6 +364,60 @@ void ratint(double xa[], double ya[], int n, double x, double *y, double *dy)
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
+void ratint(vector<double> & xa, vector<double> & ya, double x, double *y, double *dy)
+{
+	int m,i,ns=1;
+	const int n = xa.size();
+	double w,t,hh,h,dd;
+	//double *c,*d;
+	//c = new double [n];
+	//d = new double [n];
+	double c[n];
+	double d[n];
+	hh=fabs(x-xa[0]);
+	for (i=0;i<n;i++)
+	{
+		h=fabs(x-xa[i]);
+		if (h == 0.0)
+		{
+			*y=ya[i];
+			*dy=0.0;
+			return;
+		}
+		else if (h < hh)
+		{
+			ns=i+1;
+			hh=h;
+		}
+		c[i]=ya[i];
+		d[i]=ya[i]+TINY;
+	}
+	*y=ya[(ns--) - 1];
+	for (m=1;m<n;m++)
+	{
+		for (i=1;i<=n-m;i++)
+		{
+			w=c[i]-d[i-1];
+			h=xa[i+m-1]-x;
+			t=(xa[i-1]-x)*d[i-1]/h;
+			dd=t-c[i];
+			if (dd == 0.0) cerr << "Error in routine ratint" << endl;
+			dd=w/dd;
+			d[i-1]=c[i]*dd;
+			c[i-1]=t*dd;
+		}
+		*y += (*dy=(2*ns < (n-m) ? c[ns] : d[(ns--) - 1]));
+	}
+	
+	//delete [] c;
+	//delete [] d;
+
+	return;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+
 
 void polint(double xa[], double ya[], long n, double x, double *y, double *dy)
 //Given arrays xa[1..n] and ya[1..n], and given a value x, this routine returns a value y, and
