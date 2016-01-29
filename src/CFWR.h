@@ -176,6 +176,7 @@ class CorrelationFunction
 		double * qo_pts, * qs_pts, * ql_pts, * q_pts, * q_axes, * qt_pts, * qx_pts, * qy_pts, * qz_pts;
 		double * q_out, * q_side, * q_long;
 		int iqt0, iqx0, iqy0, iqz0;
+		vector<vector<int> > sorted_q_pts_list;
 		
 		//store correlation functions
 		//double *** Correl_3D;
@@ -277,6 +278,7 @@ class CorrelationFunction
 		void Set_q_points();
 		void Set_correlation_function_q_pts();
 		void Get_q_points(double qo, double qs, double ql, double KT, double Kphi, double * qgridpts);
+		void Set_sorted_q_pts_list();
 		void Allocate_resonance_running_sum_vectors();
 		void Delete_resonance_running_sum_vectors();
 		void Zero_resonance_running_sum_vector(double * vec);

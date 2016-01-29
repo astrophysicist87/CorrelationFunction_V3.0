@@ -1036,12 +1036,17 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 
 	double * temp_moms_linear_array = new double [temp_moms_lin_arr_length];
 
-	for (int iqt = 0; iqt < (qtnpts / 2) + 1; ++iqt)	//assumes each central q point is zero!!!
-	for (int iqx = 0; iqx < qxnpts; ++iqx)
-	for (int iqy = 0; iqy < qynpts; ++iqy)
-	for (int iqz = 0; iqz < qznpts; ++iqz)
+	//for (int iqt = 0; iqt < (qtnpts / 2) + 1; ++iqt)	//assumes each central q point is zero!!!
+	//for (int iqx = 0; iqx < qxnpts; ++iqx)
+	//for (int iqy = 0; iqy < qynpts; ++iqy)
+	//for (int iqz = 0; iqz < qznpts; ++iqz)
+	for (int iq = 0; iq < sorted_q_pts_list.size(); ++iq)
 	{	
 //		*global_out_stream_ptr << "Working on (iqt, iqx, iqy, iqz) = (" << iqt << ", " << iqx << ", " << iqy << ", " << iqz << ") DIRECTLY..." << endl;
+		int iqt = sorted_q_pts_list[iq][0];
+		int iqx = sorted_q_pts_list[iq][1];
+		int iqy = sorted_q_pts_list[iq][2];
+		int iqz = sorted_q_pts_list[iq][3];
 		debug_sw2.Reset();
 	
 		sw_set_giant_array_slice.Start();

@@ -67,7 +67,11 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
 			break;
 	}
 
+	//set arrays containing q points
 	Set_q_points();
+
+	//sort by proximity to origin (where CF is largest) and do those points first
+	Set_sorted_q_pts_list();
 
 	n_zeta_pts = 12;
 	n_v_pts = 12;
@@ -836,6 +840,48 @@ void CorrelationFunction::Set_q_points()
 	cerr << "Output iq*0 = " << iqt0 << "   " << iqx0 << "   " << iqy0 << "   " << iqz0 << endl;
 
 //if (1) exit;
+
+	return;
+}
+
+inline int norm (vector<int> v) { int norm2 = 0; for (size_t iv = 0; iv < v.size(); ++iv) norm2+=v[iv]*v[iv]; return (sqrt(norm2)); }
+
+inline bool qpt_comparator (vector<int> i, vector<int> j) { return (norm(i) < norm(j)); }
+
+void CorrelationFunction::Set_sorted_q_pts_list()
+{
+	vector<int> tmp (4);
+
+	//sort through all q-points with qt <= 0 by proximity to origin in q-space
+	//allows to do largest CF values first
+	for (int iqt = 0; iqt < (qtnpts / 2) + 1; ++iqt)
+	for (int iqx = 0; iqx < qxnpts; ++iqx)
+	for (int iqy = 0; iqy < qynpts; ++iqy)
+	for (int iqz = 0; iqz < qznpts; ++iqz)
+	{
+		tmp[0] = iqt - iqt0;
+		tmp[1] = iqx - iqx0;
+		tmp[2] = iqy - iqy0;
+		tmp[3] = iqz - iqz0;
+
+		sorted_q_pts_list.push_back(tmp);
+	}
+
+	sort(sorted_q_pts_list.begin(), sorted_q_pts_list.end(), qpt_comparator);
+
+	cout << "Checking sorting of q-points: " << endl;
+	for (size_t iq = 0; iq < sorted_q_pts_list.size(); ++iq)
+	{
+		sorted_q_pts_list[iq][0] += iqt0;
+		sorted_q_pts_list[iq][1] += iqx0;
+		sorted_q_pts_list[iq][2] += iqy0;
+		sorted_q_pts_list[iq][3] += iqz0;
+
+		cout << "   --> iq = " << iq << ": ";
+		for (size_t iqmu = 0; iqmu < 4; ++iqmu)
+			cout << sorted_q_pts_list[iq][iqmu] << "   ";
+		cout << endl;
+	}
 
 	return;
 }
