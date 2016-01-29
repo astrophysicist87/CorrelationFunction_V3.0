@@ -144,31 +144,6 @@ int main(int argc, char *argv[])
 
 	CorrelationFunction correlation_function(&particle[particle_idx], particle, Nparticle, FOsurf_ptr, chosen_resonance_indices, particle_idx, output);
 
-
-/*	double ** pTdep_thermal_yields = new double * [Nparticle];
-	for (int i = 0; i < Nparticle; i++)
-		pTdep_thermal_yields[i] = new double [n_interp_pT_pts];
-	double * pTdep_cum_res_cont = new double [n_interp_pT_pts];
-
-	calculate_pTdep_thermal_particle_yield(Nparticle, particle, FOsurf_ptr[0].Tdec,
-						correlation_function.SPinterp_pT_public, n_interp_pT_pts, pTdep_thermal_yields);
-
-	compute_total_pTdep_contribution_percentages(particle_idx, Nparticle, particle, n_interp_pT_pts,
-						pTdep_thermal_yields, &chosen_resonance_indices, pTdep_cum_res_cont);
-
-	correlation_function.pTdep_fractions_of_resonances = pTdep_cum_res_cont;
-
-	for (int i = 0; i < Nparticle; i++)
-		delete [] pTdep_thermal_yields[i];
-	delete [] pTdep_thermal_yields;
-
-	output << "Testing pT-dependent calculations here..." << endl;
-	for (int i = 0; i < n_interp_pT_pts; i++)
-		output << correlation_function.SPinterp_pT_public[i] << "   " << correlation_function.pTdep_fractions_of_resonances[i] << endl;
-
-if (1) return (0);*/
-
-
 	correlation_function.read_in_all_dN_dypTdpTdphi = false;
 	correlation_function.output_all_dN_dypTdpTdphi = !(correlation_function.read_in_all_dN_dypTdpTdphi);
 	correlation_function.currentfolderindex = folderindex;
@@ -176,7 +151,7 @@ if (1) return (0);*/
 	correlation_function.Set_use_delta_f(true);
 	correlation_function.Set_ofstream(output);
 
-	bool rescale_truncated_resonance_contributions = true;
+	bool rescale_truncated_resonance_contributions = false;
 	if (rescale_truncated_resonance_contributions)
 		correlation_function.fraction_of_resonances = net_fraction_resonance_contribution;
 	else

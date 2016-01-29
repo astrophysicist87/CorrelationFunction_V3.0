@@ -108,8 +108,8 @@ double CorrelationFunction::Compute_correlationfunction(int ipt, int ipphi, doub
 	}
 	else
 	{
-		*global_out_stream_ptr << "Warning: q_interp point was outside of computed grid!" << endl
-								<< "\t q_interp = {" << q_interp[0] << ", " << q_interp[1] << ", " << q_interp[2] << ", " << q_interp[3] << "}" << endl;
+		//*global_out_stream_ptr << "Warning: q_interp point was outside of computed grid!" << endl
+		//						<< "\t q_interp = {" << q_interp[0] << ", " << q_interp[1] << ", " << q_interp[2] << ", " << q_interp[3] << "}" << endl;
 		interpolated_result = 0.0;
 	}
 	return (interpolated_result);

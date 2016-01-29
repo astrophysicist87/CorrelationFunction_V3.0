@@ -364,8 +364,9 @@ void ratint(double xa[], double ya[], int n, double x, double *y, double *dy)
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
-void ratint(vector<double> & xa, vector<double> & ya, double x, double *y, double *dy)
+double ratint(vector<double> & xa, vector<double> & ya, double x, double *dy)
 {
+	double y = 0.0;
 	int m,i,ns=1;
 	const int n = xa.size();
 	double w,t,hh,h,dd;
@@ -380,9 +381,10 @@ void ratint(vector<double> & xa, vector<double> & ya, double x, double *y, doubl
 		h=fabs(x-xa[i]);
 		if (h == 0.0)
 		{
-			*y=ya[i];
+//			*y=ya[i];
+			y=ya[i];
 			*dy=0.0;
-			return;
+			return(y);
 		}
 		else if (h < hh)
 		{
@@ -392,7 +394,8 @@ void ratint(vector<double> & xa, vector<double> & ya, double x, double *y, doubl
 		c[i]=ya[i];
 		d[i]=ya[i]+TINY;
 	}
-	*y=ya[(ns--) - 1];
+//	*y=ya[(ns--) - 1];
+	y=ya[(ns--) - 1];
 	for (m=1;m<n;m++)
 	{
 		for (i=1;i<=n-m;i++)
@@ -406,13 +409,14 @@ void ratint(vector<double> & xa, vector<double> & ya, double x, double *y, doubl
 			d[i-1]=c[i]*dd;
 			c[i-1]=t*dd;
 		}
-		*y += (*dy=(2*ns < (n-m) ? c[ns] : d[(ns--) - 1]));
+//		*y += (*dy=(2*ns < (n-m) ? c[ns] : d[(ns--) - 1]));
+		y += (*dy=(2*ns < (n-m) ? c[ns] : d[(ns--) - 1]));
 	}
 	
 	//delete [] c;
 	//delete [] d;
 
-	return;
+	return(y);
 }
 
 

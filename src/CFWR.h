@@ -20,6 +20,7 @@
 #include <gsl/gsl_blas.h>           // gsl linear algebra stuff
 #include <gsl/gsl_multifit_nlin.h>  // gsl multidimensional fitting
 #include <gsl/gsl_multifit.h>
+#include <gsl/gsl_linalg.h>
 
 #include "H5Cpp.h"
 
@@ -88,6 +89,9 @@ class CorrelationFunction
 		int FO_length;
 		int nFO_cutoff;
 		int number_of_percentage_markers;
+		double q_space_CF_cutoff;		// when correlator falls below this value,
+							//	set correlator to zero for any q-points further away from q-origin than that
+		double ** current_q_space_cutoff;	// point in q-space at which cutoff of CF begins (depends on pT and pphi)
 				
 		//array to hold previous and current resonance info
 		decay_info * decay_channels;
@@ -221,7 +225,9 @@ class CorrelationFunction
 		int Get_resonance_from_HDF_array(int local_pid, double ******* resonance_array_to_fill);
 		int Set_resonance_in_HDF_array(int local_pid, double ******* resonance_array_to_use);
 		int Initialize_resonance_HDF_array();
+		int Open_resonance_HDF_array();
 		int Copy_chunk(int current_resonance_index, int reso_idx_to_be_copied);
+		int Dump_resonance_HDF_array_spectra(string output_filename, double ******* resonance_array_to_use);
 
 		void Set_giant_arrays(int iqt, int iqx, int iqy, int iqz);
 		inline void addElementToQueue(priority_queue<pair<double, size_t> >& p, pair<double, size_t> elem, size_t max_size);
@@ -294,6 +300,7 @@ class CorrelationFunction
 		double Compute_correlationfunction(int ipt, int ipphi, double * q_interp);
 		double interpolate_4D(double * x_min, double * x_max, double * x_interp, double (*vals) [2][2][2]);
 		double gsl_polynomial_fit(const vector<double> &data_x, const vector<double> &data_y, const int order, double & chisq, bool verbose = false);
+		double best_fit_rational_function(vector<double> & xdata, vector<double> & ydata, int n, int m, double x, bool & error_report);
 
 		// input and output function prototypes
 		void Output_dN_dypTdpTdphi(int folderindex);

@@ -49,7 +49,23 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
 	current_level_of_output = 0;
 	//qspace_cs_slice_length = qnpts*qnpts*qnpts*qnpts*2;		//factor of 2 for sin or cos
 	qspace_cs_slice_length = qtnpts*qxnpts*qynpts*qznpts*2;		//factor of 2 for sin or cos
-	number_of_percentage_markers = 10;
+
+	gsl_set_error_handler_off();
+
+	switch(PC_MARKER_SPACING)
+	{
+		case 0:
+			number_of_percentage_markers = 101;
+			break;
+		case 1:
+			number_of_percentage_markers = 30;
+			break;
+		case 2:
+			number_of_percentage_markers = 10;
+			break;
+		default:
+			break;
+	}
 
 	Set_q_points();
 
@@ -268,12 +284,18 @@ debugger(__LINE__, __FILE__);
 	}
 
 	// used for keeping track of how many FO cells are important for given pT, pphi
+	// also set up q-space cutoffs array
 	number_of_FOcells_above_cutoff_array = new int * [n_interp_pT_pts];
+	current_q_space_cutoff = new double * [n_interp_pT_pts];
 	for (int ipT = 0; ipT < n_interp_pT_pts; ++ipT)
 	{
 		number_of_FOcells_above_cutoff_array[ipT] = new int [n_interp_pphi_pts];
+		current_q_space_cutoff[ipT] = new double [n_interp_pphi_pts];
 		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		{
 			number_of_FOcells_above_cutoff_array[ipT][ipphi] = 0;
+			current_q_space_cutoff[ipT][ipphi] = 0.0;
+		}
 	}
 
 
@@ -361,7 +383,11 @@ debugger(__LINE__, __FILE__);
 		//int gauss_quadrature(int order, int kind, double alpha, double beta, double a, double b, double x[], double w[]) 
 		gauss_quadrature(n_interp_pT_pts, 5, 0.0, 0.0, 0.0, 13.0, SPinterp_pT, dummywts3);	//use this one to agree with iS.e
 		gauss_quadrature(n_interp_pT_pts, 5, 0.0, 0.0, 0.0, 13.0, SPinterp_pT_public, dummywts3);	//use this one to agree with iS.e
+		//for(int ipt=0; ipt<n_interp_pT_pts; ipt++)
+		//	cout << "PointCheck, pT: " << scientific << setprecision(17) << setw(20) << SPinterp_pT[ipt] << "   " << dummywts3[ipt] << endl;
 		gauss_quadrature(n_interp_pphi_pts, 1, 0.0, 0.0, interp_pphi_min, interp_pphi_max, SPinterp_pphi, dummywts4);
+		//for(int ipphi=0; ipphi<n_interp_pphi_pts; ipphi++)
+		//	cout << "PointCheck, pphi: " << scientific << setprecision(17) << setw(20) << SPinterp_pphi[ipphi] << "   " << dummywts4[ipphi] << endl;
 		for(int ipphi=0; ipphi<n_interp_pphi_pts; ipphi++)
 		{
 			//SPinterp_pphi[ipphi] = interp_pphi_min + (double)ipphi*Del2_pphi;
@@ -396,6 +422,10 @@ debugger(__LINE__, __FILE__);
 		ch_eta_s[ieta] = cosh(eta_s[ieta]);
 		sh_eta_s[ieta] = sinh(eta_s[ieta]);
 	}
+
+	//for (int ieta = 0; ieta < eta_s_npts; ieta++)
+	//	cout << "PointCheck, eta_s: " << scientific << setprecision(17) << setw(20) << eta_s[ieta] << "   " << 2.*eta_s_weight[ieta] << endl;
+
 
 debugger(__LINE__, __FILE__);
 	R2_side = new double * [n_interp_pT_pts];
@@ -1232,9 +1262,11 @@ void CorrelationFunction::Edndp3(double ptr, double phir, double * results)
 		}
 					
 		// now, interpolate f1 and f2 over the pphi direction
+		// note "+=", since must sum over "+" and "-" roots in Eq. (A19) in Wiedemann & Heinz (1997)
 		results[qpt_cs_idx] += lin_int(phir-phi0, one_by_pphidiff, f1, f2);
+//results[qpt_cs_idx] += exp(-phir*phir);
 					
-		if ( isnan( results[qpt_cs_idx] ) )
+		if ( isinf( results[qpt_cs_idx] ) || isnan( results[qpt_cs_idx] ) )
 		{
 			*global_out_stream_ptr << "ERROR in Edndp3(double, double, double*): problems encountered!" << endl
 				<< "results(" << iqt << "," << iqx << "," << iqy << "," << iqz << "," << itrig << ") = "
@@ -1251,7 +1283,7 @@ void CorrelationFunction::Edndp3(double ptr, double phir, double * results)
 				<< "  --> f22 = " << f22_arr[qpt_cs_idx] << endl
 				<< "  --> f1 = " << f1 << endl
 				<< "  --> f2 = " << f2 << endl;
-							exit(1);
+							//exit(1);
 		}
 		++qpt_cs_idx;	// step to next cell in results array
 	}	// ending all loops at once in linearized version

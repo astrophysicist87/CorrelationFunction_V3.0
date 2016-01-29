@@ -14,13 +14,21 @@ using namespace std;
 #define GROUPING_PARTICLES 		0		// set to 1 to perform calculations for similar particles together
 #define PARTICLE_DIFF_TOLERANCE 	0.00		// particles with mass and chemical potential (for each FO-cell) difference less than this value
 							// will be considered to be identical (b/c Cooper-Frye)
-#define TRUNCATE_COOPER_FRYE		false		// ignore contributions to CF integral which are extremely small --> speeds up code by factor of 3-4
 #define VERBOSE 			1		// specifies level of output - 0 is lowest (no output)
 #define DEBUG				false		// flag for output of debugging statements
 #define SPACETIME_MOMENTS_ONLY		false		// duh
 #define DO_ALL_DECAY_CHANNELS		false		// duh
 #define USE_HDF5			false		// utilizes HDF5 software to store large arrays
 #define USE_LAMBDA			false		// fit correlation function with adjustable intercept parameter
+#define USE_EXTRAPOLATION		true		// extrapolates results of CF integrals instead of competing them, false just calculates full integrals (slower)
+#define EXTRAPOLATION_METHOD		0		// 0 - GSL polynomial fit
+							// 1 - direct calculation of rational function fit using ratint in Arsenal.* files (numerator and denominator
+							// orders chosen automatically to be n+m+1==number of percentage markers)
+							// 2 - best fit rational function of given orders in numerator and denominator
+#define PC_MARKER_SPACING		0		// 0 - automatic
+							// 1 - use usr_def_pc_markers
+							// 2 - use usr_def_pc_markers_thinned
+#define COMPUTE_RESONANCE_ARRAYS	true		// alternative is to read them in from a file
 
 #ifndef H5_NO_NAMESPACE
     using namespace H5;
@@ -46,6 +54,20 @@ const int eta_s_npts = 15;
 const double eta_s_i = 0.0;
 const double eta_s_f = 4.0;
 
+//extrapolation information
+const int polynomial_fit_order = 4;
+const int rational_function_numerator_order = 3;
+const int rational_function_denominator_order = 4;
+static double usr_def_pc_markers[30] = {
+					0.00, 0.10, 0.20, 0.30, 0.40,
+					0.50, 0.60, 0.68, 0.69, 0.70,
+					0.71, 0.72, 0.73, 0.74, 0.75,
+					0.76, 0.77, 0.78, 0.79, 0.80,
+					0.81, 0.82, 0.83, 0.84, 0.85,
+					0.86, 0.87, 0.88, 0.89, 0.90
+				};
+static double usr_def_pc_markers_thinned[10] = { 0.00, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90 };
+
 //relative momentum information
 const int qonpts = 51;
 const int qsnpts = 51;
@@ -62,15 +84,15 @@ const int qlnpts = 51;
 //const int qnpts = 5;
 //const double delta_q = 0.03;
 //const double init_q = -2.0 * delta_q;
-const int qnpts = 3;
-const double delta_q = 0.06;
-const double init_q = -delta_q;
+//const int qnpts = 3;
+//const double delta_q = 0.02;
+//const double init_q = -delta_q;
 //const int qnpts = 2;
 //const double delta_q = 0.05;
 //const double init_q = -0.5*delta_q;
-//const int qnpts = 1;
-//const double delta_q = 0.005;
-//const double init_q = 0.0;
+const int qnpts = 1;
+const double delta_q = 0.005;
+const double init_q = 0.0;
 
 //all direction-specific q points information here
 /*const int qtnpts = qnpts;
@@ -85,14 +107,14 @@ const double init_qt = init_q;
 const double init_qx = init_q;
 const double init_qy = init_q;
 const double init_qz = init_q;*/
-const int qtnpts = 3;
-const int qxnpts = 7;
-const int qynpts = 3;
-const int qznpts = 3;
-const double delta_qt = -0.02;
-const double delta_qx = -0.04;
-const double delta_qy = -0.02;
-const double delta_qz = -0.02;
+const int qtnpts = 11;
+const int qxnpts = 1;
+const int qynpts = 1;
+const int qznpts = 1;
+const double delta_qt = 0.04;
+const double delta_qx = 0.02;
+const double delta_qy = 0.02;
+const double delta_qz = 0.02;
 const double init_qt = -0.5*double(qtnpts-1)*delta_qt;
 const double init_qx = -0.5*double(qxnpts-1)*delta_qx;
 const double init_qy = -0.5*double(qynpts-1)*delta_qy;

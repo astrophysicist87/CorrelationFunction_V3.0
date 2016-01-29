@@ -59,7 +59,10 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 
 	Flatten_dN_dypTdpTdphi_moments();
 
+	int tmp_parent_monval = all_particles[parent_resonance_particle_id].monval;
 	n_body = current_reso_nbody;
+	double tmp_spec_save = current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][0][0][0][0][0][0][0];
+
 
 	if (n_body == 2)
 	{
@@ -92,6 +95,7 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 						if (tempidx != 1)
 							PKphi = VEC_n2_PPhi_tildeFLIP[iv][izeta];		//also takes Pp --> Pm
 						Edndp3(PKT, PKphi, Csum_vec);
+//if (tmp_parent_monval == 223) cout << scientific << setprecision(17) << setw(20) << "Resonance integrals: " << PKT << "   " << PKphi << "   " << PKY << "   " << Csum_vec[0] << endl;
 					}												// end of tempidx sum
 					for (int qpt_cs_idx = 0; qpt_cs_idx < qspace_cs_slice_length; ++qpt_cs_idx)
 						zetasum_vec[qpt_cs_idx] += VEC_n2_zeta_factor[iv][izeta]*Csum_vec[qpt_cs_idx];
@@ -173,6 +177,7 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 							if (tempidx != 1)
 								PKphi = VEC_PPhi_tildeFLIP[is][iv][izeta];		//also takes Pp --> Pm
 							Edndp3(PKT, PKphi, Csum_vec);
+//if (tmp_parent_monval == 223) cout << scientific << setprecision(17) << setw(20) << "Resonance integrals: " << PKT << "   " << PKphi << "   " << PKY << "   " << Csum_vec[0] << endl;
 						}										// end of tempidx sum
 						for (int qpt_cs_idx = 0; qpt_cs_idx < qspace_cs_slice_length; ++qpt_cs_idx)
 							zetasum_vec[qpt_cs_idx] += VEC_zeta_factor[is][iv][izeta]*Csum_vec[qpt_cs_idx];
@@ -195,7 +200,7 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 				double temp = current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt][iqx][iqy][iqz][itrig];
 				++qpt_cs_idx;
 			}
-	
+
 			if (isnan(current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][0][0][0][0][0]
 					+ current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][0][0][0][0][1]))
 			{
@@ -206,8 +211,8 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 										<< "current_daughters_dN_dypTdpTdphi_moments[" << daughter_lookup_idx << "][" << ipt << "][" << ipphi << "][0][0][0][0][1] = "
 										<< setw(8) << setprecision(15)
 										<< current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][0][0][0][0][1] << endl
-										<< "  --> pt = " << local_pT << std::endl
-										<< "  --> pphi = " << local_pphi << std::endl
+										<< "  --> pt = " << local_pT << endl
+										<< "  --> pphi = " << local_pphi << endl
 										<< "daughter_particle_id = " << daughter_particle_id << endl
 										<< "parent_resonance_particle_id = " << parent_resonance_particle_id << endl
 										<< "  --> Qfunc = " << Qfunc << endl
@@ -223,6 +228,22 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 			}
 		}								// end of pT, pphi loops
 	}										// end of nbody == 3
+
+	/*cout << "Resonance integrals (n_body = " << n_body << "): added " << scientific << setprecision(17) << setw(20)
+			<< current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][0][0][0][0][0][0][0] - tmp_spec_save << endl
+			<< "  --> pt = " << SPinterp_pT[0] << endl
+			<< "  --> pphi = " << SPinterp_pphi[0] << endl
+			<< "daughter_particle_id = " << daughter_particle_id << endl
+			<< "parent_resonance_particle_id = " << parent_resonance_particle_id << endl
+			<< "  --> Qfunc = " << Qfunc << endl
+			<< "  --> n_body = " << n_body << endl
+			<< "  --> gRES = " << gRES << endl
+			<< "  --> Mres = " << Mres << endl
+			<< "  --> mass = " << mass << endl
+			<< "  --> Gamma = " << Gamma << endl
+			<< "  --> br = " << br << endl
+			<< "  --> m2 = " << m2 << endl
+			<< "  --> m3 = " << m3 << endl << endl;*/
 
 	// clean up
 	Delete_resonance_running_sum_vectors();
