@@ -1064,6 +1064,13 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 			for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 			{
 				//if (ipphi > 0) continue;
+				if	(
+						(correlator_minus_one_cutoff_norms[ipt][ipphi][0] < iqt) ||
+						(correlator_minus_one_cutoff_norms[ipt][ipphi][1] < iqx) ||
+						(correlator_minus_one_cutoff_norms[ipt][ipphi][2] < iqy) ||
+						(correlator_minus_one_cutoff_norms[ipt][ipphi][3] < iqz)
+					)
+					continue;	//if we're outside the q-region where the correlator is large (for this pt-pphi combo), then continue
 				double * slice2 = slice1[ipphi];
 				size_t * most_important_FOcells_for_current_pt_and_pphi = mif1[ipphi];
 
@@ -1149,10 +1156,25 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 		int iidx = 0;
 		for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-		for (int itrig = 0; itrig < ntrig; ++itrig)
 		{
-			current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][itrig] = temp_moms_linear_array[iidx];
-			++iidx;
+			double tempC = temp_moms_linear_array[iidx];
+			double tempS = temp_moms_linear_array[iidx+1];
+			double tmp = spectra[local_pid][ipt][ipphi];
+			if ( tempC*tempC + tempS*tempS >= tmp*tmp*correlator_minus_one_cutoff )
+			{
+				current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0] = tempC;
+				current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1] = tempS;
+			}
+			else if	( iqt!=iqt0 && iqx==iqx0 && iqy==iqy0 && iqz==iqz0 )
+				correlator_minus_one_cutoff_norms[ipt][ipphi][0] = iqt;
+			else if	( iqt==iqt0 && iqx!=iqx0 && iqy==iqy0 && iqz==iqz0 )
+				correlator_minus_one_cutoff_norms[ipt][ipphi][1] = iqx;
+			else if	( iqt==iqt0 && iqx==iqx0 && iqy!=iqy0 && iqz==iqz0 )
+				correlator_minus_one_cutoff_norms[ipt][ipphi][2] = iqy;
+			else if	( iqt==iqt0 && iqx==iqx0 && iqy==iqy0 && iqz!=iqz0 )
+				correlator_minus_one_cutoff_norms[ipt][ipphi][3] = iqz;
+
+			iidx+=2;
 		}
 
 		// Clean up

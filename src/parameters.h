@@ -140,6 +140,7 @@ const double Del2_pphi = (interp_pphi_max - interp_pphi_min) / (double)(n_interp
 //correlation function info
 const int corrfuncdim = 1;
 const bool lambdaflag = true;
+const double correlator_minus_one_cutoff = 0.0;		//zero means all calculations happen as usual
 
 //pair momentum info
 const int n_localp_T = 14;

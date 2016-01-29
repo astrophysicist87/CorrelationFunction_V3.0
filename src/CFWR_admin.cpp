@@ -291,17 +291,22 @@ debugger(__LINE__, __FILE__);
 	// also set up q-space cutoffs array
 	number_of_FOcells_above_cutoff_array = new int * [n_interp_pT_pts];
 	current_q_space_cutoff = new double * [n_interp_pT_pts];
+	correlator_minus_one_cutoff_norms = new int ** [n_interp_pT_pts];
 	for (int ipT = 0; ipT < n_interp_pT_pts; ++ipT)
 	{
 		number_of_FOcells_above_cutoff_array[ipT] = new int [n_interp_pphi_pts];
 		current_q_space_cutoff[ipT] = new double [n_interp_pphi_pts];
+		correlator_minus_one_cutoff_norms[ipT] = new int * [n_interp_pphi_pts];
 		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 		{
+			correlator_minus_one_cutoff_norms[ipT][ipphi] = new int [4];
+			for (int ii = 0; ii < 4; ++ii)
+				correlator_minus_one_cutoff_norms[ipT][ipphi][ii] = qtnpts*qtnpts+qxnpts*qxnpts+qynpts*qynpts+qznpts*qznpts;
+				// i.e., something larger than maximum q-array ranges, only made smaller if correlator cutoff threshhold reached, making large q-values redundant
 			number_of_FOcells_above_cutoff_array[ipT][ipphi] = 0;
 			current_q_space_cutoff[ipT][ipphi] = 0.0;
 		}
 	}
-
 
 	// set-up integration points for resonance integrals
 	s_pts = new double * [n_decay_channels];
@@ -844,7 +849,7 @@ void CorrelationFunction::Set_q_points()
 	return;
 }
 
-inline int norm (vector<int> v) { int norm2 = 0; for (size_t iv = 0; iv < v.size(); ++iv) norm2+=v[iv]*v[iv]; return (sqrt(norm2)); }
+inline int norm (vector<int> v) { int norm2 = 0; for (size_t iv = 0; iv < v.size(); ++iv) norm2+=v[iv]*v[iv]; return (norm2); }
 
 inline bool qpt_comparator (vector<int> i, vector<int> j) { return (norm(i) < norm(j)); }
 

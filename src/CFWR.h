@@ -183,6 +183,7 @@ class CorrelationFunction
 		double ***** CFvals;
 		double *** Correl_3D_err;
 		double ** lambda_Correl, ** lambda_Correl_err;
+		int ** correlator_minus_one_cutoff_norms;
 
 		//HBT radii coefficients
 		double **R2_side, **R2_out, **R2_long, **R2_outside, **R2_sidelong, **R2_outlong;
