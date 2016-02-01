@@ -19,6 +19,7 @@ const int RANK2D = 2;
 const int giant_FOslice_array_size = eta_s_npts * qtnpts * qxnpts * qynpts * qznpts * ntrig;
 const int chunk_size = n_interp_pT_pts * n_interp_pphi_pts * qtnpts * qxnpts * qynpts * qznpts * ntrig;
 const int small_array_size = qtnpts * qxnpts * qynpts * qznpts * ntrig;
+const int q_space_size = qtnpts * qxnpts * qynpts * qznpts;
 
 int CorrelationFunction::Set_giant_HDF_array()
 {
@@ -714,6 +715,172 @@ int CorrelationFunction::Dump_resonance_HDF_array_spectra(string output_filename
 
 	return (0);
 
+}
+
+//*******************************************
+// HDF array for correlator snapshots
+//*******************************************
+
+int CorrelationFunction::Initialize_snapshot_HDF_array()
+{
+	double * snapshot_chunk = new double [q_space_size];
+
+	ostringstream filename_stream_ra;
+	filename_stream_ra << global_path << "/correlator_snapshots.h5";
+	H5std_string SNAPSHOT_FILE_NAME(filename_stream_ra.str().c_str());
+	H5std_string SNAPSHOT_DATASET_NAME("cs");
+
+	try
+    {
+		Exception::dontPrint();
+	
+		snapshot_file = new H5::H5File(SNAPSHOT_FILE_NAME, H5F_ACC_TRUNC);
+
+		DSetCreatPropList cparms;
+		hsize_t chunk_dims[RANK2D] = {1, q_space_size};
+		cparms.setChunk( RANK2D, chunk_dims );
+
+		cout << "Initializing with dimensions: " << chosen_resonances.size() * n_interp_pT_pts * n_interp_pphi_pts << " x " << q_space_size << endl;
+		hsize_t dims[RANK2D] = {chosen_resonances.size() * n_interp_pT_pts * n_interp_pphi_pts, q_space_size};
+		snapshot_dataspace = new H5::DataSpace (RANK2D, dims);
+
+		snapshot_dataset = new H5::DataSet( snapshot_file->createDataSet(SNAPSHOT_DATASET_NAME, PredType::NATIVE_DOUBLE, *snapshot_dataspace, cparms) );
+
+		hsize_t count[RANK2D] = {1, q_space_size};
+		hsize_t dimsm[RANK2D] = {1, q_space_size};
+		hsize_t offset[RANK2D] = {0, 0};
+
+		snapshot_memspace = new H5::DataSpace (RANK2D, dimsm, NULL);
+		int snapshot_idx = 0;
+		for (int ir = 0; ir < chosen_resonances.size(); ++ir)
+		for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		{
+			offset[0] = snapshot_idx;
+			snapshot_dataspace->selectHyperslab(H5S_SELECT_SET, count, offset);
+
+			for (int iidx = 0; iidx < q_space_size; ++iidx)
+				snapshot_chunk[iidx] = 0.0;
+
+			//initialize everything with zeros
+			snapshot_dataset->write(snapshot_chunk, PredType::NATIVE_DOUBLE, *snapshot_memspace, *snapshot_dataspace);
+
+			++snapshot_idx;
+		}
+		snapshot_memspace->close();
+		snapshot_dataset->close();
+		snapshot_file->close();
+		delete snapshot_memspace;
+		delete snapshot_file;
+		delete snapshot_dataset;
+		snapshot_file = new H5::H5File(SNAPSHOT_FILE_NAME, H5F_ACC_RDWR);
+		snapshot_dataset = new H5::DataSet( snapshot_file->openDataSet( SNAPSHOT_DATASET_NAME ) );
+		snapshot_memspace = new H5::DataSpace (RANK2D, dimsm, NULL);
+    }
+
+    catch(FileIException error)
+    {
+		error.printError();
+		cerr << "FileIException error!" << endl;
+debugger(__LINE__, __FILE__);
+		return -1;
+    }
+
+    catch(H5::DataSetIException error)
+    {
+		error.printError();
+		cerr << "DataSetIException error!" << endl;
+debugger(__LINE__, __FILE__);
+		return -2;
+    }
+
+    catch(H5::DataSpaceIException error)
+    {
+		error.printError();
+		cerr << "DataSpaceIException error!" << endl;
+debugger(__LINE__, __FILE__);
+		return -3;
+    }
+
+	delete [] snapshot_chunk;
+
+	return (0);
+}
+
+int CorrelationFunction::Set_correlator_snapshot(int icr, double ******* snapshot_array_to_use)
+{
+	double * snapshot_chunk = new double [q_space_size];
+
+	ostringstream filename_stream_ra;
+	filename_stream_ra << global_path << "/correlator_snapshots.h5";
+	H5std_string SNAPSHOT_FILE_NAME(filename_stream_ra.str().c_str());
+	H5std_string SNAPSHOT_DATASET_NAME("cs");
+
+	try
+    {
+		Exception::dontPrint();
+	
+		hsize_t count[RANK2D] = {1, q_space_size};				// == chunk_dims
+
+		// use loaded chunk to fill snapshot_array_to_fill
+		int snapshot_idx = icr * n_interp_pT_pts * n_interp_pphi_pts;
+		for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		{
+			snapshot_array_to_use[ipt][ipphi][iqt0][iqx0][iqy0][iqz0][1] = 0.0;
+			double nonFTd_spectra = spectra[target_particle_id][ipt][ipphi];
+
+			hsize_t offset[RANK2D] = {snapshot_idx, 0};
+			snapshot_dataspace->selectHyperslab(H5S_SELECT_SET, count, offset);
+			
+			int iidx = 0;
+			for (int iqt = 0; iqt < qtnpts; ++iqt)
+			for (int iqx = 0; iqx < qxnpts; ++iqx)
+			for (int iqy = 0; iqy < qynpts; ++iqy)
+			for (int iqz = 0; iqz < qznpts; ++iqz)
+			{
+				// output all FT'd spectra
+				double cos_transf_spectra = snapshot_array_to_use[ipt][ipphi][iqt][iqx][iqy][iqz][0];
+				double sin_transf_spectra = snapshot_array_to_use[ipt][ipphi][iqt][iqx][iqy][iqz][1];
+				snapshot_chunk[iidx] = 1. + (cos_transf_spectra*cos_transf_spectra + sin_transf_spectra*sin_transf_spectra)/(nonFTd_spectra*nonFTd_spectra);
+	
+				//initialize everything with zeros
+				snapshot_dataset->write(snapshot_chunk, PredType::NATIVE_DOUBLE, *snapshot_memspace, *snapshot_dataspace);
+				++iidx;
+			}
+			++snapshot_idx;
+		}
+
+		snapshot_dataset->write(snapshot_chunk, PredType::NATIVE_DOUBLE, *snapshot_memspace, *snapshot_dataspace);
+   }
+
+    catch(FileIException error)
+    {
+		error.printError();
+		cerr << "FileIException error!" << endl;
+debugger(__LINE__, __FILE__);
+		return -1;
+    }
+
+    catch(H5::DataSetIException error)
+    {
+		error.printError();
+		cerr << "DataSetIException error!" << endl;
+debugger(__LINE__, __FILE__);
+		return -2;
+    }
+
+    catch(H5::DataSpaceIException error)
+    {
+		error.printError();
+		cerr << "DataSpaceIException error!" << endl;
+debugger(__LINE__, __FILE__);
+		return -3;
+    }
+
+	delete [] snapshot_chunk;
+
+	return (0);
 }
 
 //End of file

@@ -38,6 +38,7 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
 	target_particle_id = particle_id;
 	particle_monval = particle->monval;
 	S_prefactor = 1.0/(8.0*(M_PI*M_PI*M_PI))/hbarC/hbarC/hbarC;
+	current_total_resonance_percentage = 0.0;
 	all_particles = all_particles_in;
 	for (int icr = 0; icr < (int)chosen_resonances_in.size(); icr++)
 		chosen_resonances.push_back(chosen_resonances_in[icr]);
@@ -509,6 +510,10 @@ void CorrelationFunction::Update_sourcefunction(particle_info* particle, int FOa
 	osc1 = new double ** [FOarray_length];					//to hold cos/sin(qx x)
 	osc2 = new double ** [FOarray_length];					//to hold cos/sin(qy y)
 	osc3 = new double *** [FOarray_length];				//to hold cos/sin(+/- qz z)
+	ALTosc0 = new double * [qtnpts];					//to hold cos/sin(q0 t)
+	ALTosc1 = new double * [qxnpts];					//to hold cos/sin(qx x)
+	ALTosc2 = new double * [qynpts];					//to hold cos/sin(qy y)
+	ALTosc3 = new double * [qznpts];				//to hold cos/sin(+/- qz z)
 
 	for (int isurf = 0; isurf < FOarray_length; ++isurf)
 	{
@@ -557,6 +562,67 @@ void CorrelationFunction::Update_sourcefunction(particle_info* particle, int FOa
 				osc3[isurf][ieta][iqz] = new double [2];
 				osc3[isurf][ieta][iqz][0] = cos(hbarCm1*qz_pts[iqz]*zpt);
 				osc3[isurf][ieta][iqz][1] = sin(hbarCm1*qz_pts[iqz]*zpt);
+			}
+		}
+	}
+
+	for (int iqt = 0; iqt < qtnpts; ++iqt)
+	{
+		int iidx = 0;
+		double qt_local = qt_pts[iqt];
+		ALTosc0[iqt] = new double [FOarray_length * eta_s_npts * 2];
+		for (int isurf = 0; isurf < FOarray_length; ++isurf)
+		{
+			double tau = current_FOsurf_ptr[isurf].tau;
+			for (int ieta = 0; ieta < eta_s_npts; ++ieta)
+			{
+				double tpt = tau*ch_eta_s[ieta];
+				ALTosc0[iqt][iidx] = cos(hbarCm1*qt_local*tpt);
+				ALTosc0[iqt][iidx+1] = sin(hbarCm1*qt_local*tpt);
+				iidx+=2;
+			}
+		}
+	}
+	for (int iqx = 0; iqx < qxnpts; ++iqx)
+	{
+		int iidx = 0;
+		double qx_local = qx_pts[iqx];
+		ALTosc1[iqx] = new double [FOarray_length * 2];
+		for (int isurf = 0; isurf < FOarray_length; ++isurf)
+		{
+			double xpt = current_FOsurf_ptr[isurf].xpt;
+			ALTosc1[iqx][iidx] = cos(hbarCm1*qx_local*xpt);
+			ALTosc1[iqx][iidx+1] = sin(hbarCm1*qx_local*xpt);
+			iidx+=2;
+		}
+	}
+	for (int iqy = 0; iqy < qynpts; ++iqy)
+	{
+		int iidx = 0;
+		double qy_local = qy_pts[iqy];
+		ALTosc2[iqy] = new double [FOarray_length * 2];
+		for (int isurf = 0; isurf < FOarray_length; ++isurf)
+		{
+			double ypt = current_FOsurf_ptr[isurf].ypt;
+			ALTosc2[iqy][iidx] = cos(hbarCm1*qy_local*ypt);
+			ALTosc2[iqy][iidx+1] = sin(hbarCm1*qy_local*ypt);
+			iidx+=2;
+		}
+	}
+	for (int iqz = 0; iqz < qznpts; ++iqz)
+	{
+		int iidx = 0;
+		double qz_local = qz_pts[iqz];
+		ALTosc3[iqz] = new double [FOarray_length * eta_s_npts * 2];
+		for (int isurf = 0; isurf < FOarray_length; ++isurf)
+		{
+			double tau = current_FOsurf_ptr[isurf].tau;
+			for (int ieta = 0; ieta < eta_s_npts; ++ieta)
+			{
+				double zpt = tau*sh_eta_s[ieta];
+				ALTosc3[iqz][iidx] = cos(hbarCm1*qz_local*zpt);
+				ALTosc3[iqz][iidx+1] = sin(hbarCm1*qz_local*zpt);
+				iidx+=2;
 			}
 		}
 	}

@@ -212,6 +212,78 @@ void CorrelationFunction::Output_total_target_dN_dypTdpTdphi(int folderindex)
 	return;
 }
 
+/*void CorrelationFunction::Output_current_correlator(int folderindex)
+{
+	string local_name = all_particles[target_particle_id].name;
+	replace_parentheses(local_name);
+	ostringstream filename_stream_correlator;
+	filename_stream_correlator << global_path << "/correlator_" << local_name << "_vs_resonance_ev" << folderindex << no_df_stem << ".dat";
+	ofstream output_correlator(filename_stream_correlator.str().c_str(), ios::app);
+
+	int HDFloadTargetSuccess = Get_resonance_from_HDF_array(target_particle_id, current_dN_dypTdpTdphi_moments);
+
+	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+	{
+		current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt0][iqx0][iqy0][iqz0][1] = 0.0;
+		double nonFTd_spectra = spectra[target_particle_id][ipt][ipphi];
+
+		for (int iqt = 0; iqt < qtnpts; ++iqt)
+		for (int iqx = 0; iqx < qxnpts; ++iqx)
+		for (int iqy = 0; iqy < qynpts; ++iqy)
+		for (int iqz = 0; iqz < qznpts; ++iqz)
+		{
+			// output all FT'd spectra
+			double cos_transf_spectra = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
+			double sin_transf_spectra = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
+			output_correlator << scientific << setprecision(8) << setw(12)
+				<< current_total_resonance_percentage << "   " << SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi]
+				<< "   " << qt_pts[iqt] << "   " << qx_pts[iqx] << "   " << qy_pts[iqy] << "   " << qz_pts[iqz]
+				<< "   " << 1. + (cos_transf_spectra*cos_transf_spectra + sin_transf_spectra*sin_transf_spectra)/(nonFTd_spectra*nonFTd_spectra) << endl;
+		}
+	}
+
+	output_correlator.close();
+
+	return;
+}
+
+void CorrelationFunction::Readin_current_correlator(int folderindex)
+{
+	string local_name = all_particles[target_particle_id].name;
+	replace_parentheses(local_name);
+	ostringstream filename_stream_correlator;
+	filename_stream_correlator << global_path << "/correlator_" << local_name << "_vs_resonance_ev" << folderindex << no_df_stem << ".dat";
+	ifstream input_correlator(filename_stream_correlator.str().c_str());
+
+	double dummy;
+
+
+	for (int ir = 0; ir < (int); ++ir)
+	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+	for (int iqt = 0; iqt < qtnpts; ++iqt)
+	for (int iqx = 0; iqx < qxnpts; ++iqx)
+	for (int iqy = 0; iqy < qynpts; ++iqy)
+	for (int iqz = 0; iqz < qznpts; ++iqz)
+	{
+		// output all FT'd spectra
+		input_correlator >> current_total_resonance_percentage;
+		input_correlator >> dummy;
+		input_correlator >> dummy;
+		input_correlator >> dummy;
+		input_correlator >> dummy;
+		input_correlator >> dummy;
+		input_correlator >> dummy;
+		input_correlator >> something;
+	}
+
+	input_correlator.close();
+
+	return;
+}*/
+
+
 void CorrelationFunction::Output_total_target_eiqx_dN_dypTdpTdphi(int folderindex)
 {
 	string local_name = all_particles[target_particle_id].name;

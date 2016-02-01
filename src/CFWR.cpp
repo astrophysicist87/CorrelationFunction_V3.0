@@ -24,6 +24,7 @@ using namespace std;
 // only need to calculated interpolation grid of spacetime moments for each resonance, NOT each decay channel!
 bool recycle_previous_moments = false;
 bool recycle_similar_moments = false;
+bool output_snapshots = false;
 int reso_particle_id_of_moments_to_recycle = -1;
 string reso_name_of_moments_to_recycle = "NULL";
 string current_decay_channel_string = "NULL";
@@ -83,7 +84,8 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 	if (COMPUTE_RESONANCE_ARRAYS)
 	{
 		int HDFInitializationSuccess = Initialize_resonance_HDF_array();
-		if (HDFInitializationSuccess < 0)
+		int HDFInitializationSuccess2 = Initialize_snapshot_HDF_array();
+		if (HDFInitializationSuccess < 0 || HDFInitializationSuccess2 < 0)
 		{
 			cerr << "Failed to initialize HDF array of resonances!  Exiting..." << endl;
 			exit(1);
@@ -149,6 +151,7 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 
 	*global_out_stream_ptr << "Computing all phase-space integrals..." << endl;
 	BIGsw.tic();
+	output_snapshots = true;
 	// ************************************************************
 	// Compute feeddown with heaviest resonances first
 	// ************************************************************
@@ -169,7 +172,7 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 		Load_resonance_and_daughter_spectra(decay_channels[idc-1].resonance_particle_id);
 
 		// ************************************************************
-		// begin source variances calculations here...
+		// begin resonance decay calculations here...
 		// ************************************************************
 		Allocate_decay_channel_info();				// allocate needed memory
 
@@ -310,6 +313,7 @@ void CorrelationFunction::Set_current_particle_info(int dc_idx)
 				//previous resonance is the same as this one...
 				recycle_previous_moments = true;
 				recycle_similar_moments = false;
+				if (VERBOSE > 0) *global_out_stream_ptr << "\t * " << decay_channels[dc_idx-1].resonance_name << " (same as the last one)." << endl;
 			}
 			else if ( Search_for_similar_particle( temp_reso_idx, &similar_particle_idx ) )
 			{
@@ -317,12 +321,39 @@ void CorrelationFunction::Set_current_particle_info(int dc_idx)
 				recycle_previous_moments = false;
 				recycle_similar_moments = true;
 				reso_particle_id_of_moments_to_recycle = chosen_resonances[similar_particle_idx];
+				if (VERBOSE > 0) *global_out_stream_ptr << "\t * " << decay_channels[dc_idx-1].resonance_name << " (different from the last one, but close enough to "
+														<< all_particles[reso_particle_id_of_moments_to_recycle].name << ")." << endl;
+				if (output_snapshots)
+				{
+					current_total_resonance_percentage += all_particles[previous_resonance_particle_id].percent_contribution;
+					snapshot_fractions.push_back(current_total_resonance_percentage);
+					//Output_current_correlator(currentfolderindex);
+					int tmp = Set_correlator_snapshot(temp_reso_idx, current_dN_dypTdpTdphi_moments);
+					if (tmp < 0)
+					{
+						cerr << "Failed to set correlator snapshot!" << endl;
+						exit(1);
+					}
+				}
 			}
 			else
 			{
 				recycle_previous_moments = false;
 				recycle_similar_moments = false;
 				reso_particle_id_of_moments_to_recycle = -1;	//guarantees it won't be used spuriously
+				if (VERBOSE > 0) *global_out_stream_ptr << "\t * " << decay_channels[dc_idx-1].resonance_name << " (different from the last one --> calculating afresh)." << endl;
+				if (output_snapshots)
+				{
+					current_total_resonance_percentage += all_particles[previous_resonance_particle_id].percent_contribution;
+					snapshot_fractions.push_back(current_total_resonance_percentage);
+					//Output_current_correlator(currentfolderindex);
+					int tmp = Set_correlator_snapshot(temp_reso_idx, current_dN_dypTdpTdphi_moments);
+					if (tmp < 0)
+					{
+						cerr << "Failed to set correlator snapshot!" << endl;
+						exit(1);
+					}
+				}
 			}
 		}
 	}
@@ -673,7 +704,7 @@ void CorrelationFunction::Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int lo
 	*global_out_stream_ptr << "CP#1: Took " << sw.printTime() << " seconds." << endl;
 
 	// get weighted spectra with only most important fluid cells, up to given threshhold
-	*global_out_stream_ptr << "Computing weighted spectra..." << endl;
+	*global_out_stream_ptr << "Computing weighted (thermal) spectra..." << endl;
 	sw.Reset();
 	Cal_dN_dypTdpTdphi_with_weights(FOsurf_ptr, local_pid);
 	sw.Stop();
@@ -683,7 +714,7 @@ void CorrelationFunction::Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int lo
 	int setHDFresonanceSpectra = Set_resonance_in_HDF_array(local_pid, current_dN_dypTdpTdphi_moments);
 	if (setHDFresonanceSpectra < 0)
 	{
-		cerr << "Failed to initialize HDF array of resonances!  Exiting..." << endl;
+		cerr << "Failed to set this resonance in HDF array!  Exiting..." << endl;
 		exit;
 	}
 
@@ -1033,6 +1064,8 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 	int temp_moms_lin_arr_length = n_interp_pT_pts * n_interp_pphi_pts * ntrig;
 
 	int lin_TMLAL_idx = 0;
+	//double * tmp_results_ii0 = new double [ntrig];
+	//double * tmp_results_ii1 = new double [ntrig];
 
 	double * temp_moms_linear_array = new double [temp_moms_lin_arr_length];
 
@@ -1049,9 +1082,14 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 		int iqz = sorted_q_pts_list[iq][3];
 		debug_sw2.Reset();
 	
-		sw_set_giant_array_slice.Start();
-		Set_giant_arrays(iqt, iqx, iqy, iqz);
-		sw_set_giant_array_slice.Stop();
+		//sw_set_giant_array_slice.Start();
+		//Set_giant_arrays(iqt, iqx, iqy, iqz);
+		//sw_set_giant_array_slice.Stop();
+
+		double * ALTqtslice = ALTosc0[iqt];
+		double * ALTqxslice = ALTosc1[iqx];
+		double * ALTqyslice = ALTosc2[iqy];
+		double * ALTqzslice = ALTosc3[iqz];
 
 		for (int i = 0; i < temp_moms_lin_arr_length; ++i)
 			temp_moms_linear_array[i] = 0.0;
@@ -1092,9 +1130,16 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 					{
 						size_t next_most_important_FOindex = most_important_FOcells_for_current_pt_and_pphi[iFO];
 						double S_p_withweight = slice2[iFO];
+						int isurf = next_most_important_FOindex / eta_s_npts;
+						double cosA0 = ALTqtslice[2*next_most_important_FOindex], cosA1 = ALTqxslice[2*isurf],
+								cosA2 = ALTqyslice[2*isurf], cosA3 = ALTqzslice[2*next_most_important_FOindex];
+						double sinA0 = ALTqtslice[2*next_most_important_FOindex+1], sinA1 = ALTqxslice[2*isurf+1],
+								sinA2 = ALTqyslice[2*isurf+1], sinA3 = ALTqzslice[2*next_most_important_FOindex+1];
 
-						tmla_C += giant_array_C[next_most_important_FOindex] * S_p_withweight;
-						tmla_S += giant_array_S[next_most_important_FOindex] * S_p_withweight;
+						//tmla_C += giant_array_C[next_most_important_FOindex] * S_p_withweight;
+						//tmla_S += giant_array_S[next_most_important_FOindex] * S_p_withweight;
+						tmla_C += 2. * (cosA0*cosA1*cosA2*cosA3 + cosA2*cosA3*sinA0*sinA1 + cosA1*cosA3*sinA0*sinA2 - cosA0*cosA3*sinA1*sinA2) * S_p_withweight;
+						tmla_S += 2. * (cosA1*cosA2*cosA3*sinA0 - cosA0*cosA2*cosA3*sinA1 - cosA0*cosA1*cosA3*sinA2 - cosA3*sinA0*sinA1*sinA2) * S_p_withweight;
 	
 						running_sum += abs(S_p_withweight);
 					}
@@ -1137,10 +1182,10 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 
 //if (ipt==0 && ipphi == 0 && iqt==4 && iqx==0 && iqy==0 && iqz==0)
 //{
-	for (int ii = 0; ii < runsumvals.size(); ++ii)
-		cerr << "(" << ipt << "," << ipphi << "," << iqt << "," << iqx << "," << iqy << "," << iqz << "): " << ii << "   " << runsumvals[ii]/current_abs_spectra
-			<< "   " << cutoff_FOcell_vals_C[ptphi_index][ii] << "   " << cutoff_FOcell_vals_S[ptphi_index][ii] << endl;
-	cerr << "(" << ipt << "," << ipphi << "," << iqt << "," << iqx << "," << iqy << "," << iqz << "): "<< proj_tmla_C << "   " << proj_tmla_S << "   " << chisqC << "   " << chisqS << "   " << chisqC/proj_tmla_C << "   " << chisqS/proj_tmla_S << endl;
+//	for (int ii = 0; ii < runsumvals.size(); ++ii)
+//		cerr << "(" << ipt << "," << ipphi << "," << iqt << "," << iqx << "," << iqy << "," << iqz << "): " << ii << "   " << runsumvals[ii]/current_abs_spectra
+//			<< "   " << cutoff_FOcell_vals_C[ptphi_index][ii] << "   " << cutoff_FOcell_vals_S[ptphi_index][ii] << endl;
+//	cerr << "(" << ipt << "," << ipphi << "," << iqt << "," << iqx << "," << iqy << "," << iqz << "): "<< proj_tmla_C << "   " << proj_tmla_S << "   " << chisqC << "   " << chisqS << "   " << chisqC/proj_tmla_C << "   " << chisqS/proj_tmla_S << endl;
 //}
 				}
 
@@ -1178,8 +1223,8 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 		}
 
 		// Clean up
-		delete [] giant_array_C;
-		delete [] giant_array_S;
+		//delete [] giant_array_C;
+		//delete [] giant_array_S;
 
 		debug_sw2.Stop();
 		*global_out_stream_ptr << "   --> Finished (iqt, iqx, iqy, iqz) = ("
@@ -1215,6 +1260,8 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 	}
 
 	delete [] temp_moms_linear_array;
+	//delete [] tmp_results_ii0;
+	//delete [] tmp_results_ii1;
 
 	debug_sw.Stop();
 	*global_out_stream_ptr << "Total function call took " << debug_sw.printTime() << " seconds." << endl;

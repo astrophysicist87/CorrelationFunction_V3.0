@@ -78,8 +78,10 @@ class CorrelationFunction
 		double particle_sign;   //+/- 1 for Fermi/Bose statistics for baryon/meson
 		double particle_gspin;  //particle degeneracy 
 		double particle_mu;
+		double current_total_resonance_percentage;
 		particle_info * all_particles;
 		vector<int> chosen_resonances;
+		vector<int> snapshot_fractions;
 		bool thermal_pions_only;
 		int Nparticle;
 		int target_particle_id;		//the particle whose spectra (with resonance contributions) you want to compute
@@ -114,6 +116,7 @@ class CorrelationFunction
 
 		// needed these to avoid too many trigonometric evaluations
 		double **** osc0, *** osc1, *** osc2, **** osc3;
+		double ** ALTosc0, ** ALTosc1, ** ALTosc2, ** ALTosc3;
 	
 		//needed for resonance calculations
 		//	kinematic info
@@ -183,7 +186,7 @@ class CorrelationFunction
 		double ***** CFvals;
 		double *** Correl_3D_err;
 		double ** lambda_Correl, ** lambda_Correl_err;
-		int ** correlator_minus_one_cutoff_norms;
+		int *** correlator_minus_one_cutoff_norms;
 
 		//HBT radii coefficients
 		double **R2_side, **R2_out, **R2_long, **R2_outside, **R2_sidelong, **R2_outlong;
@@ -230,6 +233,8 @@ class CorrelationFunction
 		int Open_resonance_HDF_array();
 		int Copy_chunk(int current_resonance_index, int reso_idx_to_be_copied);
 		int Dump_resonance_HDF_array_spectra(string output_filename, double ******* resonance_array_to_use);
+		int Initialize_snapshot_HDF_array();
+		int Set_correlator_snapshot(int icr, double ******* snapshot_array_to_use);
 
 		void Set_giant_arrays(int iqt, int iqx, int iqy, int iqz);
 		inline void addElementToQueue(priority_queue<pair<double, size_t> >& p, pair<double, size_t> elem, size_t max_size);
@@ -337,6 +342,10 @@ class CorrelationFunction
 		H5::DataSpace * resonance_dataspace, * resonance_memspace;
 		H5::H5File * resonance_file;
 		H5::DataSet * resonance_dataset;
+		H5::DataSpace * snapshot_dataspace, * snapshot_memspace;
+		H5::H5File * snapshot_file;
+		H5::DataSet * snapshot_dataset;
+
 
 		CorrelationFunction(particle_info* particle, particle_info* all_particles_in, int Nparticle,
 				FO_surf* FOsurf_ptr, vector<int> chosen_resonances, int particle_idx, ofstream& myout);

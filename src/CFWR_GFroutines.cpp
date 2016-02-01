@@ -165,6 +165,13 @@ void CorrelationFunction::Cal_correlationfunction()
 	return;
 }
 
+/*void CorrelationFunction::Extrapolate_dN_dypTdpTdphi_moments_over_resonances()
+{
+	
+
+	return;
+}*/
+
 //**************************************************************
 // Gaussian fit routines below
 //**************************************************************
