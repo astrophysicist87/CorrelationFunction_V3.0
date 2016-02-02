@@ -566,7 +566,7 @@ void CorrelationFunction::Update_sourcefunction(particle_info* particle, int FOa
 		}
 	}
 
-	for (int iqt = 0; iqt < qtnpts; ++iqt)
+	/*for (int iqt = 0; iqt < qtnpts; ++iqt)
 	{
 		int iidx = 0;
 		double qt_local = qt_pts[iqt];
@@ -625,7 +625,7 @@ void CorrelationFunction::Update_sourcefunction(particle_info* particle, int FOa
 				iidx+=2;
 			}
 		}
-	}
+	}*/
 
 	S_p_withweight_array = new double ** [n_interp_pT_pts];
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
