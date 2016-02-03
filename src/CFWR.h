@@ -116,7 +116,7 @@ class CorrelationFunction
 
 		// needed these to avoid too many trigonometric evaluations
 		double **** osc0, *** osc1, *** osc2, **** osc3;
-		double ** ALTosc0, ** ALTosc1, ** ALTosc2, ** ALTosc3;
+		double ** eiqtt, ** eiqxx, ** eiqyy, ** eiqzz;
 	
 		//needed for resonance calculations
 		//	kinematic info
@@ -177,6 +177,7 @@ class CorrelationFunction
 		
 		// relative momentum information
 		double * qo_pts, * qs_pts, * ql_pts, * q_pts, * q_axes, * qt_pts, * qx_pts, * qy_pts, * qz_pts;
+		double ** qt_PTdep_pts, ** qx_PTdep_pts, ** qy_PTdep_pts, ** qz_PTdep_pts;
 		double * q_out, * q_side, * q_long;
 		int iqt0, iqx0, iqy0, iqz0;
 		vector<vector<int> > sorted_q_pts_list;
@@ -243,6 +244,7 @@ class CorrelationFunction
 		void Cal_dN_dypTdpTdphi(double** SP_p0, double** SP_px, double** SP_py, double** SP_pz, FO_surf* FOsurf_ptr);
 		void Cal_dN_dypTdpTdphi_heap(FO_surf* FOsurf_ptr, int local_pid, double cutoff);
 		void Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, int local_pid);
+		void Cal_dN_dypTdpTdphi_with_weights_INVERTED_LOOPS(FO_surf* FOsurf_ptr, int local_pid);
 		double Cal_dN_dypTdpTdphi_function(FO_surf* FOsurf_ptr, int local_pid, double pT, double pphi);
 		void Do_resonance_integrals(int iKT, int iKphi, int dc_idx);
 		void Flatten_dN_dypTdpTdphi_moments();
@@ -262,6 +264,12 @@ class CorrelationFunction
 		int Set_daughter_list(int parent_resonance_index);
 
 		void form_trig_sign_z(int isurf, int ieta, int iqt, int iqx, int iqy, int iqz, int ii, double * results);
+		void estimate_radii(double pT_local, double & Rperp, double & Rparallel, double & R0);
+		void Set_q_pTdep_pts(int ipt);
+		void Set_eiqx_with_q_pTdep_pts(int ipt);
+		void Load_eiqx_with_q_pTdep_pts(int ipt);
+		void Dump_phases_to_binary(char direction, int ipt, double ** array, const int nd1, const int nd2);
+		void Load_phases_from_binary(char direction, int ipt, double ** array, const int nd1, const int nd2);
 
 		//miscellaneous
 		void Set_ofstream(ofstream& myout);

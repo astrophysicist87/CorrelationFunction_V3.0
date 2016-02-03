@@ -29,6 +29,55 @@ void replace_parentheses(std::string & tempstring)
 	return;
 }
 
+void CorrelationFunction::Dump_phases_to_binary(char direction, int ipt, double ** array, const int nd1, const int nd2)
+{
+	ostringstream filename_stream;
+	filename_stream << global_path << "/q" << direction << "_pts_ipt_" << ipt << ".bin";
+	ofstream out(filename_stream.str().c_str(), ios::out | ios::binary);
+
+	//cout << "Using char = " << direction << ", (nd1,nd2) = " << "(" << nd1 << "," << nd2 << ")" << endl;
+
+	//double array_copy[nd1][nd2];
+	//double * array_copy = new double [nd1*nd2];
+	vector<double> array_copy (nd1*nd2);
+	int ac_idx = 0;
+	for (int i1 = 0; i1 < nd1; ++i1)
+	for (int i2 = 0; i2 < nd2; ++i2)
+		array_copy[ac_idx++] = array[i1][i2];
+
+	//out.write((char *) &array_copy, sizeof array_copy);
+	out.write(reinterpret_cast<const char*>(&array_copy[0]), array_copy.size()*sizeof(double));
+
+	out.close();
+	//delete [] array_copy;
+	return;
+}
+
+void CorrelationFunction::Load_phases_from_binary(char direction, int ipt, double ** array, const int nd1, const int nd2)
+{
+	ostringstream filename_stream;
+	filename_stream << global_path << "/q" << direction << "_pts_ipt_" << ipt << ".bin";
+	ifstream in(filename_stream.str().c_str(), ios::in | ios::binary);
+
+	//double array_copy[nd1][nd2];
+	//double * array_copy = new double [nd1*nd2];
+	vector<double> array_copy (nd1*nd2);
+	//in.read((char *) &array_copy, sizeof array_copy);
+	//in.read((char *) &array_copy, size_t(8*nd1*nd2));
+	in.read(reinterpret_cast<char*>(&array_copy[0]), array_copy.size()*sizeof(double));
+	cout << in.gcount() << " bytes read\n";
+	in.close();
+
+	int ac_idx = 0;
+	for (int i1 = 0; i1 < nd1; ++i1)
+	for (int i2 = 0; i2 < nd2; ++i2)
+		array[i1][i2] = array_copy[ac_idx++];
+
+	//delete [] array_copy;
+
+	return;
+}
+
 void CorrelationFunction::Output_results(int folderindex)
 {
 	ostringstream filename_stream_HBT;

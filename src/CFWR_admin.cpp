@@ -510,10 +510,6 @@ void CorrelationFunction::Update_sourcefunction(particle_info* particle, int FOa
 	osc1 = new double ** [FOarray_length];					//to hold cos/sin(qx x)
 	osc2 = new double ** [FOarray_length];					//to hold cos/sin(qy y)
 	osc3 = new double *** [FOarray_length];				//to hold cos/sin(+/- qz z)
-	ALTosc0 = new double * [qtnpts];					//to hold cos/sin(q0 t)
-	ALTosc1 = new double * [qxnpts];					//to hold cos/sin(qx x)
-	ALTosc2 = new double * [qynpts];					//to hold cos/sin(qy y)
-	ALTosc3 = new double * [qznpts];				//to hold cos/sin(+/- qz z)
 
 	for (int isurf = 0; isurf < FOarray_length; ++isurf)
 	{
@@ -566,66 +562,24 @@ void CorrelationFunction::Update_sourcefunction(particle_info* particle, int FOa
 		}
 	}
 
-	/*for (int iqt = 0; iqt < qtnpts; ++iqt)
-	{
-		int iidx = 0;
-		double qt_local = qt_pts[iqt];
-		ALTosc0[iqt] = new double [FOarray_length * eta_s_npts * 2];
-		for (int isurf = 0; isurf < FOarray_length; ++isurf)
-		{
-			double tau = current_FOsurf_ptr[isurf].tau;
-			for (int ieta = 0; ieta < eta_s_npts; ++ieta)
-			{
-				double tpt = tau*ch_eta_s[ieta];
-				ALTosc0[iqt][iidx] = cos(hbarCm1*qt_local*tpt);
-				ALTosc0[iqt][iidx+1] = sin(hbarCm1*qt_local*tpt);
-				iidx+=2;
-			}
-		}
-	}
+	eiqtt = new double * [qtnpts];					//to hold cos/sin(q0 t)
+	eiqxx = new double * [qxnpts];					//to hold cos/sin(qx x)
+	eiqyy = new double * [qynpts];					//to hold cos/sin(qy y)
+	eiqzz = new double * [qznpts];					//to hold cos/sin(+/- qz z)
+
+	for (int iqt = 0; iqt < qtnpts; ++iqt)
+		eiqtt[iqt] = new double [FOarray_length * eta_s_npts * 2];
 	for (int iqx = 0; iqx < qxnpts; ++iqx)
-	{
-		int iidx = 0;
-		double qx_local = qx_pts[iqx];
-		ALTosc1[iqx] = new double [FOarray_length * 2];
-		for (int isurf = 0; isurf < FOarray_length; ++isurf)
-		{
-			double xpt = current_FOsurf_ptr[isurf].xpt;
-			ALTosc1[iqx][iidx] = cos(hbarCm1*qx_local*xpt);
-			ALTosc1[iqx][iidx+1] = sin(hbarCm1*qx_local*xpt);
-			iidx+=2;
-		}
-	}
+		eiqxx[iqx] = new double [FOarray_length * 2];
 	for (int iqy = 0; iqy < qynpts; ++iqy)
-	{
-		int iidx = 0;
-		double qy_local = qy_pts[iqy];
-		ALTosc2[iqy] = new double [FOarray_length * 2];
-		for (int isurf = 0; isurf < FOarray_length; ++isurf)
-		{
-			double ypt = current_FOsurf_ptr[isurf].ypt;
-			ALTosc2[iqy][iidx] = cos(hbarCm1*qy_local*ypt);
-			ALTosc2[iqy][iidx+1] = sin(hbarCm1*qy_local*ypt);
-			iidx+=2;
-		}
-	}
+		eiqyy[iqy] = new double [FOarray_length * 2];
 	for (int iqz = 0; iqz < qznpts; ++iqz)
-	{
-		int iidx = 0;
-		double qz_local = qz_pts[iqz];
-		ALTosc3[iqz] = new double [FOarray_length * eta_s_npts * 2];
-		for (int isurf = 0; isurf < FOarray_length; ++isurf)
-		{
-			double tau = current_FOsurf_ptr[isurf].tau;
-			for (int ieta = 0; ieta < eta_s_npts; ++ieta)
-			{
-				double zpt = tau*sh_eta_s[ieta];
-				ALTosc3[iqz][iidx] = cos(hbarCm1*qz_local*zpt);
-				ALTosc3[iqz][iidx+1] = sin(hbarCm1*qz_local*zpt);
-				iidx+=2;
-			}
-		}
-	}*/
+		eiqzz[iqz] = new double [FOarray_length * eta_s_npts * 2];
+
+	qt_PTdep_pts = new double * [n_interp_pT_pts];
+	qx_PTdep_pts = new double * [n_interp_pT_pts];
+	qy_PTdep_pts = new double * [n_interp_pT_pts];
+	qz_PTdep_pts = new double * [n_interp_pT_pts];
 
 	S_p_withweight_array = new double ** [n_interp_pT_pts];
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
@@ -652,6 +606,171 @@ void CorrelationFunction::Update_sourcefunction(particle_info* particle, int FOa
 	}
 
    return;
+}
+
+void CorrelationFunction::estimate_radii(double pT_local, double & Rperp, double & Rparallel, double & R0)
+{
+	double tausum = 0.0, tau2sum = 0.0, vT2sum = 0.0, rT2sum = 0.0;
+	double Delta_tau2 = 0.0, factor1 = 0.0, factor2 = 0.0;
+	for (int isurf = 0; isurf < FO_length; ++isurf)
+	{
+		FO_surf * surf = &current_FOsurf_ptr[isurf];
+		double tau = surf->tau;
+		double vx = surf->vx;
+		double vy = surf->vy;
+		double vT2 = vx*vx+vy*vy;
+		vT2sum += vT2;
+		rT2sum += (surf->r)*(surf->r);
+		Delta_tau2 -= tau*tausum;
+		tausum += tau;
+		tau2sum += tau*tau;
+	}
+	double N = FO_length;
+	factor1 = 1./N;
+	factor2 = 2./(N*(N-1.));
+	Delta_tau2 *= factor2;
+	Delta_tau2 += factor1*tau2sum;
+
+	double mpion = 0.13957;
+
+	//estimate necessary parameters
+	double eta_f = atanh(sqrt(vT2sum/N));
+	double T0 = current_FOsurf_ptr[0].Tdec;
+	double MT = sqrt(mpion*mpion + pT_local*pT_local);
+	double R = sqrt(rT2sum/N);
+	double tau_0 = tausum/N;
+	double Delta_tau = sqrt(Delta_tau2);
+
+	Rperp = sqrt( R*R / (1. + eta_f*eta_f*MT/T0) );
+	Rparallel = tau_0 * sqrt(T0 / MT);
+	R0 = sqrt( Delta_tau2 + 2.*tau_0*tau_0*pow( sqrt(1.0 - (T0/MT)) - 1.0 , 2.0) );
+
+	return;
+}
+
+void CorrelationFunction::Set_q_pTdep_pts(int ipt)
+{
+	double pT_local = SPinterp_pT[ipt];
+	double Rperp = 0.0, Rparallel = 0.0, R0 = 0.0;
+
+	//might need to toy with these estimators...
+	estimate_radii(pT_local, Rperp, Rparallel, R0);		//use Rperp to set scale for q_points in transverse plane (qx and qy)
+														//use Rparallel to set scale for "longitudinal" q_points in transverse plane (qt and qz)
+	qt_PTdep_pts[ipt] = new double [qtnpts];
+	qx_PTdep_pts[ipt] = new double [qxnpts];
+	qy_PTdep_pts[ipt] = new double [qynpts];
+	qz_PTdep_pts[ipt] = new double [qznpts];
+
+	double eps = 1.e-3;									//specifies approximate CF value at which to truncate calculation
+														// (used for computing q(i)max)
+	double ln_one_by_eps = hbarC*log(1./eps);
+	double qtmax = ln_one_by_eps / R0;
+	double qxmax = ln_one_by_eps / Rperp;
+	double qymax = ln_one_by_eps / Rperp;
+	double qzmax = ln_one_by_eps / Rparallel;
+	//these estimates just need to be ball-park correct, to make sure that the most interesting parts of the CF are captured
+	//cout << "Estimates for pT = " << SPinterp_pT[ipt] << endl
+	//	<< "\t R0 = " << R0 << endl
+	//	<< "\t Rperp = " << Rperp << endl
+	//	<< "\t Rparallel = " << Rparallel << endl;
+
+	//finally, set q(i)_PTdep_pts
+	if (qtnpts == 1)
+		qt_PTdep_pts[ipt][0] = 0.0;
+	else
+	{
+		for (int iqt = 0; iqt < qtnpts; ++iqt)
+			qt_PTdep_pts[ipt][iqt] =  -qtmax + (double)iqt * 2.*qtmax / double(qtnpts - 1+1e-100);
+	}
+	if (qxnpts == 1)
+		qx_PTdep_pts[ipt][0] = 0.0;
+	else
+	{
+		for (int iqx = 0; iqx < qxnpts; ++iqx)
+			qz_PTdep_pts[ipt][iqx] =  -qxmax + (double)iqx * 2.*qxmax / double(qxnpts - 1+1e-100);
+	}
+	if (qynpts == 1)
+		qy_PTdep_pts[ipt][0] = 0.0;
+	else
+	{
+		for (int iqy = 0; iqy < qynpts; ++iqy)
+			qy_PTdep_pts[ipt][iqy] =  -qymax + (double)iqy * 2.*qymax / double(qynpts - 1+1e-100);
+	}
+	if (qznpts == 1)
+		qz_PTdep_pts[ipt][0] = 0.0;
+	else
+	{
+		for (int iqz = 0; iqz < qznpts; ++iqz)
+			qz_PTdep_pts[ipt][iqz] =  -qzmax + (double)iqz * 2.*qzmax / double(qznpts - 1+1e-100);
+	}
+
+
+	return;
+}
+
+void CorrelationFunction::Set_eiqx_with_q_pTdep_pts(int ipt)
+{
+	int iFO = 0;
+	double * current_qt_slice = qt_PTdep_pts[ipt];
+	double * current_qx_slice = qx_PTdep_pts[ipt];
+	double * current_qy_slice = qy_PTdep_pts[ipt];
+	double * current_qz_slice = qz_PTdep_pts[ipt];
+
+	for (int isurf = 0; isurf < FO_length; ++isurf)
+	{
+		FO_surf * surf = &current_FOsurf_ptr[isurf];
+		double tau = surf->tau;
+
+		for (int ieta = 0; ieta < eta_s_npts; ++ieta)
+		{
+			double tpt = tau*ch_eta_s[ieta];
+			double zpt = tau*sh_eta_s[ieta];
+
+			for (int iqt = 0; iqt < qtnpts; ++iqt)
+			{
+				eiqtt[iqt][iFO] = cos(hbarCm1*current_qt_slice[iqt]*tpt);
+				eiqtt[iqt][iFO+1] = sin(hbarCm1*current_qt_slice[iqt]*tpt);
+			}
+			for (int iqz = 0; iqz < qznpts; ++iqz)
+			{
+				eiqzz[iqz][iFO] = cos(hbarCm1*current_qz_slice[iqz]*zpt);
+				eiqzz[iqz][iFO+1] = sin(hbarCm1*current_qz_slice[iqz]*zpt);
+			}
+
+			iFO += 2;
+		}
+
+		double xpt = surf->xpt;
+		double ypt = surf->ypt;
+		for (int iqx = 0; iqx < qxnpts; ++iqx)
+		{
+			eiqxx[iqx][2*isurf] = cos(hbarCm1*current_qx_slice[iqx]*xpt);
+			eiqxx[iqx][2*isurf+1] = sin(hbarCm1*current_qx_slice[iqx]*xpt);
+		}
+		for (int iqy = 0; iqy < qynpts; ++iqy)
+		{
+			eiqyy[iqy][2*isurf] = cos(hbarCm1*current_qy_slice[iqy]*ypt);
+			eiqyy[iqy][2*isurf+1] = sin(hbarCm1*current_qy_slice[iqy]*ypt);
+		}
+	}
+
+	//dump results to binary files, which is way faster than recalculating everything each time
+	Dump_phases_to_binary('t', ipt, eiqtt, qtnpts, 2*FO_length*eta_s_npts);
+	Dump_phases_to_binary('x', ipt, eiqxx, qxnpts, 2*FO_length);
+	Dump_phases_to_binary('y', ipt, eiqyy, qynpts, 2*FO_length);
+	Dump_phases_to_binary('z', ipt, eiqzz, qznpts, 2*FO_length*eta_s_npts);
+
+	return;
+}
+
+void CorrelationFunction::Load_eiqx_with_q_pTdep_pts(int ipt)
+{
+	Load_phases_from_binary('t', ipt, eiqtt, qtnpts, 2*FO_length*eta_s_npts);
+	Load_phases_from_binary('x', ipt, eiqxx, qxnpts, 2*FO_length);
+	Load_phases_from_binary('y', ipt, eiqyy, qynpts, 2*FO_length);
+	Load_phases_from_binary('z', ipt, eiqzz, qznpts, 2*FO_length*eta_s_npts);
+
+	return;
 }
 
 CorrelationFunction::~CorrelationFunction()

@@ -706,7 +706,8 @@ void CorrelationFunction::Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int lo
 	// get weighted spectra with only most important fluid cells, up to given threshhold
 	*global_out_stream_ptr << "Computing weighted (thermal) spectra..." << endl;
 	sw.Reset();
-	Cal_dN_dypTdpTdphi_with_weights(FOsurf_ptr, local_pid);
+	//Cal_dN_dypTdpTdphi_with_weights(FOsurf_ptr, local_pid);
+	Cal_dN_dypTdpTdphi_with_weights_INVERTED_LOOPS(FOsurf_ptr, local_pid);
 	sw.Stop();
 	*global_out_stream_ptr << "CP#2: Took " << sw.printTime() << " seconds." << endl;
 
@@ -1043,10 +1044,6 @@ void CorrelationFunction::Set_giant_arrays(int iqt, int iqx, int iqy, int iqz)
 	for (int isurf = 0; isurf < FO_length; ++isurf)
 	for (int ieta = 0; ieta < eta_s_npts; ++ieta)
 	{
-		//form_trig_sign_z(isurf, ieta, iqt, iqx, iqy, iqz, 0, tmp_results_ii0);
-		//form_trig_sign_z(isurf, ieta, iqt, iqx, iqy, iqz, 1, tmp_results_ii1);
-		//giant_array_C[iFO] = tmp_results_ii0[0] + tmp_results_ii1[0];
-		//giant_array_S[iFO] = tmp_results_ii0[1] + tmp_results_ii1[1];
 		double cosA0 = osc0[isurf][ieta][iqt][0], cosA1 = osc1[isurf][iqx][0], cosA2 = osc2[isurf][iqy][0], cosA3 = osc3[isurf][ieta][iqz][0];
 		double sinA0 = osc0[isurf][ieta][iqt][1], sinA1 = osc1[isurf][iqx][1], sinA2 = osc2[isurf][iqy][1], sinA3 = osc3[isurf][ieta][iqz][1];
 		giant_array_C[iFO] = 2. * (cosA0*cosA1*cosA2*cosA3 + cosA2*cosA3*sinA0*sinA1 + cosA1*cosA3*sinA0*sinA2 - cosA0*cosA3*sinA1*sinA2);
@@ -1068,8 +1065,6 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 	int temp_moms_lin_arr_length = n_interp_pT_pts * n_interp_pphi_pts * ntrig;
 
 	int lin_TMLAL_idx = 0;
-	//double * tmp_results_ii0 = new double [ntrig];
-	//double * tmp_results_ii1 = new double [ntrig];
 
 	double * temp_moms_linear_array = new double [temp_moms_lin_arr_length];
 	double ** abs_spec_this_pid = abs_spectra[local_pid];
@@ -1091,11 +1086,6 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 		sw_set_giant_array_slice.Start();
 		Set_giant_arrays(iqt, iqx, iqy, iqz);
 		sw_set_giant_array_slice.Stop();
-
-		//double * ALTqtslice = ALTosc0[iqt];
-		//double * ALTqxslice = ALTosc1[iqx];
-		//double * ALTqyslice = ALTosc2[iqy];
-		//double * ALTqzslice = ALTosc3[iqz];
 
 		for (int i = 0; i < temp_moms_lin_arr_length; ++i)
 			temp_moms_linear_array[i] = 0.0;
@@ -1135,16 +1125,9 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 					{
 						size_t next_most_important_FOindex = most_important_FOcells_for_current_pt_and_pphi[iFO];
 						double S_p_withweight = slice2[iFO];
-						//int isurf = next_most_important_FOindex / eta_s_npts;
-						//double cosA0 = ALTqtslice[2*next_most_important_FOindex], cosA1 = ALTqxslice[2*isurf],
-						//		cosA2 = ALTqyslice[2*isurf], cosA3 = ALTqzslice[2*next_most_important_FOindex];
-						//double sinA0 = ALTqtslice[2*next_most_important_FOindex+1], sinA1 = ALTqxslice[2*isurf+1],
-						//		sinA2 = ALTqyslice[2*isurf+1], sinA3 = ALTqzslice[2*next_most_important_FOindex+1];
 
 						tmla_C += giant_array_C[next_most_important_FOindex] * S_p_withweight;
 						tmla_S += giant_array_S[next_most_important_FOindex] * S_p_withweight;
-						//tmla_C += 2. * (cosA0*cosA1*cosA2*cosA3 + cosA2*cosA3*sinA0*sinA1 + cosA1*cosA3*sinA0*sinA2 - cosA0*cosA3*sinA1*sinA2) * S_p_withweight;
-						//tmla_S += 2. * (cosA1*cosA2*cosA3*sinA0 - cosA0*cosA2*cosA3*sinA1 - cosA0*cosA1*cosA3*sinA2 - cosA3*sinA0*sinA1*sinA2) * S_p_withweight;
 	
 						running_sum += abs(S_p_withweight);
 					}
@@ -1228,8 +1211,8 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 		}
 
 		// Clean up
-		//delete [] giant_array_C;
-		//delete [] giant_array_S;
+		delete [] giant_array_C;
+		delete [] giant_array_S;
 
 		debug_sw2.Stop();
 		*global_out_stream_ptr << "   --> Finished (iqt, iqx, iqy, iqz) = ("
@@ -1265,8 +1248,6 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 	}
 
 	delete [] temp_moms_linear_array;
-	//delete [] tmp_results_ii0;
-	//delete [] tmp_results_ii1;
 
 	debug_sw.Stop();
 	*global_out_stream_ptr << "Total function call took " << debug_sw.printTime() << " seconds." << endl;
@@ -1274,160 +1255,151 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 	return;
 }
 
-/*void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights_INVERTED_LOOPS(FO_surf* FOsurf_ptr, int local_pid)
+void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights_INVERTED_LOOPS(FO_surf* FOsurf_ptr, int local_pid)
 {
-	CPStopwatch debug_sw, debug_sw2, sw_set_giant_array_slice;
+	CPStopwatch debug_sw, debug_sw2, sw_set_eiqx_with_q_pTdep_slice;
 	debug_sw.Start();
-
-	int temp_moms_lin_arr_length = n_interp_pT_pts * n_interp_pphi_pts * ntrig;
-
 	int lin_TMLAL_idx = 0;
-
-	double * temp_moms_linear_array = new double [temp_moms_lin_arr_length];
 	double ** abs_spec_this_pid = abs_spectra[local_pid];
-
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 	{
+		debug_sw2.Reset();
 		double ** slice1 = S_p_withweight_array[ipt];
 		size_t ** mif1 = most_important_FOcells[ipt];
-		int ** CMOCN_slice1 = correlator_minus_one_cutoff_norms[ipt];
 		int * NOFACA_slice1 = number_of_FOcells_above_cutoff_array[ipt];
 		double * ASTP_slice1 = abs_spec_this_pid[ipt];
 
-		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		if (local_pid == target_particle_id)
 		{
-			int * CMOCN_slice2 = CMOCN_slice1[ipphi];
-			double * slice2 = slice1[ipphi];
-			size_t * most_important_FOcells_for_current_pt_and_pphi = mif1[ipphi];
+			//choose q_points intelligently based on pT values and rough estimates of HBT radii
+			Set_q_pTdep_pts(ipt);
 
-			int ptphi_index = ipt * n_interp_pphi_pts + ipphi;
-			int maxFOnum = NOFACA_slice1[ipphi];
-			double running_sum = 0.0;
-			double tmla_C = 0.0, tmla_S = 0.0;
-			double current_abs_spectra = ASTP_slice1[ipphi];
-			vector<double> runsumvals;
-			vector<int> tmpvec = cutoff_FOcells[ptphi_index];
-	
-			for (int iq = 0; iq < sorted_q_pts_list.size(); ++iq)
-			{	
-				vector<int> SQPL = sorted_q_pts_list[iq];
-				int iqt = SQPL[0];
-				int iqx = SQPL[1];
-				int iqy = SQPL[2];
-				int iqz = SQPL[3];
-				if ( (CMOCN_slice2[0] < iqt) || (CMOCN_slice2[1] < iqx) || (CMOCN_slice2[2] < iqy) || (CMOCN_slice2[3] < iqz) )
-						continue;	//if we're outside the q-region where the correlator is large, then continue
-
-				debug_sw2.Reset();
-		
-				double * ALTqtslice = ALTosc0[iqt];
-				double * ALTqxslice = ALTosc1[iqx];
-				double * ALTqyslice = ALTosc2[iqy];
-				double * ALTqzslice = ALTosc3[iqz];
-		
-				for (int i = 0; i < temp_moms_lin_arr_length; ++i)
-					temp_moms_linear_array[i] = 0.0;
-		
-						for (int ipc = 0; ipc < tmpvec.size() - 1; ++ipc)
-						{
-							cutoff_FOcell_vals_C[ptphi_index].push_back(tmla_C);
-							cutoff_FOcell_vals_S[ptphi_index].push_back(tmla_S);
-							runsumvals.push_back(running_sum);
-		
-							for (int iFO = tmpvec[ipc]; iFO < tmpvec[ipc+1]; ++iFO)
-							{
-								size_t next_most_important_FOindex = most_important_FOcells_for_current_pt_and_pphi[iFO];
-								double S_p_withweight = slice2[iFO];
-								int isurf = next_most_important_FOindex / eta_s_npts;
-								double cosA0 = ALTqtslice[2*next_most_important_FOindex], cosA1 = ALTqxslice[2*isurf],
-										cosA2 = ALTqyslice[2*isurf], cosA3 = ALTqzslice[2*next_most_important_FOindex];
-								double sinA0 = ALTqtslice[2*next_most_important_FOindex+1], sinA1 = ALTqxslice[2*isurf+1],
-										sinA2 = ALTqyslice[2*isurf+1], sinA3 = ALTqzslice[2*next_most_important_FOindex+1];
-		
-								tmla_C += 2. * (cosA0*cosA1*cosA2*cosA3 + cosA2*cosA3*sinA0*sinA1 + cosA1*cosA3*sinA0*sinA2 - cosA0*cosA3*sinA1*sinA2) * S_p_withweight;
-								tmla_S += 2. * (cosA1*cosA2*cosA3*sinA0 - cosA0*cosA2*cosA3*sinA1 - cosA0*cosA1*cosA3*sinA2 - cosA3*sinA0*sinA1*sinA2) * S_p_withweight;
-			
-								running_sum += abs(S_p_withweight);
-							}
-						}
-						cutoff_FOcell_vals_C[ptphi_index].push_back(tmla_C);
-						cutoff_FOcell_vals_S[ptphi_index].push_back(tmla_S);
-						runsumvals.push_back(running_sum);
-		
-						//calculate ***PROJECTED*** tmla_C and tmla_S
-						double proj_tmla_C = tmla_C;
-						double proj_tmla_S = tmla_S;
-		
-						// if using extrapolation speed-up, recompute projected results
-						if (USE_EXTRAPOLATION)
-						{
-							double chisqC = 0.0, chisqS = 0.0;
-							if (EXTRAPOLATION_METHOD==0)
-							{
-								proj_tmla_C = gsl_polynomial_fit(pc_cutoff_vals, cutoff_FOcell_vals_C[ptphi_index], polynomial_fit_order, chisqC);
-								proj_tmla_S = gsl_polynomial_fit(pc_cutoff_vals, cutoff_FOcell_vals_S[ptphi_index], polynomial_fit_order, chisqS);
-							}
-							else if (EXTRAPOLATION_METHOD==1)
-							{
-								proj_tmla_C = ratint(pc_cutoff_vals, cutoff_FOcell_vals_C[ptphi_index], 1.0, &chisqC);
-								proj_tmla_S = ratint(pc_cutoff_vals, cutoff_FOcell_vals_S[ptphi_index], 1.0, &chisqS);
-							}
-							else if (EXTRAPOLATION_METHOD==2)
-							{
-								bool error_flag = false;
-								proj_tmla_C = best_fit_rational_function(pc_cutoff_vals, cutoff_FOcell_vals_C[ptphi_index],
-																			rational_function_numerator_order, rational_function_denominator_order, 1.0, error_flag);
-								if (error_flag)
-									proj_tmla_C = gsl_polynomial_fit(pc_cutoff_vals, cutoff_FOcell_vals_C[ptphi_index], polynomial_fit_order, chisqC);
-								error_flag = false;
-								proj_tmla_S = best_fit_rational_function(pc_cutoff_vals, cutoff_FOcell_vals_S[ptphi_index],
-																			rational_function_numerator_order, rational_function_denominator_order, 1.0, error_flag);
-								if (error_flag)
-									proj_tmla_S = gsl_polynomial_fit(pc_cutoff_vals, cutoff_FOcell_vals_S[ptphi_index], polynomial_fit_order, chisqS);
-							}
-						}
-		
-						temp_moms_linear_array[ntrig * ptphi_index + 0] = proj_tmla_C;
-						temp_moms_linear_array[ntrig * ptphi_index + 1] = proj_tmla_S;
-		
-						//cutoff_FOcells[ptphi_index].clear();
-						cutoff_FOcell_vals_C[ptphi_index].clear();
-						cutoff_FOcell_vals_S[ptphi_index].clear();
-	
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////
-		int iidx = 0;
-		for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+			//set weights corresponding to chosen q_points
+			sw_set_eiqx_with_q_pTdep_slice.Start();
+			Set_eiqx_with_q_pTdep_pts(ipt);
+			sw_set_eiqx_with_q_pTdep_slice.Stop();
+		}
+		else
 		{
-			double tempC = temp_moms_linear_array[iidx];
-			double tempS = temp_moms_linear_array[iidx+1];
-			double tmp = spectra[local_pid][ipt][ipphi];
-			if ( tempC*tempC + tempS*tempS >= tmp*tmp*correlator_minus_one_cutoff )
-			{
-				current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0] = tempC;
-				current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1] = tempS;
-			}
-			else if	( iqt!=iqt0 && iqx==iqx0 && iqy==iqy0 && iqz==iqz0 )
-				correlator_minus_one_cutoff_norms[ipt][ipphi][0] = iqt;
-			else if	( iqt==iqt0 && iqx!=iqx0 && iqy==iqy0 && iqz==iqz0 )
-				correlator_minus_one_cutoff_norms[ipt][ipphi][1] = iqx;
-			else if	( iqt==iqt0 && iqx==iqx0 && iqy!=iqy0 && iqz==iqz0 )
-				correlator_minus_one_cutoff_norms[ipt][ipphi][2] = iqy;
-			else if	( iqt==iqt0 && iqx==iqx0 && iqy==iqy0 && iqz!=iqz0 )
-				correlator_minus_one_cutoff_norms[ipt][ipphi][3] = iqz;
-
-			iidx+=2;
+			//set weights corresponding to chosen q_points
+			sw_set_eiqx_with_q_pTdep_slice.Start();
+			Load_eiqx_with_q_pTdep_pts(ipt);
+			sw_set_eiqx_with_q_pTdep_slice.Stop();
 		}
 
-		debug_sw2.Stop();
-		*global_out_stream_ptr << "   --> Finished (iqt, iqx, iqy, iqz) = ("
-								<< iqt << ", " << iqx << ", " << iqy << ", " << iqz
-								<< ") in " << debug_sw2.printTime() << " seconds." << endl;
-			}		//end of q-loops
+		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		{
+			double * slice2 = slice1[ipphi];
+			size_t * most_important_FOcells_for_current_pt_and_pphi = mif1[ipphi];
+			int ptphi_index = ipt * n_interp_pphi_pts + ipphi;
+			int maxFOnum = NOFACA_slice1[ipphi];
+			double current_abs_spectra = ASTP_slice1[ipphi];
+			vector<int> tmpvec = cutoff_FOcells[ptphi_index];
+	
+			for (int iqt = 0; iqt < (qtnpts / 2) + 1; ++iqt)	//assumes each central q point is zero!!!
+			for (int iqx = 0; iqx < qxnpts; ++iqx)
+			for (int iqy = 0; iqy < qynpts; ++iqy)
+			for (int iqz = 0; iqz < qznpts; ++iqz)
+			{
+		
+				double * eiqttslice = eiqtt[iqt];
+				double * eiqxxslice = eiqxx[iqx];
+				double * eiqyyslice = eiqyy[iqy];
+				double * eiqzzslice = eiqzz[iqz];
+		
+				double running_sum = 0.0;
+				double tmla_C = 0.0, tmla_S = 0.0;
+				vector<double> runsumvals;
+				vector<double> cutoff_FOcell_vals_cos;
+				vector<double> cutoff_FOcell_vals_sin;
+
+				for (int ipc = 0; ipc < tmpvec.size() - 1; ++ipc)
+				{
+					cutoff_FOcell_vals_cos.push_back(tmla_C);
+					cutoff_FOcell_vals_sin.push_back(tmla_S);
+					runsumvals.push_back(running_sum);
+	
+					for (int iFO = tmpvec[ipc]; iFO < tmpvec[ipc+1]; ++iFO)
+					{
+						size_t next_most_important_FOindex = most_important_FOcells_for_current_pt_and_pphi[iFO];
+						double S_p_withweight = slice2[iFO];
+						int isurf = next_most_important_FOindex / eta_s_npts;
+						double cosA0 = eiqttslice[2*next_most_important_FOindex], cosA1 = eiqxxslice[2*isurf],
+								cosA2 = eiqyyslice[2*isurf], cosA3 = eiqzzslice[2*next_most_important_FOindex];
+						double sinA0 = eiqttslice[2*next_most_important_FOindex+1], sinA1 = eiqxxslice[2*isurf+1],
+								sinA2 = eiqyyslice[2*isurf+1], sinA3 = eiqzzslice[2*next_most_important_FOindex+1];
+							
+						tmla_C += 2. * (cosA0*cosA1*cosA2*cosA3 + cosA2*cosA3*sinA0*sinA1 + cosA1*cosA3*sinA0*sinA2 - cosA0*cosA3*sinA1*sinA2) * S_p_withweight;
+						tmla_S += 2. * (cosA1*cosA2*cosA3*sinA0 - cosA0*cosA2*cosA3*sinA1 - cosA0*cosA1*cosA3*sinA2 - cosA3*sinA0*sinA1*sinA2) * S_p_withweight;
+								
+						running_sum += abs(S_p_withweight);
+					}
+				}
+				cutoff_FOcell_vals_cos.push_back(tmla_C);
+				cutoff_FOcell_vals_sin.push_back(tmla_S);
+				runsumvals.push_back(running_sum);
+				
+				//calculate ***PROJECTED*** tmla_C and tmla_S
+				double proj_tmla_C = tmla_C;
+				double proj_tmla_S = tmla_S;
+
+				// if using extrapolation speed-up, recompute projected results
+				if (USE_EXTRAPOLATION)
+				{
+					double chisqC = 0.0, chisqS = 0.0;
+					if (EXTRAPOLATION_METHOD==0)
+					{
+						proj_tmla_C = gsl_polynomial_fit(pc_cutoff_vals, cutoff_FOcell_vals_cos, polynomial_fit_order, chisqC);
+						proj_tmla_S = gsl_polynomial_fit(pc_cutoff_vals, cutoff_FOcell_vals_sin, polynomial_fit_order, chisqS);
+					}
+					else if (EXTRAPOLATION_METHOD==1)
+					{
+						proj_tmla_C = ratint(pc_cutoff_vals, cutoff_FOcell_vals_cos, 1.0, &chisqC);
+						proj_tmla_S = ratint(pc_cutoff_vals, cutoff_FOcell_vals_sin, 1.0, &chisqS);
+					}
+					else if (EXTRAPOLATION_METHOD==2)
+					{
+						bool error_flag = false;
+						proj_tmla_C = best_fit_rational_function(pc_cutoff_vals, cutoff_FOcell_vals_cos,
+																	rational_function_numerator_order, rational_function_denominator_order, 1.0, error_flag);
+						if (error_flag)
+							proj_tmla_C = gsl_polynomial_fit(pc_cutoff_vals, cutoff_FOcell_vals_cos, polynomial_fit_order, chisqC);
+						error_flag = false;
+						proj_tmla_S = best_fit_rational_function(pc_cutoff_vals, cutoff_FOcell_vals_sin,
+																	rational_function_numerator_order, rational_function_denominator_order, 1.0, error_flag);
+						if (error_flag)
+							proj_tmla_S = gsl_polynomial_fit(pc_cutoff_vals, cutoff_FOcell_vals_sin, polynomial_fit_order, chisqS);
+					}
+				}
+				
+				//finally, store projected results
+				current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0] = proj_tmla_C;
+				current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1] = proj_tmla_S;
+	
+			}	//end of q-loops
+
+
+
+		
+
+
+
 		}	//end of pphi-loop
+
+		debug_sw2.Stop();
+		//Delete_q_pTdep_pts();
+		//Delete_eiqx_with_q_pTdep_pts();
+		*global_out_stream_ptr << "   --> Finished ipt = " << ipt << " in " << debug_sw2.printTime() << " seconds." << endl;
+
+
 	}		//end of pt-loop
+
+
+	*global_out_stream_ptr << "   --> Spent " << sw_set_eiqx_with_q_pTdep_slice.printTime() << " seconds calculating, dumping, and loading q_pts arrays." << endl;
+
+
+
+
 
 
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1445,8 +1417,6 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 			= (1.0 - 2.0 * itrig) * current_dN_dypTdpTdphi_moments[ipt][ipphi][qtnpts - iqt - 1][qxnpts - iqx - 1][qynpts - iqy - 1][qznpts - iqz - 1][itrig];
 	}		//end of second set of q-loops
 
-	*global_out_stream_ptr << "Spent " << sw_set_giant_array_slice.printTime() << " seconds setting giant_array_slice." << endl;
-
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 	{
@@ -1456,13 +1426,11 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 		cutoff_FOcells[ptphi_index].clear();
 	}
 
-	delete [] temp_moms_linear_array;
-
 	debug_sw.Stop();
 	*global_out_stream_ptr << "Total function call took " << debug_sw.printTime() << " seconds." << endl;
 
 	return;
-}*/
+}
 
 void CorrelationFunction::Load_decay_channel_info(int dc_idx, double K_T_local, double K_phi_local)
 {
