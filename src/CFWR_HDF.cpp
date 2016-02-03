@@ -733,25 +733,26 @@ int CorrelationFunction::Initialize_snapshot_HDF_array()
 	try
     {
 		Exception::dontPrint();
-	
+//debugger(__LINE__, __FILE__);
 		snapshot_file = new H5::H5File(SNAPSHOT_FILE_NAME, H5F_ACC_TRUNC);
-
+//debugger(__LINE__, __FILE__);
 		DSetCreatPropList cparms;
 		hsize_t chunk_dims[RANK2D] = {1, q_space_size};
 		cparms.setChunk( RANK2D, chunk_dims );
-
+//debugger(__LINE__, __FILE__);
 		cout << "Initializing with dimensions: " << chosen_resonances.size() * n_interp_pT_pts * n_interp_pphi_pts << " x " << q_space_size << endl;
-		hsize_t dims[RANK2D] = {chosen_resonances.size() * n_interp_pT_pts * n_interp_pphi_pts, q_space_size};
+		hsize_t dims[RANK2D] = {(chosen_resonances.size()+1) * n_interp_pT_pts * n_interp_pphi_pts, q_space_size};
 		snapshot_dataspace = new H5::DataSpace (RANK2D, dims);
-
+//debugger(__LINE__, __FILE__);
 		snapshot_dataset = new H5::DataSet( snapshot_file->createDataSet(SNAPSHOT_DATASET_NAME, PredType::NATIVE_DOUBLE, *snapshot_dataspace, cparms) );
-
+//debugger(__LINE__, __FILE__);
 		hsize_t count[RANK2D] = {1, q_space_size};
 		hsize_t dimsm[RANK2D] = {1, q_space_size};
 		hsize_t offset[RANK2D] = {0, 0};
-
+//debugger(__LINE__, __FILE__);
 		snapshot_memspace = new H5::DataSpace (RANK2D, dimsm, NULL);
 		int snapshot_idx = 0;
+//debugger(__LINE__, __FILE__);
 		for (int ir = 0; ir < chosen_resonances.size(); ++ir)
 		for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
@@ -767,15 +768,19 @@ int CorrelationFunction::Initialize_snapshot_HDF_array()
 
 			++snapshot_idx;
 		}
+//debugger(__LINE__, __FILE__);
 		snapshot_memspace->close();
 		snapshot_dataset->close();
 		snapshot_file->close();
+//debugger(__LINE__, __FILE__);
 		delete snapshot_memspace;
 		delete snapshot_file;
 		delete snapshot_dataset;
+//debugger(__LINE__, __FILE__);
 		snapshot_file = new H5::H5File(SNAPSHOT_FILE_NAME, H5F_ACC_RDWR);
 		snapshot_dataset = new H5::DataSet( snapshot_file->openDataSet( SNAPSHOT_DATASET_NAME ) );
 		snapshot_memspace = new H5::DataSpace (RANK2D, dimsm, NULL);
+//debugger(__LINE__, __FILE__);
     }
 
     catch(FileIException error)

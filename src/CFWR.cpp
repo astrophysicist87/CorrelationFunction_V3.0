@@ -1257,7 +1257,7 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 
 void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights_INVERTED_LOOPS(FO_surf* FOsurf_ptr, int local_pid)
 {
-	CPStopwatch debug_sw, debug_sw2, sw_set_eiqx_with_q_pTdep_slice;
+	CPStopwatch debug_sw, debug_sw2, debug_sw3, sw_set_eiqx_with_q_pTdep_slice;
 	debug_sw.Start();
 	int lin_TMLAL_idx = 0;
 	double ** abs_spec_this_pid = abs_spectra[local_pid];
@@ -1286,27 +1286,45 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights_INVERTED_LOOPS(FO_surf
 			Load_eiqx_with_q_pTdep_pts(ipt);
 			sw_set_eiqx_with_q_pTdep_slice.Stop();
 		}
-
-		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-		{
-			double * slice2 = slice1[ipphi];
-			size_t * most_important_FOcells_for_current_pt_and_pphi = mif1[ipphi];
-			int ptphi_index = ipt * n_interp_pphi_pts + ipphi;
-			int maxFOnum = NOFACA_slice1[ipphi];
-			double current_abs_spectra = ASTP_slice1[ipphi];
-			vector<int> tmpvec = cutoff_FOcells[ptphi_index];
 	
-			for (int iqt = 0; iqt < (qtnpts / 2) + 1; ++iqt)	//assumes each central q point is zero!!!
-			for (int iqx = 0; iqx < qxnpts; ++iqx)
-			for (int iqy = 0; iqy < qynpts; ++iqy)
-			for (int iqz = 0; iqz < qznpts; ++iqz)
+		for (int iqt = 0; iqt < (qtnpts / 2) + 1; ++iqt)	//assumes each central q point is zero!!!
+		for (int iqx = 0; iqx < qxnpts; ++iqx)
+		for (int iqy = 0; iqy < qynpts; ++iqy)
+		for (int iqz = 0; iqz < qznpts; ++iqz)
+		{
+	
+			double * eiqttslice = eiqtt[iqt];
+			double * eiqxxslice = eiqxx[iqx];
+			double * eiqyyslice = eiqyy[iqy];
+			double * eiqzzslice = eiqzz[iqz];
+		
+			//initialize some arrays to save time
+			debug_sw3.Start();
+			vector<double> factor_cos;
+			vector<double> factor_sin;
+			int tmp_idx = 0;
+			for (int isurf = 0; isurf < FO_length; ++isurf)
+			for (int ieta = 0; ieta < eta_s_npts; ++ieta)
 			{
-		
-				double * eiqttslice = eiqtt[iqt];
-				double * eiqxxslice = eiqxx[iqx];
-				double * eiqyyslice = eiqyy[iqy];
-				double * eiqzzslice = eiqzz[iqz];
-		
+				double cosA0 = eiqttslice[2*tmp_idx], cosA1 = eiqxxslice[2*isurf], cosA2 = eiqyyslice[2*isurf], cosA3 = eiqzzslice[2*tmp_idx];
+				double sinA0 = eiqttslice[2*tmp_idx+1], sinA1 = eiqxxslice[2*isurf+1], sinA2 = eiqyyslice[2*isurf+1], sinA3 = eiqzzslice[2*tmp_idx+1];
+
+				factor_cos.push_back(2. * (cosA0*cosA1*cosA2*cosA3 + cosA2*cosA3*sinA0*sinA1 + cosA1*cosA3*sinA0*sinA2 - cosA0*cosA3*sinA1*sinA2));
+				factor_sin.push_back(2. * (cosA1*cosA2*cosA3*sinA0 - cosA0*cosA2*cosA3*sinA1 - cosA0*cosA1*cosA3*sinA2 - cosA3*sinA0*sinA1*sinA2));
+
+				++tmp_idx;
+			}
+			debug_sw3.Stop();
+
+			for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+			{
+				double * slice2 = slice1[ipphi];
+				size_t * most_important_FOcells_for_current_pt_and_pphi = mif1[ipphi];
+				int ptphi_index = ipt * n_interp_pphi_pts + ipphi;
+				int maxFOnum = NOFACA_slice1[ipphi];
+				double current_abs_spectra = ASTP_slice1[ipphi];
+				vector<int> tmpvec = cutoff_FOcells[ptphi_index];
+
 				double running_sum = 0.0;
 				double tmla_C = 0.0, tmla_S = 0.0;
 				vector<double> runsumvals;
@@ -1323,14 +1341,8 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights_INVERTED_LOOPS(FO_surf
 					{
 						size_t next_most_important_FOindex = most_important_FOcells_for_current_pt_and_pphi[iFO];
 						double S_p_withweight = slice2[iFO];
-						int isurf = next_most_important_FOindex / eta_s_npts;
-						double cosA0 = eiqttslice[2*next_most_important_FOindex], cosA1 = eiqxxslice[2*isurf],
-								cosA2 = eiqyyslice[2*isurf], cosA3 = eiqzzslice[2*next_most_important_FOindex];
-						double sinA0 = eiqttslice[2*next_most_important_FOindex+1], sinA1 = eiqxxslice[2*isurf+1],
-								sinA2 = eiqyyslice[2*isurf+1], sinA3 = eiqzzslice[2*next_most_important_FOindex+1];
-							
-						tmla_C += 2. * (cosA0*cosA1*cosA2*cosA3 + cosA2*cosA3*sinA0*sinA1 + cosA1*cosA3*sinA0*sinA2 - cosA0*cosA3*sinA1*sinA2) * S_p_withweight;
-						tmla_S += 2. * (cosA1*cosA2*cosA3*sinA0 - cosA0*cosA2*cosA3*sinA1 - cosA0*cosA1*cosA3*sinA2 - cosA3*sinA0*sinA1*sinA2) * S_p_withweight;
+						tmla_C += factor_cos[next_most_important_FOindex] * S_p_withweight;
+						tmla_S += factor_sin[next_most_important_FOindex] * S_p_withweight;
 								
 						running_sum += abs(S_p_withweight);
 					}
@@ -1375,16 +1387,11 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights_INVERTED_LOOPS(FO_surf
 				//finally, store projected results
 				current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0] = proj_tmla_C;
 				current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1] = proj_tmla_S;
+
+			}	//end of pphi-loop
+
 	
-			}	//end of q-loops
-
-
-
-		
-
-
-
-		}	//end of pphi-loop
+		}	//end of q-loops
 
 		debug_sw2.Stop();
 		//Delete_q_pTdep_pts();
@@ -1394,9 +1401,8 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights_INVERTED_LOOPS(FO_surf
 
 	}		//end of pt-loop
 
-
 	*global_out_stream_ptr << "   --> Spent " << sw_set_eiqx_with_q_pTdep_slice.printTime() << " seconds calculating, dumping, and loading q_pts arrays." << endl;
-
+	*global_out_stream_ptr << "   --> Spent " << debug_sw3.printTime() << " seconds messing with phases." << endl;
 
 
 

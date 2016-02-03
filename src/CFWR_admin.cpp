@@ -663,7 +663,8 @@ void CorrelationFunction::Set_q_pTdep_pts(int ipt)
 
 	double eps = 1.e-3;									//specifies approximate CF value at which to truncate calculation
 														// (used for computing q(i)max)
-	double ln_one_by_eps = hbarC*log(1./eps);
+	double ln_one_by_eps = hbarC*sqrt(log(1./eps));
+//R0 = 2.593134875;
 	double qtmax = ln_one_by_eps / R0;
 	double qxmax = ln_one_by_eps / Rperp;
 	double qymax = ln_one_by_eps / Rperp;
@@ -1472,8 +1473,8 @@ void CorrelationFunction::Edndp3(double ptr, double phir, double * results)
 			//*******************************************************************************************************************
 			// set f1 first
 			//*******************************************************************************************************************
-			// if using extrapolation and spectra at pT1 has larger magnitude than at pT0, just return zero
-			if (ptr > pT1 && log_f21_arr[qpt_cs_idx] > log_f11_arr[qpt_cs_idx])
+			// if using extrapolation and spectra at pT1 has larger magnitude than at pT0 (or the signs are different), just return zero
+			if ( ptr > pT1 && ( log_f21_arr[qpt_cs_idx] > log_f11_arr[qpt_cs_idx] || sign_of_f11 * sign_of_f21 < 0 ) )
 				f1 = 0.0;
 			else if (sign_of_f11 * sign_of_f21 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
 				f1 = sign_of_f11 * exp( lin_int(ptr-pT0, one_by_pTdiff, log_f11_arr[qpt_cs_idx], log_f21_arr[qpt_cs_idx]) );
@@ -1483,7 +1484,7 @@ void CorrelationFunction::Edndp3(double ptr, double phir, double * results)
 			//*******************************************************************************************************************
 			// set f2 next
 			//*******************************************************************************************************************
-			if (ptr > pT1 && log_f22_arr[qpt_cs_idx] > log_f12_arr[qpt_cs_idx])
+			if ( ptr > pT1 && ( log_f22_arr[qpt_cs_idx] > log_f12_arr[qpt_cs_idx] || sign_of_f12 * sign_of_f22 < 0 ) )
 				f2 = 0.0;
 			else if (sign_of_f12 * sign_of_f22 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
 				f2 = sign_of_f12 * exp( lin_int(ptr-pT0, one_by_pTdiff, log_f12_arr[qpt_cs_idx], log_f22_arr[qpt_cs_idx]) );
@@ -1501,6 +1502,23 @@ void CorrelationFunction::Edndp3(double ptr, double phir, double * results)
 		// note "+=", since must sum over "+" and "-" roots in Eq. (A19) in Wiedemann & Heinz (1997)
 		results[qpt_cs_idx] += lin_int(phir-phi0, one_by_pphidiff, f1, f2);
 //results[qpt_cs_idx] += exp(-phir*phir);
+/*if (iqt==1 && current_ipt==12 && current_ipphi==16)
+{
+		*global_out_stream_ptr << "DEBUG: "
+				<< "   ptr = " << ptr
+				<< "   pt0 = " << pT0
+				<< "   pt1 = " << pT1
+				<< "   phir = " << phir
+				<< "   phi0 = " << phi0
+				<< "   phi1 = " << phi1
+				<< "   f11 = " << f11_arr[qpt_cs_idx]
+				<< "   f12 = " << f12_arr[qpt_cs_idx]
+				<< "   f21 = " << f21_arr[qpt_cs_idx]
+				<< "   f22 = " << f22_arr[qpt_cs_idx]
+				<< "   f1 = " << f1
+				<< "   f2 = " << f2 << endl;
+}*/
+
 					
 		if ( isinf( results[qpt_cs_idx] ) || isnan( results[qpt_cs_idx] ) )
 		{

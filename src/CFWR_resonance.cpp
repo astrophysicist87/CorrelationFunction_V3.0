@@ -71,6 +71,10 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 		{
 			double local_pT = SPinterp_pT[ipt];
 			double local_pphi = SPinterp_pphi[ipphi];
+			current_ipt = ipt;
+			current_ipphi = ipphi;
+//if (current_ipt==12 && current_ipphi==16)
+//	cout << "Made it this point!" << endl;
 			Zero_resonance_running_sum_vector(ssum_vec);
 			Zero_resonance_running_sum_vector(vsum_vec);
 			Zero_resonance_running_sum_vector(zetasum_vec);
@@ -153,6 +157,10 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 		{
 			double local_pT = SPinterp_pT[ipt];
 			double local_pphi = SPinterp_pphi[ipphi];
+			current_ipt = ipt;
+			current_ipphi = ipphi;
+//if (current_ipt==12 && current_ipphi==16)
+//	cout << "Made it this point!" << endl;
 			Zero_resonance_running_sum_vector(ssum_vec);
 			Zero_resonance_running_sum_vector(vsum_vec);
 			Zero_resonance_running_sum_vector(zetasum_vec);

@@ -212,6 +212,8 @@ class CorrelationFunction
 		int n_body;
 		set<int> daughter_resonance_indices;
 
+		int current_ipt, current_ipphi;
+
 		//some private methods		
 		bool particles_are_the_same(int idx1, int idx2);
 		bool Search_for_similar_particle(int dc_idx, int * result);
