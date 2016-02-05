@@ -664,7 +664,7 @@ void CorrelationFunction::Set_q_pTdep_pts(int ipt)
 	double eps = 1.e-3;									//specifies approximate CF value at which to truncate calculation
 														// (used for computing q(i)max)
 	double ln_one_by_eps = hbarC*sqrt(log(1./eps));
-//R0 = 2.593134875;
+R0 = 2.593134875;
 	double qtmax = ln_one_by_eps / R0;
 	double qxmax = ln_one_by_eps / Rperp;
 	double qymax = ln_one_by_eps / Rperp;

@@ -81,6 +81,9 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 	// end debugging section
 	///////////////////////////////////////////////////////////////////////
 
+	int HDFResonanceExtrapolationSuccess = 0, tmp = 0, idc = 0;
+	int getHDFresonanceSpectra;
+
 	if (COMPUTE_RESONANCE_ARRAYS)
 	{
 		int HDFInitializationSuccess = Initialize_resonance_HDF_array();
@@ -96,7 +99,7 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 		// ************************************************************
 		// loop over decay_channels (idc == 0 corresponds to thermal pions)
 		// ************************************************************
-		for (int idc = 0; idc <= decay_channel_loop_cutoff; ++idc)				//this is inefficient, but will do the job for now
+		for (idc = 0; idc <= decay_channel_loop_cutoff; ++idc)				//this is inefficient, but will do the job for now
 		{
 			// ************************************************************
 			// check whether to do this decay channel
@@ -151,11 +154,11 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 
 	*global_out_stream_ptr << "Computing all phase-space integrals..." << endl;
 	BIGsw.tic();
-	output_snapshots = true;
+	//output_snapshots = true;
 	// ************************************************************
 	// Compute feeddown with heaviest resonances first
 	// ************************************************************
-	for (int idc = 1; idc <= decay_channel_loop_cutoff; ++idc)
+	for (idc = 1; idc <= decay_channel_loop_cutoff; ++idc)
 	{
 		// ************************************************************
 		// check whether to do this decay channel
@@ -188,6 +191,21 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 		Update_daughter_spectra();
 		Delete_decay_channel_info();				// free up memory
 	}											// END of decay channel loop
+
+	//push back last resonance percentage snapshot
+/*cerr << "idc = " << idc << endl;
+	current_total_resonance_percentage += 0.01*all_particles[decay_channels[idc-2].resonance_particle_id].percent_contribution;
+	snapshot_fractions.push_back(current_total_resonance_percentage);
+	if (VERBOSE > 0) *global_out_stream_ptr << "idc = " << idc << ": current_total_resonance_percentage = " << current_total_resonance_percentage << endl;
+	getHDFresonanceSpectra = Get_resonance_from_HDF_array(target_particle_id, current_dN_dypTdpTdphi_moments);
+	tmp = Set_correlator_snapshot(snapshot_fractions.size()-1, current_dN_dypTdpTdphi_moments);
+	if (tmp < 0)
+	{
+		cerr << "Failed to set correlator snapshot!" << endl;
+		exit(1);
+	}*/
+
+	//HDFResonanceExtrapolationSuccess = Extrapolate_over_snapshot_HDF_array();
 
 	correlation_function_calculation:
 		// Now, with all resonance contributions to correlation function computed, do the actual calculation
@@ -302,12 +320,27 @@ void CorrelationFunction::Set_current_particle_info(int dc_idx)
 		muRES = decay_channels[dc_idx-1].resonance_mu;
 		signRES = decay_channels[dc_idx-1].resonance_sign;
 		gRES = decay_channels[dc_idx-1].resonance_gspin;
+
+		//set thermal correlator snapshot as starting point
+		/*cout << dc_idx << "<--->" << output_snapshots << endl;
+		if (dc_idx == 1 && output_snapshots)
+		{
+			snapshot_fractions.push_back(current_total_resonance_percentage);
+			if (VERBOSE > 0) *global_out_stream_ptr << "dc_idx = " << dc_idx << ": current_total_resonance_percentage = " << current_total_resonance_percentage << endl;
+			int getHDFresonanceSpectra = Get_resonance_from_HDF_array(target_particle_id, current_dN_dypTdpTdphi_moments);
+			int tmp = Set_correlator_snapshot(0, current_dN_dypTdpTdphi_moments);
+			if (tmp < 0)
+			{
+				cerr << "Failed to set correlator snapshot!" << endl;
+				exit(1);
+			}
+		}*/
 		
 		if (dc_idx > 1)
 		{
 			int similar_particle_idx = -1;
 			int temp_reso_idx = decay_channels[dc_idx-1].resonance_idx;
-			
+
 			if ( current_resonance_particle_id == previous_resonance_particle_id )
 			{
 				//previous resonance is the same as this one...
@@ -323,18 +356,19 @@ void CorrelationFunction::Set_current_particle_info(int dc_idx)
 				reso_particle_id_of_moments_to_recycle = chosen_resonances[similar_particle_idx];
 				if (VERBOSE > 0) *global_out_stream_ptr << "\t * " << decay_channels[dc_idx-1].resonance_name << " (different from the last one, but close enough to "
 														<< all_particles[reso_particle_id_of_moments_to_recycle].name << ")." << endl;
-				if (output_snapshots)
+				/*if (output_snapshots)
 				{
-					current_total_resonance_percentage += all_particles[previous_resonance_particle_id].percent_contribution;
+					current_total_resonance_percentage += 0.01*all_particles[previous_resonance_particle_id].percent_contribution;
 					snapshot_fractions.push_back(current_total_resonance_percentage);
+					if (VERBOSE > 0) *global_out_stream_ptr << "dc_idx = " << dc_idx << ": New current_total_resonance_percentage = " << current_total_resonance_percentage << endl;
 					//Output_current_correlator(currentfolderindex);
-					int tmp = Set_correlator_snapshot(temp_reso_idx, current_dN_dypTdpTdphi_moments);
+					int tmp = Set_correlator_snapshot(temp_reso_idx+1, current_dN_dypTdpTdphi_moments);
 					if (tmp < 0)
 					{
 						cerr << "Failed to set correlator snapshot!" << endl;
 						exit(1);
 					}
-				}
+				}*/
 			}
 			else
 			{
@@ -342,10 +376,11 @@ void CorrelationFunction::Set_current_particle_info(int dc_idx)
 				recycle_similar_moments = false;
 				reso_particle_id_of_moments_to_recycle = -1;	//guarantees it won't be used spuriously
 				if (VERBOSE > 0) *global_out_stream_ptr << "\t * " << decay_channels[dc_idx-1].resonance_name << " (different from the last one --> calculating afresh)." << endl;
-				if (output_snapshots)
+				/*if (output_snapshots)
 				{
-					current_total_resonance_percentage += all_particles[previous_resonance_particle_id].percent_contribution;
+					current_total_resonance_percentage += 0.01*all_particles[previous_resonance_particle_id].percent_contribution;
 					snapshot_fractions.push_back(current_total_resonance_percentage);
+					if (VERBOSE > 0) *global_out_stream_ptr << "dc_idx = " << dc_idx << ": New current_total_resonance_percentage = " << current_total_resonance_percentage << endl;
 					//Output_current_correlator(currentfolderindex);
 					int tmp = Set_correlator_snapshot(temp_reso_idx, current_dN_dypTdpTdphi_moments);
 					if (tmp < 0)
@@ -353,7 +388,7 @@ void CorrelationFunction::Set_current_particle_info(int dc_idx)
 						cerr << "Failed to set correlator snapshot!" << endl;
 						exit(1);
 					}
-				}
+				}*/
 			}
 		}
 	}
@@ -1003,9 +1038,9 @@ pc_cutoff_vals.resize( number_of_percentage_markers );
 	}		// end of pt loop
 *global_out_stream_ptr << "\t\t\t*** Took total of " << sw3.printTime() << " seconds on ordering and copying." << endl;
 
-	cerr << "Working with the following %-age cutoffs:" << endl;
-	for (int ii = 0; ii < number_of_percentage_markers; ++ii)
-		cerr << ii << "   " << 100.0 * pc_cutoff_vals[ii] << "   " << cutoff_FOcells[0][ii] << " of " << number_of_FOcells_above_cutoff_array[0][0] << endl;
+	//cerr << "Working with the following %-age cutoffs:" << endl;
+	//for (int ii = 0; ii < number_of_percentage_markers; ++ii)
+	//	cerr << ii << "   " << 100.0 * pc_cutoff_vals[ii] << "   " << cutoff_FOcells[0][ii] << " of " << number_of_FOcells_above_cutoff_array[0][0] << endl;
 
 sw2.Stop();
 *global_out_stream_ptr << "\t\t\t*** Took " << sw2.printTime() << " seconds for whole function." << endl;

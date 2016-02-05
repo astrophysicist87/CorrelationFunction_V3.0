@@ -7,6 +7,7 @@
 #include<vector>
 #include<stdio.h>
 #include<time.h>
+#include<algorithm>
 
 #include "H5Cpp.h"
 
@@ -753,7 +754,7 @@ int CorrelationFunction::Initialize_snapshot_HDF_array()
 		snapshot_memspace = new H5::DataSpace (RANK2D, dimsm, NULL);
 		int snapshot_idx = 0;
 //debugger(__LINE__, __FILE__);
-		for (int ir = 0; ir < chosen_resonances.size(); ++ir)
+		for (int ir = 0; ir < chosen_resonances.size()+1; ++ir)
 		for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 		{
@@ -787,7 +788,6 @@ int CorrelationFunction::Initialize_snapshot_HDF_array()
     {
 		error.printError();
 		cerr << "FileIException error!" << endl;
-debugger(__LINE__, __FILE__);
 		return -1;
     }
 
@@ -795,7 +795,6 @@ debugger(__LINE__, __FILE__);
     {
 		error.printError();
 		cerr << "DataSetIException error!" << endl;
-debugger(__LINE__, __FILE__);
 		return -2;
     }
 
@@ -803,7 +802,6 @@ debugger(__LINE__, __FILE__);
     {
 		error.printError();
 		cerr << "DataSpaceIException error!" << endl;
-debugger(__LINE__, __FILE__);
 		return -3;
     }
 
@@ -815,6 +813,10 @@ debugger(__LINE__, __FILE__);
 int CorrelationFunction::Set_correlator_snapshot(int icr, double ******* snapshot_array_to_use)
 {
 	double * snapshot_chunk = new double [q_space_size];
+string tmpstring = (icr == 0) ?
+					all_particles[target_particle_id].name :
+					all_particles[chosen_resonances[icr-1]].name;
+//if (VERBOSE > 0) *global_out_stream_ptr << "Particle(chosen_resonances = " << chosen_resonances[icr-1] << ") = " << tmpstring << endl;
 
 	ostringstream filename_stream_ra;
 	filename_stream_ra << global_path << "/correlator_snapshots.h5";
@@ -834,6 +836,7 @@ int CorrelationFunction::Set_correlator_snapshot(int icr, double ******* snapsho
 		{
 			snapshot_array_to_use[ipt][ipphi][iqt0][iqx0][iqy0][iqz0][1] = 0.0;
 			double nonFTd_spectra = spectra[target_particle_id][ipt][ipphi];
+			//double nonFTd_spectra = snapshot_array_to_use[ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0];
 
 			hsize_t offset[RANK2D] = {snapshot_idx, 0};
 			snapshot_dataspace->selectHyperslab(H5S_SELECT_SET, count, offset);
@@ -848,6 +851,9 @@ int CorrelationFunction::Set_correlator_snapshot(int icr, double ******* snapsho
 				double cos_transf_spectra = snapshot_array_to_use[ipt][ipphi][iqt][iqx][iqy][iqz][0];
 				double sin_transf_spectra = snapshot_array_to_use[ipt][ipphi][iqt][iqx][iqy][iqz][1];
 				snapshot_chunk[iidx] = 1. + (cos_transf_spectra*cos_transf_spectra + sin_transf_spectra*sin_transf_spectra)/(nonFTd_spectra*nonFTd_spectra);
+				//if (icr==0)
+				//	cerr << icr << "   " << iqt << "   " << iqx << "   " << iqy << "   " << iqz << "   "
+				//		<< nonFTd_spectra << "   " << cos_transf_spectra << "   " << sin_transf_spectra << "   " << snapshot_chunk[iidx] << endl;
 	
 				//initialize everything with zeros
 				snapshot_dataset->write(snapshot_chunk, PredType::NATIVE_DOUBLE, *snapshot_memspace, *snapshot_dataspace);
@@ -863,7 +869,6 @@ int CorrelationFunction::Set_correlator_snapshot(int icr, double ******* snapsho
     {
 		error.printError();
 		cerr << "FileIException error!" << endl;
-debugger(__LINE__, __FILE__);
 		return -1;
     }
 
@@ -871,7 +876,6 @@ debugger(__LINE__, __FILE__);
     {
 		error.printError();
 		cerr << "DataSetIException error!" << endl;
-debugger(__LINE__, __FILE__);
 		return -2;
     }
 
@@ -879,11 +883,104 @@ debugger(__LINE__, __FILE__);
     {
 		error.printError();
 		cerr << "DataSpaceIException error!" << endl;
-debugger(__LINE__, __FILE__);
 		return -3;
     }
 
 	delete [] snapshot_chunk;
+
+	return (0);
+}
+
+int CorrelationFunction::Extrapolate_over_snapshot_HDF_array()
+{
+	double * snapshot_chunk = new double [q_space_size];
+	double ** pT_pphi_snapshots  = new double * [chosen_resonances.size()+1];
+	for (int icr = 0; icr < chosen_resonances.size()+1; ++icr)
+		pT_pphi_snapshots[icr] = new double [q_space_size];
+
+
+	ostringstream filename_stream_ra;
+	filename_stream_ra << global_path << "/correlator_snapshots.h5";
+	H5std_string SNAPSHOT_FILE_NAME(filename_stream_ra.str().c_str());
+	H5std_string SNAPSHOT_DATASET_NAME("cs");
+
+	try
+    {
+		Exception::dontPrint();
+
+		//put pT-pphi loops in momentarily...
+		int ipt = 0;
+		int ipphi = 0;
+	
+		hsize_t count[RANK2D] = {1, q_space_size};				// == chunk_dims
+
+		//read in all resonance snapshots for fixed pT-pphi combo.
+		for (int icr = 0; icr < chosen_resonances.size()+1; ++icr)
+		{
+debugger(__LINE__, __FILE__);
+			int snapshot_idx = icr * n_interp_pT_pts * n_interp_pphi_pts;
+	
+			hsize_t offset[RANK2D] = {snapshot_idx, 0};
+
+			snapshot_dataspace->selectHyperslab(H5S_SELECT_SET, count, offset);
+	
+			snapshot_dataset->read(snapshot_chunk, PredType::NATIVE_DOUBLE, *snapshot_memspace, *snapshot_dataspace);
+			for (int iq = 0; iq < q_space_size; ++iq)
+				pT_pphi_snapshots[icr][iq] = snapshot_chunk[iq];
+		}
+
+		// with pT_pphi_snapshots fully loaded, do extrapolation over each point in q-space
+		for (int iq = 0; iq < q_space_size; ++iq)
+		{
+			vector<double> resonance_pc_markers;
+			vector<double> pT_pphi_qpt_snapshots;
+			//vector<double> projected_results;
+			double chisq = 0.0;
+			int polynomial_fit_order = min(4, (int)chosen_resonances.size());
+
+			resonance_pc_markers.push_back(snapshot_fractions[0]);
+			pT_pphi_qpt_snapshots.push_back( pT_pphi_snapshots[0][iq] );
+			
+			for (int icr = chosen_resonances.size(); icr > 0; --icr)
+			{
+				resonance_pc_markers.push_back( snapshot_fractions[icr] - snapshot_fractions[icr-1] + resonance_pc_markers.back() );
+				cout << "RE debug: " << snapshot_fractions[icr] << "   " << snapshot_fractions[icr-1] << endl;
+				pT_pphi_qpt_snapshots.push_back( pT_pphi_snapshots[icr][iq] - pT_pphi_snapshots[icr-1][iq] + pT_pphi_qpt_snapshots.back() );
+				cout << "RE2 debug: " << pT_pphi_snapshots[icr][iq] << "   " << pT_pphi_snapshots[icr-1][iq] << endl;
+			}
+
+			for (int icr = 0; icr < chosen_resonances.size()+1; ++icr)
+				cout << "Resonance extrapolation: " << iq << "   " << icr << "   " << resonance_pc_markers[icr] << "   " << pT_pphi_qpt_snapshots[icr] << endl;
+
+			cout << "iq = " << iq << ": Projected result = " << gsl_polynomial_fit(resonance_pc_markers, pT_pphi_qpt_snapshots, polynomial_fit_order, chisq) << endl;
+		}
+   }
+
+    catch(FileIException error)
+    {
+		error.printError();
+		cerr << "FileIException error!" << endl;
+		return -1;
+    }
+
+    catch(H5::DataSetIException error)
+    {
+		error.printError();
+		cerr << "DataSetIException error!" << endl;
+		return -2;
+    }
+
+    catch(H5::DataSpaceIException error)
+    {
+		error.printError();
+		cerr << "DataSpaceIException error!" << endl;
+		return -3;
+    }
+
+	delete [] snapshot_chunk;
+	for (int icr = 0; icr < chosen_resonances.size()+1; ++icr)
+		delete [] pT_pphi_snapshots[icr];
+	delete [] pT_pphi_snapshots;
 
 	return (0);
 }

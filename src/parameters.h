@@ -20,7 +20,7 @@ using namespace std;
 #define DO_ALL_DECAY_CHANNELS		false		// duh
 #define USE_HDF5			false		// utilizes HDF5 software to store large arrays
 #define USE_LAMBDA			false		// fit correlation function with adjustable intercept parameter
-#define USE_EXTRAPOLATION		false		// extrapolates results of CF integrals instead of competing them, false just calculates full integrals (slower)
+#define USE_EXTRAPOLATION		true		// extrapolates results of CF integrals instead of competing them, false just calculates full integrals (slower)
 #define EXTRAPOLATION_METHOD		0		// 0 - GSL polynomial fit
 							// 1 - direct calculation of rational function fit using ratint in Arsenal.* files (numerator and denominator
 							// orders chosen automatically to be n+m+1==number of percentage markers)

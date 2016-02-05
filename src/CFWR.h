@@ -81,7 +81,7 @@ class CorrelationFunction
 		double current_total_resonance_percentage;
 		particle_info * all_particles;
 		vector<int> chosen_resonances;
-		vector<int> snapshot_fractions;
+		vector<double> snapshot_fractions;
 		bool thermal_pions_only;
 		int Nparticle;
 		int target_particle_id;		//the particle whose spectra (with resonance contributions) you want to compute
@@ -238,6 +238,7 @@ class CorrelationFunction
 		int Dump_resonance_HDF_array_spectra(string output_filename, double ******* resonance_array_to_use);
 		int Initialize_snapshot_HDF_array();
 		int Set_correlator_snapshot(int icr, double ******* snapshot_array_to_use);
+		int Extrapolate_over_snapshot_HDF_array();
 
 		void Set_giant_arrays(int iqt, int iqx, int iqy, int iqz);
 		inline void addElementToQueue(priority_queue<pair<double, size_t> >& p, pair<double, size_t> elem, size_t max_size);

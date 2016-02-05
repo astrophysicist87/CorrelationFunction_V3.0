@@ -65,7 +65,7 @@ void CorrelationFunction::Load_phases_from_binary(char direction, int ipt, doubl
 	//in.read((char *) &array_copy, sizeof array_copy);
 	//in.read((char *) &array_copy, size_t(8*nd1*nd2));
 	in.read(reinterpret_cast<char*>(&array_copy[0]), array_copy.size()*sizeof(double));
-	cout << in.gcount() << " bytes read\n";
+	//cout << in.gcount() << " bytes read\n";
 	in.close();
 
 	int ac_idx = 0;
