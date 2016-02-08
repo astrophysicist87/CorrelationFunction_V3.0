@@ -369,13 +369,13 @@ void CorrelationFunction::Output_total_target_eiqx_dN_dypTdpTdphi(int folderinde
 		//linearly interpolate between them to get estimate for full resonance calculation
 		double CF = 1. + (cos_transf_spectra*cos_transf_spectra + sin_transf_spectra*sin_transf_spectra)/(nonFTd_spectra*nonFTd_spectra);
 		double thermal_target_CF = 1. + (cos_transf_tspectra*cos_transf_tspectra + sin_transf_tspectra*sin_transf_tspectra)/(nonFTd_tspectra*nonFTd_tspectra);
-		double correction_factor = (thermal_target_CF - CF) / fraction_of_resonances;
+		double shift = (CF - thermal_target_CF) / fraction_of_resonances;
 
 		output_target_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12)
 			//<< qt_pts[iqt] << "   " << qx_pts[iqx] << "   " << qy_pts[iqy] << "   " << qz_pts[iqz] << "   "
 			<< qt_PTdep_pts[ipt][iqt] << "   " << qx_PTdep_pts[ipt][iqx] << "   " << qy_PTdep_pts[ipt][iqy] << "   " << qz_PTdep_pts[ipt][iqz] << "   "
 			<< SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   " << nonFTd_spectra << "   " << cos_transf_spectra << "   " << sin_transf_spectra << "   "
-			<< CF << "   " << CF * correction_factor << endl;
+			<< CF << "   " << CF + shift << endl;
 	}
 
 	output_target_dN_dypTdpTdphi.close();
