@@ -25,7 +25,7 @@ using namespace std;
 							// 1 - direct calculation of rational function fit using ratint in Arsenal.* files (numerator and denominator
 							// orders chosen automatically to be n+m+1==number of percentage markers)
 							// 2 - best fit rational function of given orders in numerator and denominator
-#define PC_MARKER_SPACING		0		// 0 - automatic
+#define PC_MARKER_SPACING		1		// 0 - automatic
 							// 1 - use usr_def_pc_markers
 							// 2 - use usr_def_pc_markers_thinned
 #define COMPUTE_RESONANCE_ARRAYS	true		// alternative is to read them in from a file
@@ -58,15 +58,18 @@ const double eta_s_f = 4.0;
 const int polynomial_fit_order = 4;
 const int rational_function_numerator_order = 3;
 const int rational_function_denominator_order = 4;
-static double usr_def_pc_markers[30] = {
-					0.00, 0.10, 0.20, 0.30, 0.40,
+const int UDPMsize = 15;
+const int UDPMTsize = 10;
+static double usr_def_pc_markers[UDPMsize] = {
+					0.00, /*0.10, 0.20, 0.30, 0.40,
 					0.50, 0.60, 0.68, 0.69, 0.70,
 					0.71, 0.72, 0.73, 0.74, 0.75,
 					0.76, 0.77, 0.78, 0.79, 0.80,
-					0.81, 0.82, 0.83, 0.84, 0.85,
-					0.86, 0.87, 0.88, 0.89, 0.90
+					0.81, 0.82, 0.83, 0.84, */0.85,
+					0.86, 0.87, 0.88, 0.89, 0.90,
+					0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98
 				};
-static double usr_def_pc_markers_thinned[10] = { 0.00, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90 };
+static double usr_def_pc_markers_thinned[UDPMTsize] = { 0.00, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90 };
 
 //relative momentum information
 const int qonpts = 51;

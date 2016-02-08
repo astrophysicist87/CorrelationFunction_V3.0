@@ -81,7 +81,6 @@ class CorrelationFunction
 		double current_total_resonance_percentage;
 		particle_info * all_particles;
 		vector<int> chosen_resonances;
-		vector<double> snapshot_fractions;
 		bool thermal_pions_only;
 		int Nparticle;
 		int target_particle_id;		//the particle whose spectra (with resonance contributions) you want to compute
@@ -113,6 +112,7 @@ class CorrelationFunction
 		double ******** current_daughters_dN_dypTdpTdphi_moments;
 		double ******** current_daughters_ln_dN_dypTdpTdphi_moments;
 		double ******** current_daughters_sign_of_dN_dypTdpTdphi_moments;
+		double ******* thermal_target_dN_dypTdpTdphi_moments;
 
 		// needed these to avoid too many trigonometric evaluations
 		double **** osc0, *** osc1, *** osc2, **** osc3;
@@ -199,7 +199,7 @@ class CorrelationFunction
 
 		vector<vector<int> > cutoff_FOcells;
 		vector<vector<double> > cutoff_FOcell_vals_C, cutoff_FOcell_vals_S;
-		vector<double> pc_cutoff_vals;
+		vector<double> pc_cutoff_vals, pc_fit_vals;
 		
 		//miscellaneous
 		ofstream * global_out_stream_ptr;
@@ -225,20 +225,12 @@ class CorrelationFunction
 		bool fexists(const char *filename);
 
 		// HDF routines
-		int Set_giant_HDF_array();
-		int Get_small_array_from_giant_HDF_array(int isurf, int ieta, double * small_array);
-		int Set_giant_chunked_HDF_array();
-		int Get_chunk(int isurf, double * small_array);
-		int Clean_up_HDF_miscellany();
 		int Get_resonance_from_HDF_array(int local_pid, double ******* resonance_array_to_fill);
 		int Set_resonance_in_HDF_array(int local_pid, double ******* resonance_array_to_use);
 		int Initialize_resonance_HDF_array();
 		int Open_resonance_HDF_array();
 		int Copy_chunk(int current_resonance_index, int reso_idx_to_be_copied);
 		int Dump_resonance_HDF_array_spectra(string output_filename, double ******* resonance_array_to_use);
-		int Initialize_snapshot_HDF_array();
-		int Set_correlator_snapshot(int icr, double ******* snapshot_array_to_use);
-		int Extrapolate_over_snapshot_HDF_array();
 
 		void Set_giant_arrays(int iqt, int iqx, int iqy, int iqz);
 		inline void addElementToQueue(priority_queue<pair<double, size_t> >& p, pair<double, size_t> elem, size_t max_size);
@@ -353,10 +345,6 @@ class CorrelationFunction
 		H5::DataSpace * resonance_dataspace, * resonance_memspace;
 		H5::H5File * resonance_file;
 		H5::DataSet * resonance_dataset;
-		H5::DataSpace * snapshot_dataspace, * snapshot_memspace;
-		H5::H5File * snapshot_file;
-		H5::DataSet * snapshot_dataset;
-
 
 		CorrelationFunction(particle_info* particle, particle_info* all_particles_in, int Nparticle,
 				FO_surf* FOsurf_ptr, vector<int> chosen_resonances, int particle_idx, ofstream& myout);

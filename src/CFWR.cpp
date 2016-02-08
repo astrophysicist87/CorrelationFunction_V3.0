@@ -24,7 +24,6 @@ using namespace std;
 // only need to calculated interpolation grid of spacetime moments for each resonance, NOT each decay channel!
 bool recycle_previous_moments = false;
 bool recycle_similar_moments = false;
-bool output_snapshots = false;
 int reso_particle_id_of_moments_to_recycle = -1;
 string reso_name_of_moments_to_recycle = "NULL";
 string current_decay_channel_string = "NULL";
@@ -81,25 +80,19 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 	// end debugging section
 	///////////////////////////////////////////////////////////////////////
 
-	int HDFResonanceExtrapolationSuccess = 0, tmp = 0, idc = 0;
-	int getHDFresonanceSpectra;
+	//int HDFResonanceExtrapolationSuccess = 0, tmp = 0;
+	//int getHDFresonanceSpectra;
 
 	if (COMPUTE_RESONANCE_ARRAYS)
 	{
 		int HDFInitializationSuccess = Initialize_resonance_HDF_array();
-		int HDFInitializationSuccess2 = Initialize_snapshot_HDF_array();
-		if (HDFInitializationSuccess < 0 || HDFInitializationSuccess2 < 0)
-		{
-			cerr << "Failed to initialize HDF array of resonances!  Exiting..." << endl;
-			exit(1);
-		}
 
 		*global_out_stream_ptr << "Setting spacetime moments grid..." << endl;
 		BIGsw.tic();
 		// ************************************************************
 		// loop over decay_channels (idc == 0 corresponds to thermal pions)
 		// ************************************************************
-		for (idc = 0; idc <= decay_channel_loop_cutoff; ++idc)				//this is inefficient, but will do the job for now
+		for (int idc = 0; idc <= decay_channel_loop_cutoff; ++idc)				//this is inefficient, but will do the job for now
 		{
 			// ************************************************************
 			// check whether to do this decay channel
@@ -134,6 +127,8 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 		*global_out_stream_ptr << "Dumping all thermal spectra to thermal_spectra.out..." << endl;
 		BIGsw.tic();
 		int HDFDumpSuccess = Dump_resonance_HDF_array_spectra("thermal_spectra.dat", current_dN_dypTdpTdphi_moments);
+		//also retain pion(+) moments for later use...
+		int getHDFresonanceSpectra = Get_resonance_from_HDF_array(target_particle_id, thermal_target_dN_dypTdpTdphi_moments);
 		BIGsw.toc();
 		*global_out_stream_ptr << "\t ...finished dumping all thermal spectra to thermal_spectra.out in " << BIGsw.takeTime() << " seconds." << endl;
 
@@ -154,11 +149,10 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 
 	*global_out_stream_ptr << "Computing all phase-space integrals..." << endl;
 	BIGsw.tic();
-	//output_snapshots = true;
 	// ************************************************************
 	// Compute feeddown with heaviest resonances first
 	// ************************************************************
-	for (idc = 1; idc <= decay_channel_loop_cutoff; ++idc)
+	for (int idc = 1; idc <= decay_channel_loop_cutoff; ++idc)
 	{
 		// ************************************************************
 		// check whether to do this decay channel
@@ -191,21 +185,6 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 		Update_daughter_spectra();
 		Delete_decay_channel_info();				// free up memory
 	}											// END of decay channel loop
-
-	//push back last resonance percentage snapshot
-/*cerr << "idc = " << idc << endl;
-	current_total_resonance_percentage += 0.01*all_particles[decay_channels[idc-2].resonance_particle_id].percent_contribution;
-	snapshot_fractions.push_back(current_total_resonance_percentage);
-	if (VERBOSE > 0) *global_out_stream_ptr << "idc = " << idc << ": current_total_resonance_percentage = " << current_total_resonance_percentage << endl;
-	getHDFresonanceSpectra = Get_resonance_from_HDF_array(target_particle_id, current_dN_dypTdpTdphi_moments);
-	tmp = Set_correlator_snapshot(snapshot_fractions.size()-1, current_dN_dypTdpTdphi_moments);
-	if (tmp < 0)
-	{
-		cerr << "Failed to set correlator snapshot!" << endl;
-		exit(1);
-	}*/
-
-	//HDFResonanceExtrapolationSuccess = Extrapolate_over_snapshot_HDF_array();
 
 	correlation_function_calculation:
 		// Now, with all resonance contributions to correlation function computed, do the actual calculation
@@ -320,21 +299,6 @@ void CorrelationFunction::Set_current_particle_info(int dc_idx)
 		muRES = decay_channels[dc_idx-1].resonance_mu;
 		signRES = decay_channels[dc_idx-1].resonance_sign;
 		gRES = decay_channels[dc_idx-1].resonance_gspin;
-
-		//set thermal correlator snapshot as starting point
-		/*cout << dc_idx << "<--->" << output_snapshots << endl;
-		if (dc_idx == 1 && output_snapshots)
-		{
-			snapshot_fractions.push_back(current_total_resonance_percentage);
-			if (VERBOSE > 0) *global_out_stream_ptr << "dc_idx = " << dc_idx << ": current_total_resonance_percentage = " << current_total_resonance_percentage << endl;
-			int getHDFresonanceSpectra = Get_resonance_from_HDF_array(target_particle_id, current_dN_dypTdpTdphi_moments);
-			int tmp = Set_correlator_snapshot(0, current_dN_dypTdpTdphi_moments);
-			if (tmp < 0)
-			{
-				cerr << "Failed to set correlator snapshot!" << endl;
-				exit(1);
-			}
-		}*/
 		
 		if (dc_idx > 1)
 		{
@@ -356,19 +320,6 @@ void CorrelationFunction::Set_current_particle_info(int dc_idx)
 				reso_particle_id_of_moments_to_recycle = chosen_resonances[similar_particle_idx];
 				if (VERBOSE > 0) *global_out_stream_ptr << "\t * " << decay_channels[dc_idx-1].resonance_name << " (different from the last one, but close enough to "
 														<< all_particles[reso_particle_id_of_moments_to_recycle].name << ")." << endl;
-				/*if (output_snapshots)
-				{
-					current_total_resonance_percentage += 0.01*all_particles[previous_resonance_particle_id].percent_contribution;
-					snapshot_fractions.push_back(current_total_resonance_percentage);
-					if (VERBOSE > 0) *global_out_stream_ptr << "dc_idx = " << dc_idx << ": New current_total_resonance_percentage = " << current_total_resonance_percentage << endl;
-					//Output_current_correlator(currentfolderindex);
-					int tmp = Set_correlator_snapshot(temp_reso_idx+1, current_dN_dypTdpTdphi_moments);
-					if (tmp < 0)
-					{
-						cerr << "Failed to set correlator snapshot!" << endl;
-						exit(1);
-					}
-				}*/
 			}
 			else
 			{
@@ -376,19 +327,6 @@ void CorrelationFunction::Set_current_particle_info(int dc_idx)
 				recycle_similar_moments = false;
 				reso_particle_id_of_moments_to_recycle = -1;	//guarantees it won't be used spuriously
 				if (VERBOSE > 0) *global_out_stream_ptr << "\t * " << decay_channels[dc_idx-1].resonance_name << " (different from the last one --> calculating afresh)." << endl;
-				/*if (output_snapshots)
-				{
-					current_total_resonance_percentage += 0.01*all_particles[previous_resonance_particle_id].percent_contribution;
-					snapshot_fractions.push_back(current_total_resonance_percentage);
-					if (VERBOSE > 0) *global_out_stream_ptr << "dc_idx = " << dc_idx << ": New current_total_resonance_percentage = " << current_total_resonance_percentage << endl;
-					//Output_current_correlator(currentfolderindex);
-					int tmp = Set_correlator_snapshot(temp_reso_idx, current_dN_dypTdpTdphi_moments);
-					if (tmp < 0)
-					{
-						cerr << "Failed to set correlator snapshot!" << endl;
-						exit(1);
-					}
-				}*/
 			}
 		}
 	}
@@ -729,7 +667,7 @@ void CorrelationFunction::Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int lo
 	
 	// get spectra at each fluid cell, sort by importance
 	*global_out_stream_ptr << "Computing spectra..." << endl;
-	double FOintegral_cutoff = 1.0;
+	double FOintegral_cutoff = 0.98;
 	if (!USE_EXTRAPOLATION)
 		FOintegral_cutoff = 1.0;	//if not extrapolating, do full integrals
 	CPStopwatch sw;
@@ -972,7 +910,7 @@ pc_cutoff_vals.resize( number_of_percentage_markers );
 			cutoff_FOcells[ptphi_index].reserve( number_of_percentage_markers );
 			cutoff_FOcell_vals_C[ptphi_index].reserve( number_of_percentage_markers );
 			cutoff_FOcell_vals_S[ptphi_index].reserve( number_of_percentage_markers );
-			cutoff_FOcells[ptphi_index].push_back(0);		//always use sum over zero FO cells as trivial point
+			//cutoff_FOcells[ptphi_index].push_back(0);		//always use sum over zero FO cells as trivial point
 
 			//set the cutoff %-age values here...
 			//just makes them equally spaced from 0% to cutoff
@@ -1002,7 +940,7 @@ pc_cutoff_vals.resize( number_of_percentage_markers );
 					breaker = ii + 1;	//marks where the final cutoff was reached
 					break;
 				}
-				else if (running_sum > pc_cutoff_vals[current_iPC + 1] * tempabssum)
+				else if (running_sum > pc_cutoff_vals[current_iPC] * tempabssum)
 				{
 					++current_iPC;
 					cutoff_FOcells[ptphi_index].push_back(ii+1);
@@ -1038,9 +976,13 @@ pc_cutoff_vals.resize( number_of_percentage_markers );
 	}		// end of pt loop
 *global_out_stream_ptr << "\t\t\t*** Took total of " << sw3.printTime() << " seconds on ordering and copying." << endl;
 
-	//cerr << "Working with the following %-age cutoffs:" << endl;
-	//for (int ii = 0; ii < number_of_percentage_markers; ++ii)
-	//	cerr << ii << "   " << 100.0 * pc_cutoff_vals[ii] << "   " << cutoff_FOcells[0][ii] << " of " << number_of_FOcells_above_cutoff_array[0][0] << endl;
+	cerr << "cutoff_FOcells[0].size() = " << cutoff_FOcells[0].size() << endl;
+	cerr << "Working with the following %-age cutoffs:" << endl;
+	for (int ii = 0; ii < number_of_percentage_markers; ++ii)
+		cerr << ii << "   " << 100.0 * pc_cutoff_vals[ii] << "   " << cutoff_FOcells[0][ii] << " of " << number_of_FOcells_above_cutoff_array[0][0] << endl;
+
+	pc_fit_vals = pc_cutoff_vals;
+	pc_fit_vals.erase( pc_fit_vals.begin() );	//drop the 0th entry, which isn't used in fitting
 
 sw2.Stop();
 *global_out_stream_ptr << "\t\t\t*** Took " << sw2.printTime() << " seconds for whole function." << endl;
@@ -1181,26 +1123,26 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 					double chisqC = 0.0, chisqS = 0.0;
 					if (EXTRAPOLATION_METHOD==0)
 					{
-						proj_tmla_C = gsl_polynomial_fit(pc_cutoff_vals, cutoff_FOcell_vals_C[ptphi_index], polynomial_fit_order, chisqC);
-						proj_tmla_S = gsl_polynomial_fit(pc_cutoff_vals, cutoff_FOcell_vals_S[ptphi_index], polynomial_fit_order, chisqS);
+						proj_tmla_C = gsl_polynomial_fit(pc_fit_vals, cutoff_FOcell_vals_C[ptphi_index], polynomial_fit_order, chisqC);
+						proj_tmla_S = gsl_polynomial_fit(pc_fit_vals, cutoff_FOcell_vals_S[ptphi_index], polynomial_fit_order, chisqS);
 					}
 					else if (EXTRAPOLATION_METHOD==1)
 					{
-						proj_tmla_C = ratint(pc_cutoff_vals, cutoff_FOcell_vals_C[ptphi_index], 1.0, &chisqC);
-						proj_tmla_S = ratint(pc_cutoff_vals, cutoff_FOcell_vals_S[ptphi_index], 1.0, &chisqS);
+						proj_tmla_C = ratint(pc_fit_vals, cutoff_FOcell_vals_C[ptphi_index], 1.0, &chisqC);
+						proj_tmla_S = ratint(pc_fit_vals, cutoff_FOcell_vals_S[ptphi_index], 1.0, &chisqS);
 					}
 					else if (EXTRAPOLATION_METHOD==2)
 					{
 						bool error_flag = false;
-						proj_tmla_C = best_fit_rational_function(pc_cutoff_vals, cutoff_FOcell_vals_C[ptphi_index],
+						proj_tmla_C = best_fit_rational_function(pc_fit_vals, cutoff_FOcell_vals_C[ptphi_index],
 																	rational_function_numerator_order, rational_function_denominator_order, 1.0, error_flag);
 						if (error_flag)
-							proj_tmla_C = gsl_polynomial_fit(pc_cutoff_vals, cutoff_FOcell_vals_C[ptphi_index], polynomial_fit_order, chisqC);
+							proj_tmla_C = gsl_polynomial_fit(pc_fit_vals, cutoff_FOcell_vals_C[ptphi_index], polynomial_fit_order, chisqC);
 						error_flag = false;
-						proj_tmla_S = best_fit_rational_function(pc_cutoff_vals, cutoff_FOcell_vals_S[ptphi_index],
+						proj_tmla_S = best_fit_rational_function(pc_fit_vals, cutoff_FOcell_vals_S[ptphi_index],
 																	rational_function_numerator_order, rational_function_denominator_order, 1.0, error_flag);
 						if (error_flag)
-							proj_tmla_S = gsl_polynomial_fit(pc_cutoff_vals, cutoff_FOcell_vals_S[ptphi_index], polynomial_fit_order, chisqS);
+							proj_tmla_S = gsl_polynomial_fit(pc_fit_vals, cutoff_FOcell_vals_S[ptphi_index], polynomial_fit_order, chisqS);
 					}
 
 //if (ipt==0 && ipphi == 0 && iqt==4 && iqx==0 && iqy==0 && iqz==0)
@@ -1394,29 +1336,39 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights_INVERTED_LOOPS(FO_surf
 				if (USE_EXTRAPOLATION)
 				{
 					double chisqC = 0.0, chisqS = 0.0;
+					cutoff_FOcell_vals_cos.erase( cutoff_FOcell_vals_cos.begin() );	//drop the 0th entry, which isn't used in fitting
+					cutoff_FOcell_vals_sin.erase( cutoff_FOcell_vals_sin.begin() );	//drop the 0th entry, which isn't used in fitting
+					runsumvals.erase( runsumvals.begin() );	//drop the 0th entry, which isn't used in fitting
 					if (EXTRAPOLATION_METHOD==0)
 					{
-						proj_tmla_C = gsl_polynomial_fit(pc_cutoff_vals, cutoff_FOcell_vals_cos, polynomial_fit_order, chisqC);
-						proj_tmla_S = gsl_polynomial_fit(pc_cutoff_vals, cutoff_FOcell_vals_sin, polynomial_fit_order, chisqS);
+						proj_tmla_C = gsl_polynomial_fit(pc_fit_vals, cutoff_FOcell_vals_cos, polynomial_fit_order, chisqC);
+						proj_tmla_S = gsl_polynomial_fit(pc_fit_vals, cutoff_FOcell_vals_sin, polynomial_fit_order, chisqS);
 					}
 					else if (EXTRAPOLATION_METHOD==1)
 					{
-						proj_tmla_C = ratint(pc_cutoff_vals, cutoff_FOcell_vals_cos, 1.0, &chisqC);
-						proj_tmla_S = ratint(pc_cutoff_vals, cutoff_FOcell_vals_sin, 1.0, &chisqS);
+						proj_tmla_C = ratint(pc_fit_vals, cutoff_FOcell_vals_cos, 1.0, &chisqC);
+						proj_tmla_S = ratint(pc_fit_vals, cutoff_FOcell_vals_sin, 1.0, &chisqS);
 					}
 					else if (EXTRAPOLATION_METHOD==2)
 					{
 						bool error_flag = false;
-						proj_tmla_C = best_fit_rational_function(pc_cutoff_vals, cutoff_FOcell_vals_cos,
+						proj_tmla_C = best_fit_rational_function(pc_fit_vals, cutoff_FOcell_vals_cos,
 																	rational_function_numerator_order, rational_function_denominator_order, 1.0, error_flag);
 						if (error_flag)
-							proj_tmla_C = gsl_polynomial_fit(pc_cutoff_vals, cutoff_FOcell_vals_cos, polynomial_fit_order, chisqC);
+							proj_tmla_C = gsl_polynomial_fit(pc_fit_vals, cutoff_FOcell_vals_cos, polynomial_fit_order, chisqC);
 						error_flag = false;
-						proj_tmla_S = best_fit_rational_function(pc_cutoff_vals, cutoff_FOcell_vals_sin,
+						proj_tmla_S = best_fit_rational_function(pc_fit_vals, cutoff_FOcell_vals_sin,
 																	rational_function_numerator_order, rational_function_denominator_order, 1.0, error_flag);
 						if (error_flag)
-							proj_tmla_S = gsl_polynomial_fit(pc_cutoff_vals, cutoff_FOcell_vals_sin, polynomial_fit_order, chisqS);
+							proj_tmla_S = gsl_polynomial_fit(pc_fit_vals, cutoff_FOcell_vals_sin, polynomial_fit_order, chisqS);
 					}
+if (ipt==0 && ipphi == 0 && iqt==0 && iqx==0 && iqy==0 && iqz==0)
+{
+	for (int ii = 0; ii < runsumvals.size(); ++ii)
+		cerr << "(" << ipt << "," << ipphi << "," << iqt << "," << iqx << "," << iqy << "," << iqz << "): " << ii << "   " << runsumvals[ii]/current_abs_spectra
+			<< "   " << cutoff_FOcell_vals_cos[ii] << "   " << cutoff_FOcell_vals_sin[ii] << endl;
+	cerr << "(" << ipt << "," << ipphi << "," << iqt << "," << iqx << "," << iqy << "," << iqz << "): "<< proj_tmla_C << "   " << proj_tmla_S << "   " << chisqC << "   " << chisqS << "   " << chisqC/proj_tmla_C << "   " << chisqS/proj_tmla_S << endl;
+}
 				}
 				
 				//finally, store projected results

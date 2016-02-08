@@ -356,14 +356,26 @@ void CorrelationFunction::Output_total_target_eiqx_dN_dypTdpTdphi(int folderinde
 		current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt0][iqx0][iqy0][iqz0][1] = 0.0;
 
 		// output all FT'd spectra
+		// with all resonance included
 		double nonFTd_spectra = spectra[target_particle_id][ipt][ipphi];
 		double cos_transf_spectra = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
 		double sin_transf_spectra = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
+
+		//with no resonances
+		double nonFTd_tspectra = thermal_target_dN_dypTdpTdphi_moments[ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0];
+		double cos_transf_tspectra = thermal_target_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
+		double sin_transf_tspectra = thermal_target_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
+
+		//linearly interpolate between them to get estimate for full resonance calculation
+		double CF = 1. + (cos_transf_spectra*cos_transf_spectra + sin_transf_spectra*sin_transf_spectra)/(nonFTd_spectra*nonFTd_spectra);
+		double thermal_target_CF = 1. + (cos_transf_tspectra*cos_transf_tspectra + sin_transf_tspectra*sin_transf_tspectra)/(nonFTd_tspectra*nonFTd_tspectra);
+		double correction_factor = (thermal_target_CF - CF) / fraction_of_resonances;
+
 		output_target_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12)
 			//<< qt_pts[iqt] << "   " << qx_pts[iqx] << "   " << qy_pts[iqy] << "   " << qz_pts[iqz] << "   "
 			<< qt_PTdep_pts[ipt][iqt] << "   " << qx_PTdep_pts[ipt][iqx] << "   " << qy_PTdep_pts[ipt][iqy] << "   " << qz_PTdep_pts[ipt][iqz] << "   "
 			<< SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   " << nonFTd_spectra << "   " << cos_transf_spectra << "   " << sin_transf_spectra << "   "
-			<< 1. + (cos_transf_spectra*cos_transf_spectra + sin_transf_spectra*sin_transf_spectra)/(nonFTd_spectra*nonFTd_spectra) <<  endl;
+			<< CF << CF * correction_factor << endl;
 	}
 
 	output_target_dN_dypTdpTdphi.close();

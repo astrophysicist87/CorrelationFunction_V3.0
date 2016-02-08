@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
 	correlation_function.Set_use_delta_f(true);
 	correlation_function.Set_ofstream(output);
 
-	bool rescale_truncated_resonance_contributions = false;
+	bool rescale_truncated_resonance_contributions = true;
 	if (rescale_truncated_resonance_contributions)
 		correlation_function.fraction_of_resonances = net_fraction_resonance_contribution;
 	else

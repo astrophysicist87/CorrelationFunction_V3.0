@@ -59,10 +59,10 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
 			number_of_percentage_markers = 101;
 			break;
 		case 1:
-			number_of_percentage_markers = 30;
+			number_of_percentage_markers = UDPMsize;
 			break;
 		case 2:
-			number_of_percentage_markers = 10;
+			number_of_percentage_markers = UDPMTsize;
 			break;
 		default:
 			break;
