@@ -48,18 +48,25 @@ double CorrelationFunction::Compute_correlationfunction(int ipt, int ipphi, doub
 	double nonFTd_spectra = spectra[target_particle_id][ipt][ipphi];
 
 	int * qidx = new int [4];
-	qidx[0] = binarySearch(qt_pts, qtnpts, q_interp[0]);
-	qidx[1] = binarySearch(qx_pts, qxnpts, q_interp[1]);
-	qidx[2] = binarySearch(qy_pts, qynpts, q_interp[2]);
-	qidx[3] = binarySearch(qz_pts, qznpts, q_interp[3]);
+	//qidx[0] = binarySearch(qt_pts, qtnpts, q_interp[0]);
+	//qidx[1] = binarySearch(qx_pts, qxnpts, q_interp[1]);
+	//qidx[2] = binarySearch(qy_pts, qynpts, q_interp[2]);
+	//qidx[3] = binarySearch(qz_pts, qznpts, q_interp[3]);
+	qidx[0] = binarySearch(qt_PTdep_pts[ipt], qtnpts, q_interp[0]);
+	qidx[1] = binarySearch(qx_PTdep_pts[ipt], qxnpts, q_interp[1]);
+	qidx[2] = binarySearch(qy_PTdep_pts[ipt], qynpts, q_interp[2]);
+	qidx[3] = binarySearch(qz_PTdep_pts[ipt], qznpts, q_interp[3]);
+
 
 	bool q_point_is_outside_grid = ( qidx[0] == -1 ) || ( qidx[1] == -1 ) || ( qidx[2] == -1 ) || ( qidx[3] == -1 );
 
 	if (!q_point_is_outside_grid)
 	{
 		double * sgnd_q2_interp = new double [4];
-		double q_min[4] = { qt_pts[qidx[0]], qx_pts[qidx[1]], qy_pts[qidx[2]], qz_pts[qidx[3]] };
-		double q_max[4] = { qt_pts[qidx[0]+1], qx_pts[qidx[1]+1], qy_pts[qidx[2]+1], qz_pts[qidx[3]+1] };
+		//double q_min[4] = { qt_pts[qidx[0]], qx_pts[qidx[1]], qy_pts[qidx[2]], qz_pts[qidx[3]] };
+		//double q_max[4] = { qt_pts[qidx[0]+1], qx_pts[qidx[1]+1], qy_pts[qidx[2]+1], qz_pts[qidx[3]+1] };
+		double q_min[4] = { qt_PTdep_pts[ipt][qidx[0]], qx_PTdep_pts[ipt][qidx[1]], qy_PTdep_pts[ipt][qidx[2]], qz_PTdep_pts[ipt][qidx[3]] };
+		double q_max[4] = { qt_PTdep_pts[ipt][qidx[0]+1], qx_PTdep_pts[ipt][qidx[1]+1], qy_PTdep_pts[ipt][qidx[2]+1], qz_PTdep_pts[ipt][qidx[3]+1] };
 		double * sgnd_q2_min = new double [4];
 		double * sgnd_q2_max = new double [4];
 
@@ -82,7 +89,15 @@ double CorrelationFunction::Compute_correlationfunction(int ipt, int ipphi, doub
 						double * ccs4 = ccs3[qidx[3]+l];
 						double tmp_cos = ccs4[0];
 						double tmp_sin = ccs4[1];
-						ln_C_at_q[i][j][k][l] = log( (tmp_cos*tmp_cos + tmp_sin*tmp_sin)/(nonFTd_spectra*nonFTd_spectra) );
+						ln_C_at_q[i][j][k][l] = log( (tmp_cos*tmp_cos + tmp_sin*tmp_sin)/(nonFTd_spectra*nonFTd_spectra) + 1.e-100 );
+						/*if (isnan(ln_C_at_q[i][j][k][l]) || isinf(ln_C_at_q[i][j][k][l]))
+						{
+							cerr << "NaN or Inf at ln_C_at_q[" << i << "][" << j << "][" << k << "][" << l << "] = " << ln_C_at_q[i][j][k][l] << endl;
+							cerr << "tmp_cos = " << tmp_cos << endl;
+							cerr << "tmp_sin = " << tmp_sin << endl;
+							cerr << "nonFTd_spectra = " << nonFTd_spectra << endl;
+							exit(1);
+						}*/
 						//C_at_q[i][j][k][l] = (tmp_cos*tmp_cos + tmp_sin*tmp_sin)/(nonFTd_spectra*nonFTd_spectra);
 					}
 				}
@@ -115,6 +130,80 @@ double CorrelationFunction::Compute_correlationfunction(int ipt, int ipphi, doub
 	return (interpolated_result);
 }
 
+double CorrelationFunction::Compute_correlationfunction_ALT(int ipt, int ipphi, double * q_interp)
+{
+	// try using linear-logarithmic interpolation if q-point is within grid
+	// otherwise, just use linear interpolation/extrapolation, or throw an exception and do return 0
+	double interpolated_result = 0.0;
+	double * sgnd_q2_interp = new double [4];
+	double * sgnd_q2_tpts = new double [qtnpts];
+	double * sgnd_q2_xpts = new double [qxnpts];
+	double * sgnd_q2_ypts = new double [qynpts];
+	double * sgnd_q2_zpts = new double [qznpts];
+
+	for (int i = 0; i < 4; ++i)
+	{
+		sgnd_q2_interp[i] = sgn(q_interp[i]) * q_interp[i] * q_interp[i];
+		cerr << "sgnd_q2_interp[" << i << "] = " << sgnd_q2_interp[i] << endl;
+	}
+	for (int iqt = 0; iqt < qtnpts; ++iqt)
+	{
+		sgnd_q2_tpts[iqt] = sgn(qt_PTdep_pts[ipt][iqt]) * qt_PTdep_pts[ipt][iqt] * qt_PTdep_pts[ipt][iqt];
+		cerr << "sgnd_q2_tpts[" << iqt << "] = " << sgnd_q2_tpts[iqt] << endl;
+	}
+	for (int iqx = 0; iqx < qxnpts; ++iqx)
+	{
+		sgnd_q2_xpts[iqx] = sgn(qx_PTdep_pts[ipt][iqx]) * qx_PTdep_pts[ipt][iqx] * qx_PTdep_pts[ipt][iqx];
+		cerr << "sgnd_q2_xpts[" << iqx << "] = " << sgnd_q2_xpts[iqx] << endl;
+	}
+	for (int iqy = 0; iqy < qynpts; ++iqy)
+	{
+		sgnd_q2_ypts[iqy] = sgn(qy_PTdep_pts[ipt][iqy]) * qy_PTdep_pts[ipt][iqy] * qy_PTdep_pts[ipt][iqy];
+		cerr << "sgnd_q2_ypts[" << iqy << "] = " << sgnd_q2_ypts[iqy] << endl;
+	}
+	for (int iqz = 0; iqz < qznpts; ++iqz)
+	{
+		sgnd_q2_zpts[iqz] = sgn(qz_PTdep_pts[ipt][iqz]) * qz_PTdep_pts[ipt][iqz] * qz_PTdep_pts[ipt][iqz];
+		cerr << "sgnd_q2_zpts[" << iqz << "] = " << sgnd_q2_zpts[iqz] << endl;
+	}
+
+	double nonFTd_spectra = spectra[target_particle_id][ipt][ipphi];
+
+	double **** lnCFvals = new double *** [qtnpts];
+	for (int iqt = 0; iqt < qtnpts; ++iqt)
+	{
+		lnCFvals[iqt] = new double ** [qxnpts];
+		for (int iqx = 0; iqx < qxnpts; ++iqx)
+		{
+			lnCFvals[iqt][iqx] = new double * [qynpts];
+			for (int iqy = 0; iqy < qynpts; ++iqy)
+			{
+				lnCFvals[iqt][iqx][iqy] = new double [qznpts];
+				for (int iqz = 0; iqz < qznpts; ++iqz)
+				{
+					double tmp_cos = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
+					double tmp_sin = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
+					lnCFvals[iqt][iqx][iqy][iqz] = log( (tmp_cos*tmp_cos + tmp_sin*tmp_sin)/(nonFTd_spectra*nonFTd_spectra) + 1.e-100 );
+					//lnCFvals[iqt][iqx][iqy][iqz] = (tmp_cos*tmp_cos + tmp_sin*tmp_sin)/(nonFTd_spectra*nonFTd_spectra);
+				}
+			}
+		}
+	}
+
+	//interpolated_result = exp( interpQuadriLinearNondirect(sgnd_q2_tpts, sgnd_q2_xpts, sgnd_q2_ypts, sgnd_q2_zpts, lnCFvals,
+	//													sgnd_q2_interp[0], sgnd_q2_interp[1], sgnd_q2_interp[2], sgnd_q2_interp[3], qtnpts, qxnpts, qynpts, qznpts) );
+	//interpolated_result = interpQuadriLinearNondirect(sgnd_q2_tpts, sgnd_q2_xpts, sgnd_q2_ypts, sgnd_q2_zpts, lnCFvals,
+	//													sgnd_q2_interp[0], sgnd_q2_interp[1], sgnd_q2_interp[2], sgnd_q2_interp[3], qtnpts, qxnpts, qynpts, qznpts);
+	interpolated_result = exp( interpQuadriCubicNonDirect(sgnd_q2_tpts, sgnd_q2_xpts, sgnd_q2_ypts, sgnd_q2_zpts, lnCFvals,
+														sgnd_q2_interp[0], sgnd_q2_interp[1], sgnd_q2_interp[2], sgnd_q2_interp[3], qtnpts, qxnpts, qynpts, qznpts) );
+	//interpolated_result = interpQuadriCubicNonDirect(sgnd_q2_tpts, sgnd_q2_xpts, sgnd_q2_ypts, sgnd_q2_zpts, lnCFvals,
+	//													sgnd_q2_interp[0], sgnd_q2_interp[1], sgnd_q2_interp[2], sgnd_q2_interp[3], qtnpts, qxnpts, qynpts, qznpts);
+
+
+
+	return (interpolated_result);
+}
+
 double CorrelationFunction::interpolate_4D(double * x_min, double * x_max, double * x_interp, double (*vals) [2][2][2])
 {
 	double total = 0.0;
@@ -135,7 +224,7 @@ double CorrelationFunction::interpolate_4D(double * x_min, double * x_max, doubl
 	return (total);
 }
 
-void CorrelationFunction::Cal_correlationfunction()
+void CorrelationFunction::Cal_correlationfunction(bool use_HDF_resonance_file /*== false*/)
 {
 	// Can't interpolate if there's only one point in q-space!
 	if (qtnpts == 1 || qxnpts == 1 || qynpts == 1 || qznpts == 1)
@@ -146,11 +235,21 @@ void CorrelationFunction::Cal_correlationfunction()
 	Set_correlation_function_q_pts();
 	Allocate_CFvals();
 
-	int HDFloadTargetSuccess = Get_resonance_from_HDF_array(target_particle_id, current_dN_dypTdpTdphi_moments);
+	/*if (use_HDF_resonance_file)
+	{
+		*global_out_stream_ptr << "Loading HDF resonance file..." << endl;
+		int HDFloadTargetSuccess = Get_resonance_from_HDF_array(target_particle_id, current_dN_dypTdpTdphi_moments);
+	}
+	else
+	{
+		*global_out_stream_ptr << "Loading Fourier transformed spectra..." << endl;
+		Readin_total_target_eiqx_dN_dypTdpTdphi(currentfolderindex);
+	}*/
 
 	double * q_interp = new double [4];
 
 	// Then compute full correlation function
+	*global_out_stream_ptr << "Computing the full correlator in out-side-long coordinates..." << endl;
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 	for (int iqo = 0; iqo < qonpts; ++iqo)
@@ -161,16 +260,45 @@ void CorrelationFunction::Cal_correlationfunction()
 
 		CFvals[ipt][ipphi][iqo][iqs][iql] = Compute_correlationfunction(ipt, ipphi, q_interp);
 	}
+	*global_out_stream_ptr << "Finished computing correlator." << endl;
+
+	// this is just to check the interpolation routines...
+	for (int ipt = 0; ipt < n_interp_pT_pts; ipt+=n_interp_pT_pts-1)
+	//for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+	for (int iqt = 0; iqt < 11; ++iqt)
+	for (int iqx = 0; iqx < 11; ++iqx)
+	for (int iqy = 0; iqy < 11; ++iqy)
+	for (int iqz = 0; iqz < 11; ++iqz)
+	{
+		double nonFTd_spectra = spectra[target_particle_id][ipt][0];
+		//uniform grid for simplicity
+		q_interp[0] = qt_PTdep_pts[ipt][0] + 0.1 * iqt * (qt_PTdep_pts[ipt][qtnpts - 1] - qt_PTdep_pts[ipt][0]);
+		q_interp[1] = qx_PTdep_pts[ipt][0] + 0.1 * iqx * (qx_PTdep_pts[ipt][qxnpts - 1] - qx_PTdep_pts[ipt][0]);
+		q_interp[2] = qy_PTdep_pts[ipt][0] + 0.1 * iqy * (qy_PTdep_pts[ipt][qynpts - 1] - qy_PTdep_pts[ipt][0]);
+		q_interp[3] = qz_PTdep_pts[ipt][0] + 0.1 * iqz * (qz_PTdep_pts[ipt][qznpts - 1] - qz_PTdep_pts[ipt][0]);
+
+		cout << "TEST GRID: " << SPinterp_pT[ipt] << "   " << SPinterp_pphi[0] << "   "
+				<< q_interp[0] << "   " << q_interp[1] << "   " << q_interp[2] << "   " << q_interp[3] << "   "
+				<< Compute_correlationfunction(ipt, 0, q_interp) << "   " << Compute_correlationfunction_ALT(ipt, 0, q_interp) << "   "
+				<< Cal_dN_dypTdpTdphi_with_weights_function( current_FOsurf_ptr, target_particle_id, SPinterp_pT[ipt], SPinterp_pphi[0],
+															q_interp[0], q_interp[1], q_interp[2], q_interp[3] )/(nonFTd_spectra*nonFTd_spectra) << endl;
+	}
+/*double nonFTd_spectra = spectra[target_particle_id][0][0];
+q_interp[0] = -0.0491892;
+q_interp[1] = -0.0279823;
+q_interp[2] = 0.0839468;
+q_interp[3] = 0.0125871;
+
+		cout << "TEST GRID: " << SPinterp_pT[0] << "   " << SPinterp_pphi[0] << "   "
+				<< q_interp[0] << "   " << q_interp[1] << "   " << q_interp[2] << "   " << q_interp[3] << "   " << nonFTd_spectra << "   "
+				<< Compute_correlationfunction(0, 0, q_interp) << "   "
+				<< Compute_correlationfunction_ALT(0, 0, q_interp) << "   "
+				<< Cal_dN_dypTdpTdphi_with_weights_function( current_FOsurf_ptr, target_particle_id, SPinterp_pT[0], SPinterp_pphi[0],
+															q_interp[0], q_interp[1], q_interp[2], q_interp[3] )/(nonFTd_spectra*nonFTd_spectra) << endl;
+*/
 
 	return;
 }
-
-/*void CorrelationFunction::Extrapolate_dN_dypTdpTdphi_moments_over_resonances()
-{
-	
-
-	return;
-}*/
 
 //**************************************************************
 // Gaussian fit routines below

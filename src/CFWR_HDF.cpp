@@ -35,6 +35,8 @@ int CorrelationFunction::Initialize_resonance_HDF_array()
 	H5std_string RESONANCE_FILE_NAME(filename_stream_ra.str().c_str());
 	H5std_string RESONANCE_DATASET_NAME("ra");
 
+	bool file_does_not_already_exist = !fexists(filename_stream_ra.str().c_str());
+
 	try
     {
 		Exception::dontPrint();
@@ -55,18 +57,26 @@ int CorrelationFunction::Initialize_resonance_HDF_array()
 		hsize_t offset[RANK2D] = {0, 0};
 
 		resonance_memspace = new H5::DataSpace (RANK2D, dimsm, NULL);
-		for (int ir = 0; ir < Nparticle; ++ir)
+		if (file_does_not_already_exist)
 		{
-			offset[0] = ir;
-			resonance_dataspace->selectHyperslab(H5S_SELECT_SET, count, offset);
+			*global_out_stream_ptr << "HDF resonance file doesn't exist!  Initializing to zero..." << endl;
 
-			for (int iidx = 0; iidx < chunk_size; ++iidx)
-				resonance_chunk[iidx] = 0.0;
-
-			//initialize everything with zeros
-			resonance_dataset->write(resonance_chunk, PredType::NATIVE_DOUBLE, *resonance_memspace, *resonance_dataspace);
+			for (int ir = 0; ir < Nparticle; ++ir)
+			{
+				//debugger(__LINE__, __FILE__);
+				//print_now();
+	
+				offset[0] = ir;
+				resonance_dataspace->selectHyperslab(H5S_SELECT_SET, count, offset);
+	
+				for (int iidx = 0; iidx < chunk_size; ++iidx)
+					resonance_chunk[iidx] = 0.0;
+	
+				//initialize everything with zeros
+				resonance_dataset->write(resonance_chunk, PredType::NATIVE_DOUBLE, *resonance_memspace, *resonance_dataspace);
+			}
 		}
-		resonance_memspace->close();
+		/*resonance_memspace->close();
 		resonance_dataset->close();
 		resonance_file->close();
 		delete resonance_memspace;
@@ -74,7 +84,7 @@ int CorrelationFunction::Initialize_resonance_HDF_array()
 		delete resonance_dataset;
 		resonance_file = new H5::H5File(RESONANCE_FILE_NAME, H5F_ACC_RDWR);
 		resonance_dataset = new H5::DataSet( resonance_file->openDataSet( RESONANCE_DATASET_NAME ) );
-		resonance_memspace = new H5::DataSpace (RANK2D, dimsm, NULL);
+		resonance_memspace = new H5::DataSpace (RANK2D, dimsm, NULL);*/
     }
 
     catch(FileIException error)

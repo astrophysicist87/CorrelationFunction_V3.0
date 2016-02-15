@@ -78,4 +78,10 @@ void inline debugger(int cln, const char* cfn)
 	return;
 }
 
+void inline print_now()
+{
+	time_t ctt = time(0);
+	cerr << asctime(localtime(&ctt)) << endl;
+}
+
 #endif

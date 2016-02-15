@@ -12,7 +12,7 @@ void stratify_npts(double a, double b, int n1, int npts, double * x);
 void scalepoints(double * x, double a, double b, double scale, int n);
 
 //miscellaneous functions needed for interpolation routines
-long binarySearch(double * A, int length, double value, bool skip_out_of_range = true);
+long binarySearch(double * A, int length, double value, bool skip_out_of_range = true, bool verbose = false);
 void get_1D_derivatives(double * x, double * f, double * derivatives, int length, double);
 void get_2D_derivatives(double * x, double * y, double ** f, double ** f1, double ** f2, double ** f12, int x_length, int y_length, double default_edge_fill);
 void bcucof(double * y, double * y1, double * y2, double * y12, double d1, double d2, double ** c);
@@ -47,6 +47,14 @@ double interpBiCubicNonDirectALT(double * x, double * y, double ** z, double x0,
 				bool returnflag = false, double default_return_value = 0.0);
 double interpPolyDirect(double * x, double * y, double x0, long size);
 double interpBiPolyDirect(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size);
+
+double interpTriCubicNonDirect(double * x, double * y, double * z, double *** t, double x0, double y0, double z0,
+									long x_size, long y_size, long z_size, bool returnflag=false, double default_return_value=0);
+double interpQuadriCubicNonDirect(double * x, double * y, double * z, double * t, double **** f, double x0, double y0, double z0, double t0,
+									long x_size, long y_size, long z_size, long t_size, bool returnflag=false, double default_return_value=0);
+double interpQuadriLinearNondirect(double * x, double * y, double * z, double * t, double **** f, double x0, double y0, double z0, double t0,
+									long x_size, long y_size, long z_size, long t_size, bool returnflag=false, double default_return_value=0);
+
 
 //miscellaneous interpolation routines
 double interpNewtonDirect(double * x, double * y, double x0, long size);

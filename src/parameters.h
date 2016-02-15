@@ -29,6 +29,12 @@ using namespace std;
 							// 1 - use usr_def_pc_markers
 							// 2 - use usr_def_pc_markers_thinned
 #define COMPUTE_RESONANCE_ARRAYS	true		// alternative is to read them in from a file
+#define QT_POINTS_SPACING		0		// 0 - uniform from -qmax to +qmax
+							// 1 - Chebyshev nodes from -qmax to +qmax
+#define QX_POINTS_SPACING		0
+#define QY_POINTS_SPACING		0
+#define QZ_POINTS_SPACING		0
+
 
 #ifndef H5_NO_NAMESPACE
     using namespace H5;
@@ -72,9 +78,9 @@ static double usr_def_pc_markers[UDPMsize] = {
 static double usr_def_pc_markers_thinned[UDPMTsize] = { 0.00, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90 };
 
 //relative momentum information
-const int qonpts = 51;
-const int qsnpts = 51;
-const int qlnpts = 51;
+const int qonpts = 11;
+const int qsnpts = 11;
+const int qlnpts = 11;
 //const int qnpts = 11;
 //const double delta_q = 0.02;
 //const double init_q = -5.0*delta_q;
@@ -111,10 +117,10 @@ const double init_qx = init_q;
 const double init_qy = init_q;
 const double init_qz = init_q;*/
 const int qtnpts = 11;
-const int qxnpts = 1;
-const int qynpts = 1;
-const int qznpts = 1;
-const double delta_qt = 0.04;
+const int qxnpts = 7;
+const int qynpts = 7;
+const int qznpts = 9;
+const double delta_qt = 0.02;
 const double delta_qx = 0.02;
 const double delta_qy = 0.02;
 const double delta_qz = 0.02;

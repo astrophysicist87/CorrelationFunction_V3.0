@@ -35,21 +35,15 @@ void CorrelationFunction::Dump_phases_to_binary(char direction, int ipt, double 
 	filename_stream << global_path << "/q" << direction << "_pts_ipt_" << ipt << ".bin";
 	ofstream out(filename_stream.str().c_str(), ios::out | ios::binary);
 
-	//cout << "Using char = " << direction << ", (nd1,nd2) = " << "(" << nd1 << "," << nd2 << ")" << endl;
-
-	//double array_copy[nd1][nd2];
-	//double * array_copy = new double [nd1*nd2];
 	vector<double> array_copy (nd1*nd2);
 	int ac_idx = 0;
 	for (int i1 = 0; i1 < nd1; ++i1)
 	for (int i2 = 0; i2 < nd2; ++i2)
 		array_copy[ac_idx++] = array[i1][i2];
 
-	//out.write((char *) &array_copy, sizeof array_copy);
 	out.write(reinterpret_cast<const char*>(&array_copy[0]), array_copy.size()*sizeof(double));
 
 	out.close();
-	//delete [] array_copy;
 	return;
 }
 
@@ -59,21 +53,14 @@ void CorrelationFunction::Load_phases_from_binary(char direction, int ipt, doubl
 	filename_stream << global_path << "/q" << direction << "_pts_ipt_" << ipt << ".bin";
 	ifstream in(filename_stream.str().c_str(), ios::in | ios::binary);
 
-	//double array_copy[nd1][nd2];
-	//double * array_copy = new double [nd1*nd2];
 	vector<double> array_copy (nd1*nd2);
-	//in.read((char *) &array_copy, sizeof array_copy);
-	//in.read((char *) &array_copy, size_t(8*nd1*nd2));
 	in.read(reinterpret_cast<char*>(&array_copy[0]), array_copy.size()*sizeof(double));
-	//cout << in.gcount() << " bytes read\n";
 	in.close();
 
 	int ac_idx = 0;
 	for (int i1 = 0; i1 < nd1; ++i1)
 	for (int i2 = 0; i2 < nd2; ++i2)
 		array[i1][i2] = array_copy[ac_idx++];
-
-	//delete [] array_copy;
 
 	return;
 }
@@ -379,6 +366,56 @@ void CorrelationFunction::Output_total_target_eiqx_dN_dypTdpTdphi(int folderinde
 	}
 
 	output_target_dN_dypTdpTdphi.close();
+
+	return;
+}
+
+void CorrelationFunction::Readin_total_target_eiqx_dN_dypTdpTdphi(int folderindex)
+{
+	string local_name = all_particles[target_particle_id].name;
+	replace_parentheses(local_name);
+	ostringstream filename_stream_target_dN_dypTdpTdphi;
+	filename_stream_target_dN_dypTdpTdphi << global_path << "/total_" << local_name << "_eiqx_dN_dypTdpTdphi_ev" << folderindex << no_df_stem << ".dat";
+	ifstream input_target_dN_dypTdpTdphi(filename_stream_target_dN_dypTdpTdphi.str().c_str());
+
+	double dummy = 0.0;
+
+	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+		Set_q_pTdep_pts(ipt);
+
+	for (int iqt = 0; iqt < qtnpts; ++iqt)
+	for (int iqx = 0; iqx < qxnpts; ++iqx)
+	for (int iqy = 0; iqy < qynpts; ++iqy)
+	for (int iqz = 0; iqz < qznpts; ++iqz)
+	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+	{
+		//input_target_dN_dypTdpTdphi >> qt_PTdep_pts[ipt][iqt];
+		//input_target_dN_dypTdpTdphi >> qx_PTdep_pts[ipt][iqx];
+		//input_target_dN_dypTdpTdphi >> qy_PTdep_pts[ipt][iqy];
+		//input_target_dN_dypTdpTdphi >> qz_PTdep_pts[ipt][iqz];
+		//input_target_dN_dypTdpTdphi >> SPinterp_pT[ipt];
+		//input_target_dN_dypTdpTdphi >> SPinterp_pphi[ipphi];
+		input_target_dN_dypTdpTdphi >> dummy;
+		input_target_dN_dypTdpTdphi >> dummy;
+		input_target_dN_dypTdpTdphi >> dummy;
+		input_target_dN_dypTdpTdphi >> dummy;
+		input_target_dN_dypTdpTdphi >> dummy;
+		input_target_dN_dypTdpTdphi >> dummy;
+		input_target_dN_dypTdpTdphi >> spectra[target_particle_id][ipt][ipphi];
+		input_target_dN_dypTdpTdphi >> current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
+		input_target_dN_dypTdpTdphi >> current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
+		input_target_dN_dypTdpTdphi >> dummy;
+		/*cout << scientific << setprecision(8) << setw(12)
+			<< qt_PTdep_pts[ipt][iqt] << "   " << qx_PTdep_pts[ipt][iqx] << "   " << qy_PTdep_pts[ipt][iqy] << "   " << qz_PTdep_pts[ipt][iqz] << "   "
+			<< SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   "
+			<< spectra[target_particle_id][ipt][ipphi] << "   "
+			<< current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0] << "   "
+			<< current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1] << "   "
+			<< dummy << endl;*/
+	}
+
+	input_target_dN_dypTdpTdphi.close();
 
 	return;
 }

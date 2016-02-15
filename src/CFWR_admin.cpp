@@ -650,7 +650,9 @@ void CorrelationFunction::estimate_radii(double pT_local, double & Rperp, double
 	double Delta_tau = sqrt(Delta_tau2);
 
 	Rperp = sqrt( R*R / (1. + eta_f*eta_f*MT/T0) );
-	Rparallel = tau_0 * sqrt(T0 / MT);
+	//double R2l_factor = 1.;
+	double R2l_factor = 1. + ( 1./(1.+MT*vT2sum/(N*T0)) + 0.5 )*(T0/MT);
+	Rparallel = tau_0 * sqrt(R2l_factor * T0 / MT);
 	R0 = sqrt( Delta_tau2 + 2.*tau_0*tau_0*pow( sqrt(1.0 - (T0/MT)) - 1.0 , 2.0) );
 
 	return;
@@ -672,10 +674,10 @@ void CorrelationFunction::Set_q_pTdep_pts(int ipt)
 	double eps = 1.e-3;									//specifies approximate CF value at which to truncate calculation
 														// (used for computing q(i)max)
 	double ln_one_by_eps = hbarC*sqrt(log(1./eps));
-R0 = 2.593134875;
-	double qtmax = ln_one_by_eps / R0;
-	double qxmax = ln_one_by_eps / Rperp;
-	double qymax = ln_one_by_eps / Rperp;
+//R0 = 2.593134875;
+	double qtmax = 1.5 * ln_one_by_eps / R0;
+	double qxmax = 1.5 * ln_one_by_eps / Rperp;
+	double qymax = 1.5 * ln_one_by_eps / Rperp;
 	double qzmax = ln_one_by_eps / Rparallel;
 	//these estimates just need to be ball-park correct, to make sure that the most interesting parts of the CF are captured
 	//cout << "Estimates for pT = " << SPinterp_pT[ipt] << endl
@@ -688,29 +690,77 @@ R0 = 2.593134875;
 		qt_PTdep_pts[ipt][0] = 0.0;
 	else
 	{
-		for (int iqt = 0; iqt < qtnpts; ++iqt)
-			qt_PTdep_pts[ipt][iqt] =  -qtmax + (double)iqt * 2.*qtmax / double(qtnpts - 1+1e-100);
+		// if I want q-points equally spaced...
+		if (QT_POINTS_SPACING == 0)
+		{
+			for (int iqt = 0; iqt < qtnpts; ++iqt)
+				qt_PTdep_pts[ipt][iqt] =  -qtmax + (double)iqt * 2.*qtmax / double(qtnpts - 1+1e-100);
+		}
+		// else, use Chebyshev nodes instead...
+		else if (QT_POINTS_SPACING == 1)
+		{
+			//double local_scale = qtmax / cos(M_PI / (2.*qtnpts));
+			double local_scale = -qtmax;
+			for (int iqt = 0; iqt < qtnpts; ++iqt)
+				qt_PTdep_pts[ipt][iqt] = local_scale * cos( M_PI*(2.*(iqt+1.) - 1.) / (2.*qtnpts) );
+		}
 	}
 	if (qxnpts == 1)
 		qx_PTdep_pts[ipt][0] = 0.0;
 	else
 	{
-		for (int iqx = 0; iqx < qxnpts; ++iqx)
-			qz_PTdep_pts[ipt][iqx] =  -qxmax + (double)iqx * 2.*qxmax / double(qxnpts - 1+1e-100);
+		// if I want q-points equally spaced...
+		if (QX_POINTS_SPACING == 0)
+		{
+			for (int iqx = 0; iqx < qxnpts; ++iqx)
+				qx_PTdep_pts[ipt][iqx] =  -qxmax + (double)iqx * 2.*qxmax / double(qxnpts - 1+1e-100);
+		}
+		// else, use Chebyshev nodes instead...
+		else if (QX_POINTS_SPACING == 1)
+		{
+			//double local_scale = qxmax / cos(M_PI / (2.*qxnpts));
+			double local_scale = -qxmax;
+			for (int iqx = 0; iqx < qxnpts; ++iqx)
+				qx_PTdep_pts[ipt][iqx] = local_scale * cos( M_PI*(2.*(iqx+1.) - 1.) / (2.*qxnpts) );
+		}
 	}
 	if (qynpts == 1)
 		qy_PTdep_pts[ipt][0] = 0.0;
 	else
 	{
-		for (int iqy = 0; iqy < qynpts; ++iqy)
-			qy_PTdep_pts[ipt][iqy] =  -qymax + (double)iqy * 2.*qymax / double(qynpts - 1+1e-100);
+		// if I want q-points equally spaced...
+		if (QY_POINTS_SPACING == 0)
+		{
+			for (int iqy = 0; iqy < qynpts; ++iqy)
+				qy_PTdep_pts[ipt][iqy] =  -qymax + (double)iqy * 2.*qymax / double(qynpts - 1+1e-100);
+		}
+		// else, use Chebyshev nodes instead...
+		else if (QY_POINTS_SPACING == 1)
+		{
+			//double local_scale = qymax / cos(M_PI / (2.*qynpts));
+			double local_scale = -qymax;
+			for (int iqy = 0; iqy < qynpts; ++iqy)
+				qy_PTdep_pts[ipt][iqy] = local_scale * cos( M_PI*(2.*(iqy+1.) - 1.) / (2.*qynpts) );
+		}
 	}
 	if (qznpts == 1)
 		qz_PTdep_pts[ipt][0] = 0.0;
 	else
 	{
-		for (int iqz = 0; iqz < qznpts; ++iqz)
-			qz_PTdep_pts[ipt][iqz] =  -qzmax + (double)iqz * 2.*qzmax / double(qznpts - 1+1e-100);
+		// if I want q-points equally spaced...
+		if (QZ_POINTS_SPACING == 0)
+		{
+			for (int iqz = 0; iqz < qznpts; ++iqz)
+				qz_PTdep_pts[ipt][iqz] =  -qzmax + (double)iqz * 2.*qzmax / double(qznpts - 1+1e-100);
+		}
+		// else, use Chebyshev nodes instead...
+		else if (QZ_POINTS_SPACING == 1)
+		{
+			//double local_scale = qzmax / cos(M_PI / (2.*qznpts));
+			double local_scale = -qzmax;
+			for (int iqz = 0; iqz < qznpts; ++iqz)
+				qz_PTdep_pts[ipt][iqz] = local_scale * cos( M_PI*(2.*(iqz+1.) - 1.) / (2.*qznpts) );
+		}
 	}
 
 
@@ -1068,7 +1118,7 @@ void CorrelationFunction::Set_sorted_q_pts_list()
 
 	sort(sorted_q_pts_list.begin(), sorted_q_pts_list.end(), qpt_comparator);
 
-	cout << "Checking sorting of q-points: " << endl;
+	//cout << "Checking sorting of q-points: " << endl;
 	for (size_t iq = 0; iq < sorted_q_pts_list.size(); ++iq)
 	{
 		sorted_q_pts_list[iq][0] += iqt0;
@@ -1076,10 +1126,10 @@ void CorrelationFunction::Set_sorted_q_pts_list()
 		sorted_q_pts_list[iq][2] += iqy0;
 		sorted_q_pts_list[iq][3] += iqz0;
 
-		cout << "   --> iq = " << iq << ": ";
-		for (size_t iqmu = 0; iqmu < 4; ++iqmu)
-			cout << sorted_q_pts_list[iq][iqmu] << "   ";
-		cout << endl;
+		//cout << "   --> iq = " << iq << ": ";
+		//for (size_t iqmu = 0; iqmu < 4; ++iqmu)
+		//	cout << sorted_q_pts_list[iq][iqmu] << "   ";
+		//cout << endl;
 	}
 
 	return;

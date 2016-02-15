@@ -241,6 +241,7 @@ class CorrelationFunction
 		void Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, int local_pid);
 		void Cal_dN_dypTdpTdphi_with_weights_INVERTED_LOOPS(FO_surf* FOsurf_ptr, int local_pid);
 		double Cal_dN_dypTdpTdphi_function(FO_surf* FOsurf_ptr, int local_pid, double pT, double pphi);
+		double Cal_dN_dypTdpTdphi_with_weights_function(FO_surf* FOsurf_ptr, int local_pid, double pT, double pphi, double qt, double qx, double qy, double qz);
 		void Do_resonance_integrals(int iKT, int iKphi, int dc_idx);
 		void Flatten_dN_dypTdpTdphi_moments();
 		void Set_current_daughter_info(int dc_idx, int daughter_idx);
@@ -300,7 +301,7 @@ class CorrelationFunction
 		// Gaussian fit / correlation function routines
 		void Allocate_CFvals();
 		void Get_GF_HBTradii(FO_surf* FOsurf_ptr, int folderindex);
-		void Cal_correlationfunction();
+		void Cal_correlationfunction(bool use_HDF_resonance_file = false);
 		void Fit_Correlationfunction3D(double *** Correl_3D, int ipt, int ipphi);
 		int print_fit_state_3D (size_t iteration, gsl_multifit_fdfsolver * solver_ptr);
 		void Fit_Correlationfunction3D_withlambda(double *** Correl_3D, int ipt, int ipphi);
@@ -309,6 +310,7 @@ class CorrelationFunction
 		inline double get_fit_results(int i, gsl_multifit_fdfsolver * solver_ptr);
 		inline double get_fit_err (int i, gsl_matrix * covariance_ptr);
 		double Compute_correlationfunction(int ipt, int ipphi, double * q_interp);
+		double Compute_correlationfunction_ALT(int ipt, int ipphi, double * q_interp);
 		double interpolate_4D(double * x_min, double * x_max, double * x_interp, double (*vals) [2][2][2]);
 		double gsl_polynomial_fit(const vector<double> &data_x, const vector<double> &data_y, const int order, double & chisq, bool verbose = false);
 		double best_fit_rational_function(vector<double> & xdata, vector<double> & ydata, int n, int m, double x, bool & error_report);
@@ -319,6 +321,7 @@ class CorrelationFunction
 		void Output_all_dN_dypTdpTdphi(int folderindex);
 		void Output_total_target_dN_dypTdpTdphi(int folderindex);
 		void Output_total_target_eiqx_dN_dypTdpTdphi(int folderindex);
+		void Readin_total_target_eiqx_dN_dypTdpTdphi(int folderindex);
 		void Output_results(int folderindex);
 		void Readin_results(int folderindex);
 		void Read_in_all_dN_dypTdpTdphi(int folderindex);

@@ -85,7 +85,14 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 
 	if (COMPUTE_RESONANCE_ARRAYS)
 	{
+		debugger(__LINE__, __FILE__);
+		print_now();
+
+		*global_out_stream_ptr << "Initializing HDF file of resonance spectra..." << endl;
 		int HDFInitializationSuccess = Initialize_resonance_HDF_array();
+
+		debugger(__LINE__, __FILE__);
+		print_now();
 
 		*global_out_stream_ptr << "Setting spacetime moments grid..." << endl;
 		BIGsw.tic();
@@ -101,7 +108,7 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 				break;
 			else if (!Do_this_decay_channel(idc))
 				continue;
-	
+
 			// ************************************************************
 			// if so, set decay channel info
 			// ************************************************************
@@ -666,7 +673,7 @@ void CorrelationFunction::Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int lo
 	}
 	
 	// get spectra at each fluid cell, sort by importance
-	*global_out_stream_ptr << "Computing spectra..." << endl;
+	*global_out_stream_ptr << "Computing unweighted thermal spectra..." << endl;
 	double FOintegral_cutoff = 0.98;
 	if (!USE_EXTRAPOLATION)
 		FOintegral_cutoff = 1.0;	//if not extrapolating, do full integrals
@@ -677,7 +684,7 @@ void CorrelationFunction::Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int lo
 	*global_out_stream_ptr << "CP#1: Took " << sw.printTime() << " seconds." << endl;
 
 	// get weighted spectra with only most important fluid cells, up to given threshhold
-	*global_out_stream_ptr << "Computing weighted (thermal) spectra..." << endl;
+	*global_out_stream_ptr << "Computing weighted thermal spectra..." << endl;
 	sw.Reset();
 	//Cal_dN_dypTdpTdphi_with_weights(FOsurf_ptr, local_pid);
 	Cal_dN_dypTdpTdphi_with_weights_INVERTED_LOOPS(FOsurf_ptr, local_pid);
@@ -1269,7 +1276,6 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights_INVERTED_LOOPS(FO_surf
 		for (int iqy = 0; iqy < qynpts; ++iqy)
 		for (int iqz = 0; iqz < qznpts; ++iqz)
 		{
-	
 			double * eiqttslice = eiqtt[iqt];
 			double * eiqxxslice = eiqxx[iqx];
 			double * eiqyyslice = eiqyy[iqy];
@@ -1381,8 +1387,6 @@ if (ipt==0 && ipphi == 0 && iqt==0 && iqx==0 && iqy==0 && iqz==0)
 		}	//end of q-loops
 
 		debug_sw2.Stop();
-		//Delete_q_pTdep_pts();
-		//Delete_eiqx_with_q_pTdep_pts();
 		*global_out_stream_ptr << "   --> Finished ipt = " << ipt << " in " << debug_sw2.printTime() << " seconds." << endl;
 
 
@@ -1567,6 +1571,109 @@ void CorrelationFunction::Load_decay_channel_info(int dc_idx, double K_T_local, 
 }
 
 //***************************************************************************************************
+
+double CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights_function(FO_surf* FOsurf_ptr, int local_pid, double pT, double pphi, double qt, double qx, double qy, double qz)
+{
+	// set particle information
+	double sign = all_particles[local_pid].sign;
+	double degen = all_particles[local_pid].gspin;
+	double localmass = all_particles[local_pid].mass;
+	double mu = all_particles[local_pid].mu;
+
+	// set some freeze-out surface information that's constant the whole time
+	double prefactor = 1.0*degen/(8.0*M_PI*M_PI*M_PI)/(hbarC*hbarC*hbarC);
+	double Tdec = (&FOsurf_ptr[0])->Tdec;
+	double Pdec = (&FOsurf_ptr[0])->Pdec;
+	double Edec = (&FOsurf_ptr[0])->Edec;
+	double one_by_Tdec = 1./Tdec;
+	double deltaf_prefactor = 0.;
+	if (use_delta_f)
+		deltaf_prefactor = 1./(2.0*Tdec*Tdec*(Edec+Pdec));
+
+	// set the rapidity-integration symmetry factor
+	double eta_odd_factor = 1.0, eta_even_factor = 1.0;
+	if (ASSUME_ETA_SYMMETRIC)
+	{
+		eta_odd_factor = 0.0;
+		eta_even_factor = 2.0;
+	}
+
+	double sin_pphi = sin(pphi);
+	double cos_pphi = cos(pphi);
+	double px = pT*cos_pphi;
+	double py = pT*sin_pphi;
+
+	double cosqx_dN_dypTdpTdphi = 0.0;
+	double sinqx_dN_dypTdpTdphi = 0.0;
+
+	for(int isurf=0; isurf<FO_length; ++isurf)
+	{
+		FO_surf*surf = &FOsurf_ptr[isurf];
+
+		double tau = surf->tau;
+		double xpt = surf->xpt;
+		double ypt = surf->ypt;
+
+		double vx = surf->vx;
+		double vy = surf->vy;
+		double gammaT = surf->gammaT;
+
+		double da0 = surf->da0;
+		double da1 = surf->da1;
+		double da2 = surf->da2;
+
+		double pi00 = surf->pi00;
+		double pi01 = surf->pi01;
+		double pi02 = surf->pi02;
+		double pi11 = surf->pi11;
+		double pi12 = surf->pi12;
+		double pi22 = surf->pi22;
+		double pi33 = surf->pi33;
+
+		for(int ieta=0; ieta < eta_s_npts; ++ieta)
+		{
+			double p0 = sqrt(pT*pT+localmass*localmass)*cosh(SP_p_y - eta_s[ieta]);
+			double pz = sqrt(pT*pT+localmass*localmass)*sinh(SP_p_y - eta_s[ieta]);
+
+			double f0 = 1./(exp( one_by_Tdec*(gammaT*(p0*1. - px*vx - py*vy) - mu) )+sign);	//thermal equilibrium distributions
+	
+			//viscous corrections
+			double deltaf = 0.;
+			if (use_delta_f)
+				deltaf = deltaf_prefactor * (1. - sign*f0)
+							* (p0*p0*pi00 - 2.0*p0*px*pi01 - 2.0*p0*py*pi02 + px*px*pi11 + 2.0*px*py*pi12 + py*py*pi22 + pz*pz*pi33);
+
+			//p^mu d^3sigma_mu factor: The plus sign is due to the fact that the DA# variables are for the covariant surface integration
+			double S_p = prefactor*(p0*da0 + px*da1 + py*da2)*f0*(1.+deltaf);
+
+			//ignore points where delta f is large or emission function goes negative from pdsigma
+			if ((1. + deltaf < 0.0) || (flagneg == 1 && S_p < tol))
+			{
+				S_p = 0.0;
+				continue;
+			}
+
+			double tpt = tau*ch_eta_s[ieta];
+			double zpt = tau*sh_eta_s[ieta];
+			for (int ii = 0; ii < 2; ++ii)
+			{
+				zpt *= -1.;
+				double arg = tpt*qt-(xpt*qx+ypt*qy+zpt*qz);
+				cosqx_dN_dypTdpTdphi += cos(arg/hbarC)*S_p*tau*eta_s_weight[ieta];
+				sinqx_dN_dypTdpTdphi += sin(arg/hbarC)*S_p*tau*eta_s_weight[ieta];
+				/*if (isnan(cosqx_dN_dypTdpTdphi) || isinf(cosqx_dN_dypTdpTdphi))
+				{
+					cerr << "NaN or Inf at isurf = " << isurf << " and ieta = " << ieta << endl;
+					exit(1);
+				}*/
+
+			}
+		}
+	}
+
+	return ( cosqx_dN_dypTdpTdphi*cosqx_dN_dypTdpTdphi+sinqx_dN_dypTdpTdphi*sinqx_dN_dypTdpTdphi );
+}
+
 
 double CorrelationFunction::Cal_dN_dypTdpTdphi_function(FO_surf* FOsurf_ptr, int local_pid, double pT, double pphi)
 {
