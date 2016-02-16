@@ -877,27 +877,55 @@ CorrelationFunction::~CorrelationFunction()
    return;
 }
 
-void CorrelationFunction::Allocate_CFvals()
+void CorrelationFunction::Allocate_CFvals(int coords /*== 0*/)
 {
-	CFvals = new double **** [n_interp_pT_pts];
-	for (int ipT = 0; ipT < n_interp_pT_pts; ++ipT)
+	//coords ==	0 - use o-s-l coordinate system
+	//			1 - use x-y-z coordinate system
+	if (coords == 0)
 	{
-		CFvals[ipT] = new double *** [n_interp_pphi_pts];
-		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		CFvals = new double **** [n_interp_pT_pts];
+		for (int ipT = 0; ipT < n_interp_pT_pts; ++ipT)
 		{
-			CFvals[ipT][ipphi] = new double ** [qonpts];
-			for (int iqo = 0; iqo < qonpts; ++iqo)
+			CFvals[ipT] = new double *** [n_interp_pphi_pts];
+			for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 			{
-				CFvals[ipT][ipphi][iqo] = new double * [qsnpts];
-				for (int iqs = 0; iqs < qsnpts; ++iqs)
+				CFvals[ipT][ipphi] = new double ** [qonpts];
+				for (int iqo = 0; iqo < qonpts; ++iqo)
 				{
-					CFvals[ipT][ipphi][iqo][iqs] = new double [qlnpts];
-					for (int iql = 0; iql < qlnpts; ++iql)
-						CFvals[ipT][ipphi][iqo][iqs][iql] = 0.0;
+					CFvals[ipT][ipphi][iqo] = new double * [qsnpts];
+					for (int iqs = 0; iqs < qsnpts; ++iqs)
+					{
+						CFvals[ipT][ipphi][iqo][iqs] = new double [qlnpts];
+						for (int iql = 0; iql < qlnpts; ++iql)
+							CFvals[ipT][ipphi][iqo][iqs][iql] = 0.0;
+					}
 				}
 			}
 		}
 	}
+	else if (coords == 1)
+	{
+		CFvals = new double **** [n_interp_pT_pts];
+		for (int ipT = 0; ipT < n_interp_pT_pts; ++ipT)
+		{
+			CFvals[ipT] = new double *** [n_interp_pphi_pts];
+			for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+			{
+				CFvals[ipT][ipphi] = new double ** [qxnpts];
+				for (int iqx = 0; iqx < qxnpts; ++iqx)
+				{
+					CFvals[ipT][ipphi][iqx] = new double * [qynpts];
+					for (int iqy = 0; iqy < qynpts; ++iqy)
+					{
+						CFvals[ipT][ipphi][iqx][iqy] = new double [qznpts];
+						for (int iqz = 0; iqz < qznpts; ++iqz)
+							CFvals[ipT][ipphi][iqx][iqy][iqz] = 0.0;
+					}
+				}
+			}
+		}
+	}
+
 	return;
 }
 
@@ -1135,33 +1163,65 @@ void CorrelationFunction::Set_sorted_q_pts_list()
 	return;
 }
 
-void CorrelationFunction::Set_correlation_function_q_pts()
+void CorrelationFunction::Set_correlation_function_q_pts(int coords /*== 0*/)
 {
+	//coords ==	0 - use o-s-l coordinate system
+	//			1 - use x-y-z coordinate system
 	// initialize q-points for actual correlation function
-	qo_pts = new double [qonpts];
-	qs_pts = new double [qsnpts];
-	ql_pts = new double [qlnpts];
-
-	double q_osl_init = init_q/sqrt(2.0);	//sqrt(2) is a cheat to keep q_interp inside range already calculated for qt-qx-qy-qz
-	double delta_q_osl = double(qnpts-1)*delta_q/(sqrt(2.0)*double(qonpts-1));
-
-	for (int iq = 0; iq < qonpts; ++iq)
-		qo_pts[iq] = q_osl_init + (double)iq * delta_q_osl;
-	for (int iq = 0; iq < qsnpts; ++iq)
-		qs_pts[iq] = q_osl_init + (double)iq * delta_q_osl;
-	for (int iq = 0; iq < qlnpts; ++iq)
-		ql_pts[iq] = q_osl_init + (double)iq * delta_q_osl;
-
-	// initialize error matrix
-	Correl_3D_err = new double ** [qonpts];
-	for (int iqo = 0; iqo < qonpts; ++iqo)
+	if (coords == 0)
 	{
-		Correl_3D_err[iqo] = new double * [qsnpts];
-		for (int iqs = 0; iqs < qsnpts; ++iqs)
+		q1npts = qonpts;
+		q2npts = qsnpts;
+		q3npts = qlnpts;
+
+		qo_pts = new double [qonpts];
+		qs_pts = new double [qsnpts];
+		ql_pts = new double [qlnpts];
+	
+		double q_osl_init = init_q/sqrt(2.0);	//sqrt(2) is a cheat to keep q_interp inside range already calculated for qt-qx-qy-qz
+		double delta_q_osl = double(qnpts-1)*delta_q/(sqrt(2.0)*double(qonpts-1));
+	
+		for (int iq = 0; iq < qonpts; ++iq)
+			qo_pts[iq] = q_osl_init + (double)iq * delta_q_osl;
+		for (int iq = 0; iq < qsnpts; ++iq)
+			qs_pts[iq] = q_osl_init + (double)iq * delta_q_osl;
+		for (int iq = 0; iq < qlnpts; ++iq)
+			ql_pts[iq] = q_osl_init + (double)iq * delta_q_osl;
+	
+		// initialize error matrix
+		Correl_3D_err = new double ** [qonpts];
+		for (int iqo = 0; iqo < qonpts; ++iqo)
 		{
-			Correl_3D_err[iqo][iqs] = new double [qlnpts];
-			for (int iql = 0; iql < qlnpts; ++iql)
-				Correl_3D_err[iqo][iqs][iql] = 1e-2;	//naive choice for now
+			Correl_3D_err[iqo] = new double * [qsnpts];
+			for (int iqs = 0; iqs < qsnpts; ++iqs)
+			{
+				Correl_3D_err[iqo][iqs] = new double [qlnpts];
+				for (int iql = 0; iql < qlnpts; ++iql)
+					Correl_3D_err[iqo][iqs][iql] = 1e-2;	//naive choice for now
+			}
+		}
+	}
+	else if (coords == 1)
+	{
+		q1npts = qxnpts;
+		q2npts = qynpts;
+		q3npts = qznpts;
+
+		qx_pts = new double [qxnpts];
+		qy_pts = new double [qynpts];
+		qz_pts = new double [qznpts];
+	
+		// initialize error matrix
+		Correl_3D_err = new double ** [qxnpts];
+		for (int iqx = 0; iqx < qxnpts; ++iqx)
+		{
+			Correl_3D_err[iqx] = new double * [qynpts];
+			for (int iqy = 0; iqy < qynpts; ++iqy)
+			{
+				Correl_3D_err[iqx][iqy] = new double [qznpts];
+				for (int iqz = 0; iqz < qznpts; ++iqz)
+					Correl_3D_err[iqx][iqy][iqz] = 1e-2;	//naive choice for now
+			}
 		}
 	}
 
@@ -1171,17 +1231,30 @@ void CorrelationFunction::Set_correlation_function_q_pts()
 
 // returns points in q-space for computing weighted spectra grid corresponding to to given q and K choices
 // weighted spectra grid thus needs to be interpolated at point returned in qgridpts
-void CorrelationFunction::Get_q_points(double qo, double qs, double ql, double pT, double pphi, double * qgridpts)
+void CorrelationFunction::Get_q_points(double q1, double q2, double q3, double pT, double pphi, double * qgridpts, int coords /*== 0*/)
 {
 	double mtarget = all_particles[target_particle_id].mass;
-	double xi2 = 0.25*mtarget*mtarget + pT*pT + qo*qo + qs*qs + ql*ql;
+	double xi2 = 0.25*mtarget*mtarget + pT*pT + q1*q1 + q2*q2 + q3*q3;
 	double ckp = cos(pphi), skp = sin(pphi);
 
-	// set qpts at which to interpolate spectra
-	qgridpts[0] = sqrt(xi2 + qo*pT) - sqrt(xi2 - qo*pT);	//set qt component
-	qgridpts[1] = qo*ckp - qs*skp;							//set qx component
-	qgridpts[2] = qo*skp + qs*ckp;							//set qy component
-	qgridpts[3] = ql;										//set qz component, since qz = ql
+	if (coords == 0)
+	{
+		// set qpts at which to interpolate spectra
+		qgridpts[0] = sqrt(xi2 + q1*pT) - sqrt(xi2 - q1*pT);	//set qt component
+		qgridpts[1] = q1*ckp - q2*skp;							//set qx component
+		qgridpts[2] = q1*skp + q2*ckp;							//set qy component
+		qgridpts[3] = q3;										//set qz component, since qz = ql
+	}
+	else if (coords == 1)
+	{
+		double qo = ckp * q1 + skp * q2;
+		
+		// set qpts at which to interpolate spectra
+		qgridpts[0] = sqrt(xi2 + qo*pT) - sqrt(xi2 - qo*pT);	//set qt component
+		qgridpts[1] = q1;										//set qx component
+		qgridpts[2] = q2;										//set qy component
+		qgridpts[3] = q3;										//set qz component, since qz = ql
+	}
 
 	return;
 }

@@ -357,6 +357,8 @@ void CorrelationFunction::Output_total_target_eiqx_dN_dypTdpTdphi(int folderinde
 		double CF = 1. + (cos_transf_spectra*cos_transf_spectra + sin_transf_spectra*sin_transf_spectra)/(nonFTd_spectra*nonFTd_spectra);
 		double thermal_target_CF = 1. + (cos_transf_tspectra*cos_transf_tspectra + sin_transf_tspectra*sin_transf_tspectra)/(nonFTd_tspectra*nonFTd_tspectra);
 		double shift = (CF - thermal_target_CF) / fraction_of_resonances;
+		if (fraction_of_resonances < 1.e-12)
+			shift = 0.0;
 
 		output_target_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12)
 			//<< qt_pts[iqt] << "   " << qx_pts[iqx] << "   " << qy_pts[iqy] << "   " << qz_pts[iqz] << "   "

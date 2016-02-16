@@ -179,6 +179,8 @@ class CorrelationFunction
 		double * qo_pts, * qs_pts, * ql_pts, * q_pts, * q_axes, * qt_pts, * qx_pts, * qy_pts, * qz_pts;
 		double ** qt_PTdep_pts, ** qx_PTdep_pts, ** qy_PTdep_pts, ** qz_PTdep_pts;
 		double * q_out, * q_side, * q_long;
+		int q1npts, q2npts, q3npts;		//123 indexing allows these to refer to either q[osl]npts or q[xyz]npts
+		double * q1_pts, * q2_pts, * q3_pts;
 		int iqt0, iqx0, iqy0, iqz0;
 		vector<vector<int> > sorted_q_pts_list;
 		
@@ -286,8 +288,8 @@ class CorrelationFunction
 		static inline double lin_int(double x_m_x1, double one_by_x2_m_x1, double f1, double f2);
 		void Edndp3(double ptr, double phir, double * results);
 		void Set_q_points();
-		void Set_correlation_function_q_pts();
-		void Get_q_points(double qo, double qs, double ql, double KT, double Kphi, double * qgridpts);
+		void Set_correlation_function_q_pts(int coords = 0);
+		void Get_q_points(double qo, double qs, double ql, double KT, double Kphi, double * qgridpts, int coords = 0);
 		void Set_sorted_q_pts_list();
 		void Allocate_resonance_running_sum_vectors();
 		void Delete_resonance_running_sum_vectors();
@@ -299,12 +301,14 @@ class CorrelationFunction
 		void Delete_S_p_withweight_array();
 
 		// Gaussian fit / correlation function routines
-		void Allocate_CFvals();
+		void Allocate_CFvals(int coords = 0);
 		void Get_GF_HBTradii(FO_surf* FOsurf_ptr, int folderindex);
 		void Cal_correlationfunction(bool use_HDF_resonance_file = false);
-		void Fit_Correlationfunction3D(double *** Correl_3D, int ipt, int ipphi);
+		double Compute_correlationfunction_in_XYZ(int ipt, int ipphi, int iqx, int iqy, int iqz, double qt_interp);
+		void Cal_correlationfunction_in_XYZ();
+		void Fit_Correlationfunction3D(double *** Correl_3D, int ipt, int ipphi, int coords = 0);
 		int print_fit_state_3D (size_t iteration, gsl_multifit_fdfsolver * solver_ptr);
-		void Fit_Correlationfunction3D_withlambda(double *** Correl_3D, int ipt, int ipphi);
+		void Fit_Correlationfunction3D_withlambda(double *** Correl_3D, int ipt, int ipphi, int coords = 0);
 		int print_fit_state_3D_withlambda (size_t iteration, gsl_multifit_fdfsolver * solver_ptr);
 		//int Read_correlationfunction(int iKT, int iKphi);
 		inline double get_fit_results(int i, gsl_multifit_fdfsolver * solver_ptr);

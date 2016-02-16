@@ -130,6 +130,61 @@ double CorrelationFunction::Compute_correlationfunction(int ipt, int ipphi, doub
 	return (interpolated_result);
 }
 
+double CorrelationFunction::Compute_correlationfunction_in_XYZ(int ipt, int ipphi, int iqx, int iqy, int iqz, double qt_interp)
+{
+	// try using linear-logarithmic interpolation if q-point is within grid
+	// otherwise, just use linear interpolation/extrapolation, or throw an exception and do return 0
+	double interpolated_result = 0.0;
+
+	double nonFTd_spectra = spectra[target_particle_id][ipt][ipphi];
+
+	int qidx = binarySearch(qt_PTdep_pts[ipt], qtnpts, qt_interp);
+
+	bool q_point_is_outside_grid = ( qidx == -1 );
+
+	if (!q_point_is_outside_grid)
+	{
+		double q_min = qt_PTdep_pts[ipt][qidx];
+		double q_max = qt_PTdep_pts[ipt][qidx+1];
+
+		double ln_C_at_q[2];
+		//double C_at_q[2];
+
+		double ***** current_C_slice = current_dN_dypTdpTdphi_moments[ipt][ipphi];
+
+		// set values at all vertices of 4D-hypercube used for interpolation
+		for (int iqtidx = 0; iqtidx < 1; ++iqtidx)
+		{
+			double tmp_cos = current_C_slice[qidx+iqtidx][iqx][iqy][iqz][0];
+			double tmp_sin = current_C_slice[qidx+iqtidx][iqx][iqy][iqz][1];
+			//C_at_q[iqtidx] = (tmp_cos*tmp_cos + tmp_sin*tmp_sin)/(nonFTd_spectra*nonFTd_spectra);
+			ln_C_at_q[iqtidx] = log( (tmp_cos*tmp_cos + tmp_sin*tmp_sin)/(nonFTd_spectra*nonFTd_spectra) + 1.e-100 );
+		}
+
+		// interpolating w.r.t. q^2, not q
+		double sgnd_qt2_interp = sgn(qt_interp) * qt_interp * qt_interp;
+		double * sgnd_qt2_limits = new double [2];
+		sgnd_qt2_limits[0] = sgn(q_min) * q_min * q_min;
+		sgnd_qt2_limits[1] = sgn(q_max) * q_max * q_max;
+
+		double interpolated_ln_result = interpolate1D(sgnd_qt2_limits, ln_C_at_q, sgnd_qt2_interp, 2, 0, true);
+		interpolated_result = exp(interpolated_ln_result);
+
+		// Clean up
+		//delete [] sgnd_qt2_interp;
+		//delete [] sgnd_q2_min;
+		//delete [] sgnd_q2_max;
+		delete [] sgnd_qt2_limits;
+	}
+	else
+	{
+		//*global_out_stream_ptr << "Warning: q_interp point was outside of computed grid!" << endl
+		//						<< "\t q_interp = {" << q_interp[0] << ", " << q_interp[1] << ", " << q_interp[2] << ", " << q_interp[3] << "}" << endl;
+		interpolated_result = 0.0;
+	}
+	return (interpolated_result);
+}
+
 double CorrelationFunction::Compute_correlationfunction_ALT(int ipt, int ipphi, double * q_interp)
 {
 	// try using linear-logarithmic interpolation if q-point is within grid
@@ -300,23 +355,79 @@ q_interp[3] = 0.0125871;
 	return;
 }
 
+//to save time, don't bother making grid large enough to interpolate to OSL
+//this function leaves open the option of just interpolating over the qt-direction
+void CorrelationFunction::Cal_correlationfunction_in_XYZ()
+{
+	// Can't interpolate if there's only one point in qt-direction!
+	if (qtnpts == 1)
+		return;
+
+	// chooses the qo, qs, ql (or qx, qy, ql) points at which to evaluate correlation function,
+	// and allocates the array to hold correlation function values
+	int chosen_coordinate_system = 1;
+	Set_correlation_function_q_pts(chosen_coordinate_system);
+	Allocate_CFvals(chosen_coordinate_system);
+
+	double * q_interp = new double [4];
+
+	// Then compute full correlation function
+	*global_out_stream_ptr << "Computing the full correlator in out-side-long coordinates..." << endl;
+	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+	for (int iqx = 0; iqx < qxnpts; ++iqx)
+	for (int iqy = 0; iqy < qynpts; ++iqy)
+	for (int iqz = 0; iqz < qznpts; ++iqz)
+	{
+		Get_q_points(qx_pts[iqx], qy_pts[iqy], qz_pts[iqz], SPinterp_pT[ipt], SPinterp_pphi[ipphi], q_interp, chosen_coordinate_system);
+
+		CFvals[ipt][ipphi][iqx][iqy][iqz] = Compute_correlationfunction_in_XYZ(ipt, ipphi, iqx, iqy, iqz, q_interp[0]);
+	}
+	*global_out_stream_ptr << "Finished computing correlator." << endl;
+
+	/*// this is just to check the interpolation routines...
+	for (int ipt = 0; ipt < n_interp_pT_pts; ipt+=n_interp_pT_pts-1)
+	//for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+	for (int iqt = 0; iqt < 11; ++iqt)
+	for (int iqx = 0; iqx < 11; ++iqx)
+	for (int iqy = 0; iqy < 11; ++iqy)
+	for (int iqz = 0; iqz < 11; ++iqz)
+	{
+		double nonFTd_spectra = spectra[target_particle_id][ipt][0];
+		//uniform grid for simplicity
+		q_interp[0] = qt_PTdep_pts[ipt][0] + 0.1 * iqt * (qt_PTdep_pts[ipt][qtnpts - 1] - qt_PTdep_pts[ipt][0]);
+		q_interp[1] = qx_PTdep_pts[ipt][0] + 0.1 * iqx * (qx_PTdep_pts[ipt][qxnpts - 1] - qx_PTdep_pts[ipt][0]);
+		q_interp[2] = qy_PTdep_pts[ipt][0] + 0.1 * iqy * (qy_PTdep_pts[ipt][qynpts - 1] - qy_PTdep_pts[ipt][0]);
+		q_interp[3] = qz_PTdep_pts[ipt][0] + 0.1 * iqz * (qz_PTdep_pts[ipt][qznpts - 1] - qz_PTdep_pts[ipt][0]);
+
+		cout << "TEST GRID: " << SPinterp_pT[ipt] << "   " << SPinterp_pphi[0] << "   "
+				<< q_interp[0] << "   " << q_interp[1] << "   " << q_interp[2] << "   " << q_interp[3] << "   "
+				<< Compute_correlationfunction(ipt, 0, q_interp) << "   " << Compute_correlationfunction_ALT(ipt, 0, q_interp) << "   "
+				<< Cal_dN_dypTdpTdphi_with_weights_function( current_FOsurf_ptr, target_particle_id, SPinterp_pT[ipt], SPinterp_pphi[0],
+															q_interp[0], q_interp[1], q_interp[2], q_interp[3] )/(nonFTd_spectra*nonFTd_spectra) << endl;
+	}*/
+
+
+	return;
+}
+
 //**************************************************************
 // Gaussian fit routines below
 //**************************************************************
 
-void CorrelationFunction::Fit_Correlationfunction3D(double *** Correl_3D, int ipt, int ipphi)
+void CorrelationFunction::Fit_Correlationfunction3D(double *** Correl_3D, int ipt, int ipphi, int coords /*== 0*/)
 {
-	const size_t data_length = qonpts*qsnpts*qlnpts;  // # of points
+	const size_t data_length = q1npts*q2npts*q3npts;  // # of points
 	const size_t n_para = 4;  // # of parameters
-//debugger(__LINE__, __FILE__);
+
 	// allocate space for a covariance matrix of size p by p
 	gsl_matrix *covariance_ptr = gsl_matrix_alloc (n_para, n_para);
-//debugger(__LINE__, __FILE__);
+
 	// allocate and setup for generating gaussian distibuted random numbers
 	gsl_rng_env_setup ();
 	const gsl_rng_type *type = gsl_rng_default;
 	gsl_rng *rng_ptr = gsl_rng_alloc (type);
-//debugger(__LINE__, __FILE__);
+
 	//set up test data
 	struct Correlationfunction3D_data Correlfun3D_data;
 	Correlfun3D_data.data_length = data_length;
@@ -325,26 +436,42 @@ void CorrelationFunction::Fit_Correlationfunction3D(double *** Correl_3D, int ip
 	Correlfun3D_data.q_l = new double [data_length];
 	Correlfun3D_data.y = new double [data_length];
 	Correlfun3D_data.sigma = new double [data_length];
-//debugger(__LINE__, __FILE__);
+
 	int idx = 0;
-	for(int i = 0; i < qonpts; i++)
-	for(int j = 0; j < qsnpts; j++)
-	for(int k = 0; k < qlnpts; k++)
+	if (coords == 0)		// osl coordinates
 	{
-		Correlfun3D_data.q_o[idx] = qo_pts[i];
-		Correlfun3D_data.q_s[idx] = qs_pts[j];
-		Correlfun3D_data.q_l[idx] = ql_pts[k];
-		// This sets up the data to be fitted, with gaussian noise added
-		// Correlfun3D_data.y[idx] = 1.0*exp( - 0.81*q_out[i]*q_out[i] - 1.21*q_side[j]*q_side[j] - 4.0*q_long[k]*q_long[k] - 0.25*q_out[i]*q_side[j]) + gsl_ran_gaussian(rng_ptr, 	error);
-		Correlfun3D_data.y[idx] = Correl_3D[i][j][k];
-		Correlfun3D_data.sigma[idx] = Correl_3D_err[i][j][k];
-		idx++;
+		for (int i = 0; i < q1npts; i++)
+		for (int j = 0; j < q2npts; j++)
+		for (int k = 0; k < q3npts; k++)
+		{
+			Correlfun3D_data.q_o[idx] = qo_pts[i];
+			Correlfun3D_data.q_s[idx] = qs_pts[j];
+			Correlfun3D_data.q_l[idx] = ql_pts[k];
+			Correlfun3D_data.y[idx] = Correl_3D[i][j][k];
+			Correlfun3D_data.sigma[idx] = Correl_3D_err[i][j][k];
+			idx++;
+		}
 	}
-//debugger(__LINE__, __FILE__);
+	else if (coords == 1)	// xyz coordinates
+	{
+		double ckp = cos_SPinterp_pphi[ipphi], skp = sin_SPinterp_pphi[ipphi];
+		for (int i = 0; i < q1npts; i++)
+		for (int j = 0; j < q2npts; j++)
+		for (int k = 0; k < q3npts; k++)
+		{
+			Correlfun3D_data.q_o[idx] = qx_pts[i] * ckp + qy_pts[j] * skp;
+			Correlfun3D_data.q_s[idx] = -qx_pts[i] * skp + qy_pts[j] * ckp;
+			Correlfun3D_data.q_l[idx] = qz_pts[k];
+			Correlfun3D_data.y[idx] = Correl_3D[i][j][k];
+			Correlfun3D_data.sigma[idx] = Correl_3D_err[i][j][k];
+			idx++;
+		}
+	}
+
 	double para_init[n_para] = { 1.0, 1.0, 1.0, 1.0 };  // initial guesses of parameters
-//debugger(__LINE__, __FILE__);
+
 	gsl_vector_view xvec_ptr = gsl_vector_view_array (para_init, n_para);
-//debugger(__LINE__, __FILE__);
+
 	// set up the function to be fit 
 	gsl_multifit_function_fdf target_func;
 	target_func.f = &Fittarget_correlfun3D_f;        // the function of residuals
@@ -353,11 +480,11 @@ void CorrelationFunction::Fit_Correlationfunction3D(double *** Correl_3D, int ip
 	target_func.n = data_length;              // number of points in the data set
 	target_func.p = n_para;              // number of parameters in the fit function
 	target_func.params = &Correlfun3D_data;  // structure with the data and error bars
-//debugger(__LINE__, __FILE__);
+
 	const gsl_multifit_fdfsolver_type *type_ptr = gsl_multifit_fdfsolver_lmsder;
 	gsl_multifit_fdfsolver *solver_ptr = gsl_multifit_fdfsolver_alloc (type_ptr, data_length, n_para);
 	gsl_multifit_fdfsolver_set (solver_ptr, &target_func, &xvec_ptr.vector);
-//debugger(__LINE__, __FILE__);
+
 	size_t iteration = 0;         // initialize iteration counter
 	print_fit_state_3D (iteration, solver_ptr);
 	int status;  		// return value from gsl function calls (e.g., error)
@@ -383,19 +510,19 @@ void CorrelationFunction::Fit_Correlationfunction3D(double *** Correl_3D, int ip
 		status = gsl_multifit_test_delta (solver_ptr->dx, solver_ptr->x, fit_tolerance, fit_tolerance);
 	}
 	while (status == GSL_CONTINUE && iteration < fit_max_iterations);
-//debugger(__LINE__, __FILE__);
+
 	//cerr >> "iteration = " << iteration << endl;
-//debugger(__LINE__, __FILE__);
+
 	// calculate the covariance matrix of the best-fit parameters
 	gsl_multifit_covar (solver_ptr->J, 0.0, covariance_ptr);
 
 	// print out the covariance matrix using the gsl function (not elegant!)
 	cout << endl << "Covariance matrix: " << endl;
 	gsl_matrix_fprintf (stdout, covariance_ptr, "%g");
-//debugger(__LINE__, __FILE__);
+
 	cout.setf (ios::fixed, ios::floatfield);	// output in fixed format
 	cout.precision (5);		                // # of digits in doubles
-//debugger(__LINE__, __FILE__);
+
 	int width = 7;		// setw width for output
 	cout << endl << "Best fit results:" << endl;
 	cout << "R2o = " << setw (width) << get_fit_results (0, solver_ptr)
@@ -416,7 +543,7 @@ void CorrelationFunction::Fit_Correlationfunction3D(double *** Correl_3D, int ip
 	double chi = gsl_blas_dnrm2(solver_ptr->f);
 	double dof = data_length - n_para;
 	double c = GSL_MAX_DBL(1, chi/sqrt(dof));
-//debugger(__LINE__, __FILE__);
+
 	lambda_Correl[ipt][ipphi] = 1.0;
 	lambda_Correl_err[ipt][ipphi] = 0.0;
 	R2_out[ipt][ipphi] = fabs(get_fit_results(0, solver_ptr))*hbarC*hbarC;
@@ -427,7 +554,7 @@ void CorrelationFunction::Fit_Correlationfunction3D(double *** Correl_3D, int ip
 	R2_side_err[ipt][ipphi] = c*get_fit_err(1, covariance_ptr)*hbarC*hbarC;
 	R2_long_err[ipt][ipphi] = c*get_fit_err(2, covariance_ptr)*hbarC*hbarC;
 	R2_outside_err[ipt][ipphi] = c*get_fit_err(3, covariance_ptr)*hbarC*hbarC;
-//debugger(__LINE__, __FILE__);
+
 	cout << "final results: " << endl;
 	cout << scientific << setw(10) << setprecision(5) 
 		<< "chisq/dof = " << chi*chi/dof << endl;
@@ -437,25 +564,25 @@ void CorrelationFunction::Fit_Correlationfunction3D(double *** Correl_3D, int ip
 	cout << " R2_side[ipt][ipphi] = " << R2_side[ipt][ipphi] << " +/- " << R2_side_err[ipt][ipphi] << endl;
 	cout << " R2_long[ipt][ipphi] = " << R2_long[ipt][ipphi] << " +/- " << R2_long_err[ipt][ipphi] << endl;
 	cout << " R2_outside[ipt][ipphi] = " << R2_outside[ipt][ipphi] << " +/- " << R2_outside_err[ipt][ipphi] << endl;
-//debugger(__LINE__, __FILE__);
+
 	//clean up
 	gsl_matrix_free (covariance_ptr);
 	gsl_rng_free (rng_ptr);
-//debugger(__LINE__, __FILE__);
+
 	delete[] Correlfun3D_data.q_o;
 	delete[] Correlfun3D_data.q_s;
 	delete[] Correlfun3D_data.q_l;
 	delete[] Correlfun3D_data.y;
 	delete[] Correlfun3D_data.sigma;
-//debugger(__LINE__, __FILE__);
+
 	gsl_multifit_fdfsolver_free (solver_ptr);  // free up the solver
 
 	return;
 }
 
-void CorrelationFunction::Fit_Correlationfunction3D_withlambda(double *** Correl_3D, int ipt, int ipphi)
+void CorrelationFunction::Fit_Correlationfunction3D_withlambda(double *** Correl_3D, int ipt, int ipphi, int coords /*== 0*/)
 {
-	const size_t data_length = qonpts*qsnpts*qlnpts;  // # of points
+	const size_t data_length = q1npts*q2npts*q3npts;  // # of points
 	const size_t n_para = 5;  // # of parameters
 
 	// allocate space for a covariance matrix of size p by p
@@ -476,18 +603,34 @@ void CorrelationFunction::Fit_Correlationfunction3D_withlambda(double *** Correl
 	Correlfun3D_data.sigma = new double [data_length];
 
 	int idx = 0;
-	for(int i = 0; i < qonpts; i++)
-	for(int j = 0; j < qsnpts; j++)
-	for(int k = 0; k < qlnpts; k++)
+	if (coords == 0)		// osl coordinates
 	{
-		Correlfun3D_data.q_o[idx] = qo_pts[i];
-		Correlfun3D_data.q_s[idx] = qs_pts[j];
-		Correlfun3D_data.q_l[idx] = ql_pts[k];
-		// This sets up the data to be fitted, with gaussian noise added
-		// Correlfun3D_data.y[idx] = 1.0*exp( - 0.81*q_out[i]*q_out[i] - 1.21*q_side[j]*q_side[j] - 4.0*q_long[k]*q_long[k] - 0.25*q_out[i]*q_side[j]) + gsl_ran_gaussian(rng_ptr, error);
-		Correlfun3D_data.y[idx] = Correl_3D[i][j][k];
-		Correlfun3D_data.sigma[idx] = Correl_3D_err[i][j][k];
-		idx++;
+		for (int i = 0; i < q1npts; i++)
+		for (int j = 0; j < q2npts; j++)
+		for (int k = 0; k < q3npts; k++)
+		{
+			Correlfun3D_data.q_o[idx] = qo_pts[i];
+			Correlfun3D_data.q_s[idx] = qs_pts[j];
+			Correlfun3D_data.q_l[idx] = ql_pts[k];
+			Correlfun3D_data.y[idx] = Correl_3D[i][j][k];
+			Correlfun3D_data.sigma[idx] = Correl_3D_err[i][j][k];
+			idx++;
+		}
+	}
+	else if (coords == 1)	// xyz coordinates
+	{
+		double ckp = cos_SPinterp_pphi[ipphi], skp = sin_SPinterp_pphi[ipphi];
+		for (int i = 0; i < q1npts; i++)
+		for (int j = 0; j < q2npts; j++)
+		for (int k = 0; k < q3npts; k++)
+		{
+			Correlfun3D_data.q_o[idx] = qx_pts[i] * ckp + qy_pts[j] * skp;
+			Correlfun3D_data.q_s[idx] = -qx_pts[i] * skp + qy_pts[j] * ckp;
+			Correlfun3D_data.q_l[idx] = qz_pts[k];
+			Correlfun3D_data.y[idx] = Correl_3D[i][j][k];
+			Correlfun3D_data.sigma[idx] = Correl_3D_err[i][j][k];
+			idx++;
+		}
 	}
 	double para_init[n_para] = { 1.0, 1.0, 1.0, 1.0, 1.0 };  // initial guesses of parameters
 

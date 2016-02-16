@@ -1800,6 +1800,9 @@ double CorrelationFunction::gsl_polynomial_fit(const vector<double> &data_x, con
 	gsl_matrix_free (X);
 	gsl_matrix_free (cov);
 
+	delete [] in_data_x;
+	delete [] in_data_y;
+
 	return ( accumulate(vc.begin(), vc.end(), 0.0) );
 }
 
