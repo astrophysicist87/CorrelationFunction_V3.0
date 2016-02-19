@@ -662,6 +662,7 @@ void get_important_resonances(int chosen_target_particle_idx, vector<int> * chos
 		count = Nparticle;	//			if (sorted_resonance_indices[ii - 1] == chosen_target_particle_idx)
 		for (int ii = 1; ii <= count; ii++)
 			(*chosen_resonance_indices_ptr).push_back(sorted_resonance_indices[ii - 1]);
+		running_total_percentage = 1.0;
 		output << "All resonances included." << endl;
 	}
 	else

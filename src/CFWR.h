@@ -234,14 +234,12 @@ class CorrelationFunction
 		int Copy_chunk(int current_resonance_index, int reso_idx_to_be_copied);
 		int Dump_resonance_HDF_array_spectra(string output_filename, double ******* resonance_array_to_use);
 
-		void Set_giant_arrays(int iqt, int iqx, int iqy, int iqz);
 		inline void addElementToQueue(priority_queue<pair<double, size_t> >& p, pair<double, size_t> elem, size_t max_size);
 
 		void Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int dc_idx);
 		void Cal_dN_dypTdpTdphi(double** SP_p0, double** SP_px, double** SP_py, double** SP_pz, FO_surf* FOsurf_ptr);
 		void Cal_dN_dypTdpTdphi_heap(FO_surf* FOsurf_ptr, int local_pid, double cutoff);
 		void Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, int local_pid);
-		void Cal_dN_dypTdpTdphi_with_weights_INVERTED_LOOPS(FO_surf* FOsurf_ptr, int local_pid);
 		double Cal_dN_dypTdpTdphi_function(FO_surf* FOsurf_ptr, int local_pid, double pT, double pphi);
 		double Cal_dN_dypTdpTdphi_with_weights_function(FO_surf* FOsurf_ptr, int local_pid, double pT, double pphi, double qt, double qx, double qy, double qz);
 		void Do_resonance_integrals(int iKT, int iKphi, int dc_idx);
@@ -261,9 +259,8 @@ class CorrelationFunction
 		void Delete_decay_channel_info();
 		int Set_daughter_list(int parent_resonance_index);
 
-		void form_trig_sign_z(int isurf, int ieta, int iqt, int iqx, int iqy, int iqz, int ii, double * results);
-		void estimate_radii(double pT_local, double & Rperp, double & Rparallel, double & R0);
-		void Set_q_pTdep_pts(int ipt);
+		void Fill_out_pts(double * pointsarray, int numpoints, double max_val, int spacing_type);
+		void Set_q_pTdep_pts(int ipt, double qxw, double qyw, double qzw);
 		void Set_eiqx_with_q_pTdep_pts(int ipt);
 		void Load_eiqx_with_q_pTdep_pts(int ipt);
 		void Dump_phases_to_binary(char direction, int ipt, double ** array, const int nd1, const int nd2);
@@ -288,8 +285,8 @@ class CorrelationFunction
 		static inline double lin_int(double x_m_x1, double one_by_x2_m_x1, double f1, double f2);
 		void Edndp3(double ptr, double phir, double * results);
 		void Set_q_points();
-		void Set_correlation_function_q_pts(int coords = 0);
-		void Get_q_points(double qo, double qs, double ql, double KT, double Kphi, double * qgridpts, int coords = 0);
+		void Set_correlation_function_q_pts();
+		void Get_q_points(double qo, double qs, double ql, double KT, double Kphi, double * qgridpts);
 		void Set_sorted_q_pts_list();
 		void Allocate_resonance_running_sum_vectors();
 		void Delete_resonance_running_sum_vectors();
@@ -301,21 +298,17 @@ class CorrelationFunction
 		void Delete_S_p_withweight_array();
 
 		// Gaussian fit / correlation function routines
-		void Allocate_CFvals(int coords = 0);
+		void Allocate_CFvals();
 		void Get_GF_HBTradii(FO_surf* FOsurf_ptr, int folderindex);
-		void Cal_correlationfunction(bool use_HDF_resonance_file = false);
-		double Compute_correlationfunction_in_XYZ(int ipt, int ipphi, int iqx, int iqy, int iqz, double qt_interp);
-		void Cal_correlationfunction_in_XYZ();
-		void Fit_Correlationfunction3D(double *** Correl_3D, int ipt, int ipphi, int coords = 0);
+		double Compute_correlationfunction(int ipt, int ipphi, int iqx, int iqy, int iqz, double qt_interp, int interp_flag = 0);
+		void Cal_correlationfunction();
+		void Fit_Correlationfunction3D(double *** Correl_3D, int ipt, int ipphi);
 		int print_fit_state_3D (size_t iteration, gsl_multifit_fdfsolver * solver_ptr);
-		void Fit_Correlationfunction3D_withlambda(double *** Correl_3D, int ipt, int ipphi, int coords = 0);
+		void Fit_Correlationfunction3D_withlambda(double *** Correl_3D, int ipt, int ipphi);
 		int print_fit_state_3D_withlambda (size_t iteration, gsl_multifit_fdfsolver * solver_ptr);
 		//int Read_correlationfunction(int iKT, int iKphi);
 		inline double get_fit_results(int i, gsl_multifit_fdfsolver * solver_ptr);
 		inline double get_fit_err (int i, gsl_matrix * covariance_ptr);
-		double Compute_correlationfunction(int ipt, int ipphi, double * q_interp);
-		double Compute_correlationfunction_ALT(int ipt, int ipphi, double * q_interp);
-		double interpolate_4D(double * x_min, double * x_max, double * x_interp, double (*vals) [2][2][2]);
 		double gsl_polynomial_fit(const vector<double> &data_x, const vector<double> &data_y, const int order, double & chisq, bool verbose = false);
 		double best_fit_rational_function(vector<double> & xdata, vector<double> & ydata, int n, int m, double x, bool & error_report);
 

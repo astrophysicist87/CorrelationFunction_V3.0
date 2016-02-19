@@ -7,130 +7,47 @@
 #include<vector>
 #include<stdio.h>
 
-/*#include<gsl/gsl_sf_bessel.h>
-#include <gsl/gsl_errno.h>
-#include <gsl/gsl_rng.h>            // gsl random number generators
-#include <gsl/gsl_randist.h>        // gsl random number distributions
-#include <gsl/gsl_vector.h>         // gsl vector and matrix definitions
-#include <gsl/gsl_blas.h>           // gsl linear algebra stuff
-#include <gsl/gsl_multifit_nlin.h>  // gsl multidimensional fitting*/
-
 #include "CFWR.h"
+#include "CPStopwatch.h"
 #include "Arsenal.h"
 #include "gauss_quadrature.h"
+#include "chebyshev.h"
 
 using namespace std;
 
-double slopes[4][2];
-
 void CorrelationFunction::Get_GF_HBTradii(FO_surf* FOsurf_ptr, int folderindex)
 {
-	*global_out_stream_ptr << "--> Getting HBT radii by Gaussian fit method" << endl;
+	if (!VARY_ALPHA)
+		*global_out_stream_ptr << "--> Getting HBT radii by Gaussian fit method" << endl;
+	else
+		*global_out_stream_ptr << "--> Getting HBT radii by Levy-stable fit method" << endl;
+
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 	{
 		*global_out_stream_ptr << "   --> Doing pT = " << SPinterp_pT[ipt] << ", pphi = " << SPinterp_pphi[ipphi] << "..." << endl;
-		if (USE_LAMBDA)
-			Fit_Correlationfunction3D_withlambda( CFvals[ipt][ipphi], ipt, ipphi );
-		else
-			Fit_Correlationfunction3D( CFvals[ipt][ipphi], ipt, ipphi );
+		if (!VARY_ALPHA)
+		{
+			if (USE_LAMBDA)
+				Fit_Correlationfunction3D_withlambda( CFvals[ipt][ipphi], ipt, ipphi );
+			else
+				Fit_Correlationfunction3D( CFvals[ipt][ipphi], ipt, ipphi );
+		}
+		else	//varying alpha not yet supported!
+		{
+			//if (USE_LAMBDA)
+			//	Fit_Correlationfunction3D_withlambda( CFvals[ipt][ipphi], ipt, ipphi );
+			//else
+			//	Fit_Correlationfunction3D( CFvals[ipt][ipphi], ipt, ipphi );
+			cerr << "Varying alpha not yet supported!" << endl;
+		}
+
 	}
 
 	return;
 }
 
-double CorrelationFunction::Compute_correlationfunction(int ipt, int ipphi, double * q_interp)
-{
-	// try using linear-logarithmic interpolation if q-point is within grid
-	// otherwise, just use linear interpolation/extrapolation, or throw an exception and do return 0
-	double interpolated_result = 0.0;
-
-	double nonFTd_spectra = spectra[target_particle_id][ipt][ipphi];
-
-	int * qidx = new int [4];
-	//qidx[0] = binarySearch(qt_pts, qtnpts, q_interp[0]);
-	//qidx[1] = binarySearch(qx_pts, qxnpts, q_interp[1]);
-	//qidx[2] = binarySearch(qy_pts, qynpts, q_interp[2]);
-	//qidx[3] = binarySearch(qz_pts, qznpts, q_interp[3]);
-	qidx[0] = binarySearch(qt_PTdep_pts[ipt], qtnpts, q_interp[0]);
-	qidx[1] = binarySearch(qx_PTdep_pts[ipt], qxnpts, q_interp[1]);
-	qidx[2] = binarySearch(qy_PTdep_pts[ipt], qynpts, q_interp[2]);
-	qidx[3] = binarySearch(qz_PTdep_pts[ipt], qznpts, q_interp[3]);
-
-
-	bool q_point_is_outside_grid = ( qidx[0] == -1 ) || ( qidx[1] == -1 ) || ( qidx[2] == -1 ) || ( qidx[3] == -1 );
-
-	if (!q_point_is_outside_grid)
-	{
-		double * sgnd_q2_interp = new double [4];
-		//double q_min[4] = { qt_pts[qidx[0]], qx_pts[qidx[1]], qy_pts[qidx[2]], qz_pts[qidx[3]] };
-		//double q_max[4] = { qt_pts[qidx[0]+1], qx_pts[qidx[1]+1], qy_pts[qidx[2]+1], qz_pts[qidx[3]+1] };
-		double q_min[4] = { qt_PTdep_pts[ipt][qidx[0]], qx_PTdep_pts[ipt][qidx[1]], qy_PTdep_pts[ipt][qidx[2]], qz_PTdep_pts[ipt][qidx[3]] };
-		double q_max[4] = { qt_PTdep_pts[ipt][qidx[0]+1], qx_PTdep_pts[ipt][qidx[1]+1], qy_PTdep_pts[ipt][qidx[2]+1], qz_PTdep_pts[ipt][qidx[3]+1] };
-		double * sgnd_q2_min = new double [4];
-		double * sgnd_q2_max = new double [4];
-
-		double ln_C_at_q[2][2][2][2];
-		//double C_at_q[2][2][2][2];
-		double ***** current_C_slice = current_dN_dypTdpTdphi_moments[ipt][ipphi];
-
-		// set values at all vertices of 4D-hypercube used for interpolation
-		for (int i = 0; i < 2; ++i)
-		{
-			double **** ccs1 = current_C_slice[qidx[0]+i];
-			for (int j = 0; j < 2; ++j)
-			{
-				double *** ccs2 = ccs1[qidx[1]+j];
-				for (int k = 0; k < 2; ++k)
-				{
-					double ** ccs3 = ccs2[qidx[2]+k];
-					for (int l = 0; l < 2; ++l)
-					{
-						double * ccs4 = ccs3[qidx[3]+l];
-						double tmp_cos = ccs4[0];
-						double tmp_sin = ccs4[1];
-						ln_C_at_q[i][j][k][l] = log( (tmp_cos*tmp_cos + tmp_sin*tmp_sin)/(nonFTd_spectra*nonFTd_spectra) + 1.e-100 );
-						/*if (isnan(ln_C_at_q[i][j][k][l]) || isinf(ln_C_at_q[i][j][k][l]))
-						{
-							cerr << "NaN or Inf at ln_C_at_q[" << i << "][" << j << "][" << k << "][" << l << "] = " << ln_C_at_q[i][j][k][l] << endl;
-							cerr << "tmp_cos = " << tmp_cos << endl;
-							cerr << "tmp_sin = " << tmp_sin << endl;
-							cerr << "nonFTd_spectra = " << nonFTd_spectra << endl;
-							exit(1);
-						}*/
-						//C_at_q[i][j][k][l] = (tmp_cos*tmp_cos + tmp_sin*tmp_sin)/(nonFTd_spectra*nonFTd_spectra);
-					}
-				}
-			}
-		}
-
-		// interpolating w.r.t. q^2, not q
-		for (int i = 0; i < 4; ++i)
-		{
-			sgnd_q2_interp[i] = sgn(q_interp[i]) * q_interp[i] * q_interp[i];
-			sgnd_q2_min[i] = sgn(q_min[i]) * q_min[i] * q_min[i];
-			sgnd_q2_max[i] = sgn(q_max[i]) * q_max[i] * q_max[i];
-		}
-
-		double interpolated_ln_result = interpolate_4D(sgnd_q2_min, sgnd_q2_max, sgnd_q2_interp, ln_C_at_q);
-		interpolated_result = exp(interpolated_ln_result);
-		//double interpolated_result = interpolate_4D(q_min, q_max, q_interp, C_at_q);
-
-		// Clean up
-		delete [] sgnd_q2_interp;
-		delete [] sgnd_q2_min;
-		delete [] sgnd_q2_max;
-	}
-	else
-	{
-		//*global_out_stream_ptr << "Warning: q_interp point was outside of computed grid!" << endl
-		//						<< "\t q_interp = {" << q_interp[0] << ", " << q_interp[1] << ", " << q_interp[2] << ", " << q_interp[3] << "}" << endl;
-		interpolated_result = 0.0;
-	}
-	return (interpolated_result);
-}
-
-double CorrelationFunction::Compute_correlationfunction_in_XYZ(int ipt, int ipphi, int iqx, int iqy, int iqz, double qt_interp)
+double CorrelationFunction::Compute_correlationfunction(int ipt, int ipphi, int iqx, int iqy, int iqz, double qt_interp, int interp_flag /*==0*/)
 {
 	// try using linear-logarithmic interpolation if q-point is within grid
 	// otherwise, just use linear interpolation/extrapolation, or throw an exception and do return 0
@@ -139,274 +56,148 @@ double CorrelationFunction::Compute_correlationfunction_in_XYZ(int ipt, int ipph
 	double nonFTd_spectra = spectra[target_particle_id][ipt][ipphi];
 
 	int qidx = binarySearch(qt_PTdep_pts[ipt], qtnpts, qt_interp);
+	double q_min = qt_PTdep_pts[ipt][0] / cos(M_PI / (2.*qtnpts)), q_max = qt_PTdep_pts[ipt][qtnpts-1]/ cos(M_PI / (2.*qtnpts));
 
-	bool q_point_is_outside_grid = ( qidx == -1 );
+	bool q_point_is_outside_grid = ( qidx == -1 && ( qt_interp < q_min || qt_interp > q_max ) );
+	bool use_linear_logarithmic_interpolation = false;
 
 	if (!q_point_is_outside_grid)
 	{
-		double q_min = qt_PTdep_pts[ipt][qidx];
-		double q_max = qt_PTdep_pts[ipt][qidx+1];
-
-		double ln_C_at_q[2];
-		//double C_at_q[2];
-
-		double ***** current_C_slice = current_dN_dypTdpTdphi_moments[ipt][ipphi];
-
-		// set values at all vertices of 4D-hypercube used for interpolation
-		for (int iqtidx = 0; iqtidx < 1; ++iqtidx)
+		if (use_linear_logarithmic_interpolation)
 		{
-			double tmp_cos = current_C_slice[qidx+iqtidx][iqx][iqy][iqz][0];
-			double tmp_sin = current_C_slice[qidx+iqtidx][iqx][iqy][iqz][1];
-			//C_at_q[iqtidx] = (tmp_cos*tmp_cos + tmp_sin*tmp_sin)/(nonFTd_spectra*nonFTd_spectra);
-			ln_C_at_q[iqtidx] = log( (tmp_cos*tmp_cos + tmp_sin*tmp_sin)/(nonFTd_spectra*nonFTd_spectra) + 1.e-100 );
+			q_min = qt_PTdep_pts[ipt][qidx];
+			q_max = qt_PTdep_pts[ipt][qidx+1];
+
+			double ln_C_at_q[2];
+	
+			double ***** current_C_slice = current_dN_dypTdpTdphi_moments[ipt][ipphi];
+	
+			// set values at all vertices of 4D-hypercube used for interpolation
+			for (int iqtidx = 0; iqtidx < 1; ++iqtidx)
+			{
+				double tmp_cos = current_C_slice[qidx+iqtidx][iqx][iqy][iqz][0];
+				double tmp_sin = current_C_slice[qidx+iqtidx][iqx][iqy][iqz][1];
+				ln_C_at_q[iqtidx] = log( (tmp_cos*tmp_cos + tmp_sin*tmp_sin)/(nonFTd_spectra*nonFTd_spectra) + 1.e-100 );
+			}
+	
+			// interpolating w.r.t. q^2, not q
+			double sgnd_qt2_interp = sgn(qt_interp) * qt_interp * qt_interp;
+			double * sgnd_qt2_limits = new double [2];
+			sgnd_qt2_limits[0] = sgn(q_min) * q_min * q_min;
+			sgnd_qt2_limits[1] = sgn(q_max) * q_max * q_max;
+	
+			double interpolated_ln_result = interpolate1D(sgnd_qt2_limits, ln_C_at_q, sgnd_qt2_interp, 2, 0, true);
+			interpolated_result = exp(interpolated_ln_result);
+	
+			// Clean up
+			delete [] sgnd_qt2_limits;
 		}
+		else
+		{
+			//q_min = qt_PTdep_pts[ipt][0];
+			//q_max = qt_PTdep_pts[ipt][qtnpts-1];
+			double C_at_q[qtnpts];
+			double ***** current_C_slice = current_dN_dypTdpTdphi_moments[ipt][ipphi];
+	
+			// set CF values along qt-slice for interpolation
+			for (int iqtidx = 0; iqtidx < qtnpts; ++iqtidx)
+			{
+				double tmp_cos = current_C_slice[iqtidx][iqx][iqy][iqz][0];
+				double tmp_sin = current_C_slice[iqtidx][iqx][iqy][iqz][1];
+				C_at_q[iqtidx] = (tmp_cos*tmp_cos + tmp_sin*tmp_sin)/(nonFTd_spectra*nonFTd_spectra);
+//cerr << "INFODUMP: " << iqtidx << "   " << iqx << "   " << iqy << "   " << iqz << "   " << ipt << "   " << ipphi << "   "
+//			<< qt_PTdep_pts[ipt][iqtidx] << "   " << qx_PTdep_pts[ipt][iqx] << "   " << qy_PTdep_pts[ipt][iqy] << "   " << qz_PTdep_pts[ipt][iqz] << "   "
+//			<< SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   " << nonFTd_spectra << "   " << tmp_cos << "   " << tmp_sin << endl;
+			}
 
-		// interpolating w.r.t. q^2, not q
-		double sgnd_qt2_interp = sgn(qt_interp) * qt_interp * qt_interp;
-		double * sgnd_qt2_limits = new double [2];
-		sgnd_qt2_limits[0] = sgn(q_min) * q_min * q_min;
-		sgnd_qt2_limits[1] = sgn(q_max) * q_max * q_max;
+			//assumes qt-grid has already been computed at (adjusted) Chebyshev nodes!!!
+			if (QT_POINTS_SPACING == 1 && interp_flag == 0)
+			{
+				//set up Chebyshev calculation
+				int npts_loc[1] = { qtnpts };
+				int os[1] = { qtnpts - 1 };
+				double lls[1] = { q_min };
+				double uls[1] = { q_max };
+				double point[1] = { qt_interp };
+				int dim_loc = 1;
 
-		double interpolated_ln_result = interpolate1D(sgnd_qt2_limits, ln_C_at_q, sgnd_qt2_interp, 2, 0, true);
-		interpolated_result = exp(interpolated_ln_result);
-
-		// Clean up
-		//delete [] sgnd_qt2_interp;
-		//delete [] sgnd_q2_min;
-		//delete [] sgnd_q2_max;
-		delete [] sgnd_qt2_limits;
+				Chebyshev cf(C_at_q, npts_loc, os, lls, uls, dim_loc);
+	
+				interpolated_result = cf.eval(point);
+/*if (iqx==2 and iqy==2 and iqz==3)
+{
+*global_out_stream_ptr << "Setting up Chebyshev approximation (C_at_q = {" << C_at_q[0];
+	for (int iqtidx = 1; iqtidx < qtnpts; ++iqtidx)
+		*global_out_stream_ptr << ", " << C_at_q[iqtidx];
+*global_out_stream_ptr << "}, spectra = " << nonFTd_spectra << "): interpolated_result = " << interpolated_result << endl;
+}*/
+			}
+			else	//if not using Chebyshev nodes in qt-direction, just use straight-up linear(0) or cubic(1) interpolation
+			{
+*global_out_stream_ptr << "Using cubic interpolation" << endl;
+				//interpolated_result = interpolate1D(qt_PTdep_pts[ipt], C_at_q, qt_interp, qtnpts, 0, true);
+				interpolated_result = interpolate1D(qt_PTdep_pts[ipt], C_at_q, qt_interp, qtnpts, 1, false);
+			}
+		}
 	}
 	else
 	{
-		//*global_out_stream_ptr << "Warning: q_interp point was outside of computed grid!" << endl
-		//						<< "\t q_interp = {" << q_interp[0] << ", " << q_interp[1] << ", " << q_interp[2] << ", " << q_interp[3] << "}" << endl;
+		*global_out_stream_ptr << "Warning: qt_interp point was outside of computed grid!" << endl
+								<< "\t qt_interp = " << qt_interp << " out of {q_min, q_max} = {" << q_min << ", " << q_max << "}" << endl;
 		interpolated_result = 0.0;
 	}
 	return (interpolated_result);
 }
 
-double CorrelationFunction::Compute_correlationfunction_ALT(int ipt, int ipphi, double * q_interp)
-{
-	// try using linear-logarithmic interpolation if q-point is within grid
-	// otherwise, just use linear interpolation/extrapolation, or throw an exception and do return 0
-	double interpolated_result = 0.0;
-	double * sgnd_q2_interp = new double [4];
-	double * sgnd_q2_tpts = new double [qtnpts];
-	double * sgnd_q2_xpts = new double [qxnpts];
-	double * sgnd_q2_ypts = new double [qynpts];
-	double * sgnd_q2_zpts = new double [qznpts];
-
-	for (int i = 0; i < 4; ++i)
-	{
-		sgnd_q2_interp[i] = sgn(q_interp[i]) * q_interp[i] * q_interp[i];
-		cerr << "sgnd_q2_interp[" << i << "] = " << sgnd_q2_interp[i] << endl;
-	}
-	for (int iqt = 0; iqt < qtnpts; ++iqt)
-	{
-		sgnd_q2_tpts[iqt] = sgn(qt_PTdep_pts[ipt][iqt]) * qt_PTdep_pts[ipt][iqt] * qt_PTdep_pts[ipt][iqt];
-		cerr << "sgnd_q2_tpts[" << iqt << "] = " << sgnd_q2_tpts[iqt] << endl;
-	}
-	for (int iqx = 0; iqx < qxnpts; ++iqx)
-	{
-		sgnd_q2_xpts[iqx] = sgn(qx_PTdep_pts[ipt][iqx]) * qx_PTdep_pts[ipt][iqx] * qx_PTdep_pts[ipt][iqx];
-		cerr << "sgnd_q2_xpts[" << iqx << "] = " << sgnd_q2_xpts[iqx] << endl;
-	}
-	for (int iqy = 0; iqy < qynpts; ++iqy)
-	{
-		sgnd_q2_ypts[iqy] = sgn(qy_PTdep_pts[ipt][iqy]) * qy_PTdep_pts[ipt][iqy] * qy_PTdep_pts[ipt][iqy];
-		cerr << "sgnd_q2_ypts[" << iqy << "] = " << sgnd_q2_ypts[iqy] << endl;
-	}
-	for (int iqz = 0; iqz < qznpts; ++iqz)
-	{
-		sgnd_q2_zpts[iqz] = sgn(qz_PTdep_pts[ipt][iqz]) * qz_PTdep_pts[ipt][iqz] * qz_PTdep_pts[ipt][iqz];
-		cerr << "sgnd_q2_zpts[" << iqz << "] = " << sgnd_q2_zpts[iqz] << endl;
-	}
-
-	double nonFTd_spectra = spectra[target_particle_id][ipt][ipphi];
-
-	double **** lnCFvals = new double *** [qtnpts];
-	for (int iqt = 0; iqt < qtnpts; ++iqt)
-	{
-		lnCFvals[iqt] = new double ** [qxnpts];
-		for (int iqx = 0; iqx < qxnpts; ++iqx)
-		{
-			lnCFvals[iqt][iqx] = new double * [qynpts];
-			for (int iqy = 0; iqy < qynpts; ++iqy)
-			{
-				lnCFvals[iqt][iqx][iqy] = new double [qznpts];
-				for (int iqz = 0; iqz < qznpts; ++iqz)
-				{
-					double tmp_cos = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
-					double tmp_sin = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
-					lnCFvals[iqt][iqx][iqy][iqz] = log( (tmp_cos*tmp_cos + tmp_sin*tmp_sin)/(nonFTd_spectra*nonFTd_spectra) + 1.e-100 );
-					//lnCFvals[iqt][iqx][iqy][iqz] = (tmp_cos*tmp_cos + tmp_sin*tmp_sin)/(nonFTd_spectra*nonFTd_spectra);
-				}
-			}
-		}
-	}
-
-	//interpolated_result = exp( interpQuadriLinearNondirect(sgnd_q2_tpts, sgnd_q2_xpts, sgnd_q2_ypts, sgnd_q2_zpts, lnCFvals,
-	//													sgnd_q2_interp[0], sgnd_q2_interp[1], sgnd_q2_interp[2], sgnd_q2_interp[3], qtnpts, qxnpts, qynpts, qznpts) );
-	//interpolated_result = interpQuadriLinearNondirect(sgnd_q2_tpts, sgnd_q2_xpts, sgnd_q2_ypts, sgnd_q2_zpts, lnCFvals,
-	//													sgnd_q2_interp[0], sgnd_q2_interp[1], sgnd_q2_interp[2], sgnd_q2_interp[3], qtnpts, qxnpts, qynpts, qznpts);
-	interpolated_result = exp( interpQuadriCubicNonDirect(sgnd_q2_tpts, sgnd_q2_xpts, sgnd_q2_ypts, sgnd_q2_zpts, lnCFvals,
-														sgnd_q2_interp[0], sgnd_q2_interp[1], sgnd_q2_interp[2], sgnd_q2_interp[3], qtnpts, qxnpts, qynpts, qznpts) );
-	//interpolated_result = interpQuadriCubicNonDirect(sgnd_q2_tpts, sgnd_q2_xpts, sgnd_q2_ypts, sgnd_q2_zpts, lnCFvals,
-	//													sgnd_q2_interp[0], sgnd_q2_interp[1], sgnd_q2_interp[2], sgnd_q2_interp[3], qtnpts, qxnpts, qynpts, qznpts);
-
-
-
-	return (interpolated_result);
-}
-
-double CorrelationFunction::interpolate_4D(double * x_min, double * x_max, double * x_interp, double (*vals) [2][2][2])
-{
-	double total = 0.0;
-
-	for (int i = 0; i < 4; ++i)
-	{
-		//slopes[i][0] = (x_interp[i] - x_min[i]) / (x_max[i] - x_min[i]);
-		slopes[i][0] = (x_max[i] - x_interp[i]) / (x_max[i] - x_min[i]);
-		slopes[i][1] = 1.0 - slopes[i][0];
-	}
-
-	for (int i = 0; i < 2; ++i)
-	for (int j = 0; j < 2; ++j)
-	for (int k = 0; k < 2; ++k)
-	for (int l = 0; l < 2; ++l)
-		total += vals[i][j][k][l] * slopes[0][i] * slopes[1][j] * slopes[2][k] * slopes[3][l];
-	
-	return (total);
-}
-
-void CorrelationFunction::Cal_correlationfunction(bool use_HDF_resonance_file /*== false*/)
-{
-	// Can't interpolate if there's only one point in q-space!
-	if (qtnpts == 1 || qxnpts == 1 || qynpts == 1 || qznpts == 1)
-		return;
-
-	// chooses the qo, qs, ql points at which to evaluate correlation function,
-	// and allocates the array to hold correlation function values
-	Set_correlation_function_q_pts();
-	Allocate_CFvals();
-
-	/*if (use_HDF_resonance_file)
-	{
-		*global_out_stream_ptr << "Loading HDF resonance file..." << endl;
-		int HDFloadTargetSuccess = Get_resonance_from_HDF_array(target_particle_id, current_dN_dypTdpTdphi_moments);
-	}
-	else
-	{
-		*global_out_stream_ptr << "Loading Fourier transformed spectra..." << endl;
-		Readin_total_target_eiqx_dN_dypTdpTdphi(currentfolderindex);
-	}*/
-
-	double * q_interp = new double [4];
-
-	// Then compute full correlation function
-	*global_out_stream_ptr << "Computing the full correlator in out-side-long coordinates..." << endl;
-	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-	for (int iqo = 0; iqo < qonpts; ++iqo)
-	for (int iqs = 0; iqs < qsnpts; ++iqs)
-	for (int iql = 0; iql < qlnpts; ++iql)
-	{
-		Get_q_points(qo_pts[iqo], qs_pts[iqs], ql_pts[iql], SPinterp_pT[ipt], SPinterp_pphi[ipphi], q_interp);
-
-		CFvals[ipt][ipphi][iqo][iqs][iql] = Compute_correlationfunction(ipt, ipphi, q_interp);
-	}
-	*global_out_stream_ptr << "Finished computing correlator." << endl;
-
-	// this is just to check the interpolation routines...
-	for (int ipt = 0; ipt < n_interp_pT_pts; ipt+=n_interp_pT_pts-1)
-	//for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-	for (int iqt = 0; iqt < 11; ++iqt)
-	for (int iqx = 0; iqx < 11; ++iqx)
-	for (int iqy = 0; iqy < 11; ++iqy)
-	for (int iqz = 0; iqz < 11; ++iqz)
-	{
-		double nonFTd_spectra = spectra[target_particle_id][ipt][0];
-		//uniform grid for simplicity
-		q_interp[0] = qt_PTdep_pts[ipt][0] + 0.1 * iqt * (qt_PTdep_pts[ipt][qtnpts - 1] - qt_PTdep_pts[ipt][0]);
-		q_interp[1] = qx_PTdep_pts[ipt][0] + 0.1 * iqx * (qx_PTdep_pts[ipt][qxnpts - 1] - qx_PTdep_pts[ipt][0]);
-		q_interp[2] = qy_PTdep_pts[ipt][0] + 0.1 * iqy * (qy_PTdep_pts[ipt][qynpts - 1] - qy_PTdep_pts[ipt][0]);
-		q_interp[3] = qz_PTdep_pts[ipt][0] + 0.1 * iqz * (qz_PTdep_pts[ipt][qznpts - 1] - qz_PTdep_pts[ipt][0]);
-
-		cout << "TEST GRID: " << SPinterp_pT[ipt] << "   " << SPinterp_pphi[0] << "   "
-				<< q_interp[0] << "   " << q_interp[1] << "   " << q_interp[2] << "   " << q_interp[3] << "   "
-				<< Compute_correlationfunction(ipt, 0, q_interp) << "   " << Compute_correlationfunction_ALT(ipt, 0, q_interp) << "   "
-				<< Cal_dN_dypTdpTdphi_with_weights_function( current_FOsurf_ptr, target_particle_id, SPinterp_pT[ipt], SPinterp_pphi[0],
-															q_interp[0], q_interp[1], q_interp[2], q_interp[3] )/(nonFTd_spectra*nonFTd_spectra) << endl;
-	}
-/*double nonFTd_spectra = spectra[target_particle_id][0][0];
-q_interp[0] = -0.0491892;
-q_interp[1] = -0.0279823;
-q_interp[2] = 0.0839468;
-q_interp[3] = 0.0125871;
-
-		cout << "TEST GRID: " << SPinterp_pT[0] << "   " << SPinterp_pphi[0] << "   "
-				<< q_interp[0] << "   " << q_interp[1] << "   " << q_interp[2] << "   " << q_interp[3] << "   " << nonFTd_spectra << "   "
-				<< Compute_correlationfunction(0, 0, q_interp) << "   "
-				<< Compute_correlationfunction_ALT(0, 0, q_interp) << "   "
-				<< Cal_dN_dypTdpTdphi_with_weights_function( current_FOsurf_ptr, target_particle_id, SPinterp_pT[0], SPinterp_pphi[0],
-															q_interp[0], q_interp[1], q_interp[2], q_interp[3] )/(nonFTd_spectra*nonFTd_spectra) << endl;
-*/
-
-	return;
-}
-
 //to save time, don't bother making grid large enough to interpolate to OSL
 //this function leaves open the option of just interpolating over the qt-direction
-void CorrelationFunction::Cal_correlationfunction_in_XYZ()
+void CorrelationFunction::Cal_correlationfunction()
 {
 	// Can't interpolate if there's only one point in qt-direction!
 	if (qtnpts == 1)
 		return;
 
+	// store in HDF5 file
+	int getHDFresonanceSpectra = Get_resonance_from_HDF_array(target_particle_id, current_dN_dypTdpTdphi_moments);
+	if (getHDFresonanceSpectra < 0)
+	{
+		cerr << "Failed to set this resonance in HDF array!  Exiting..." << endl;
+		exit;
+	}
+
 	// chooses the qo, qs, ql (or qx, qy, ql) points at which to evaluate correlation function,
 	// and allocates the array to hold correlation function values
-	int chosen_coordinate_system = 1;
-	Set_correlation_function_q_pts(chosen_coordinate_system);
-	Allocate_CFvals(chosen_coordinate_system);
+	Set_correlation_function_q_pts();
+	Allocate_CFvals();
 
 	double * q_interp = new double [4];
 
 	// Then compute full correlation function
-	*global_out_stream_ptr << "Computing the full correlator in out-side-long coordinates..." << endl;
+	*global_out_stream_ptr << "Computing the full correlator in XYZ coordinates..." << endl;
+	CPStopwatch sw;
+	sw.Start();
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 	for (int iqx = 0; iqx < qxnpts; ++iqx)
 	for (int iqy = 0; iqy < qynpts; ++iqy)
 	for (int iqz = 0; iqz < qznpts; ++iqz)
 	{
-		Get_q_points(qx_pts[iqx], qy_pts[iqy], qz_pts[iqz], SPinterp_pT[ipt], SPinterp_pphi[ipphi], q_interp, chosen_coordinate_system);
+		Get_q_points(qx_PTdep_pts[ipt][iqx], qy_PTdep_pts[ipt][iqy], qz_PTdep_pts[ipt][iqz], SPinterp_pT[ipt], SPinterp_pphi[ipphi], q_interp);
 
-		CFvals[ipt][ipphi][iqx][iqy][iqz] = Compute_correlationfunction_in_XYZ(ipt, ipphi, iqx, iqy, iqz, q_interp[0]);
+		double tmp_spectra = spectra[target_particle_id][ipt][ipphi];
+
+		//CFvals[ipt][ipphi][iqx][iqy][iqz] = Compute_correlationfunction(ipt, ipphi, iqx, iqy, iqz, q_interp[0]);
+		double interpcheck = Compute_correlationfunction(ipt, ipphi, iqx, iqy, iqz, q_interp[0], 0);
+		//cout << "INTERPOLATION CHECK: " << scientific << setprecision(8) << setw(12) << interpcheck << "   " << SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   "
+		//		<< q_interp[0] << "   " << qx_PTdep_pts[ipt][iqx] << "   " << qy_PTdep_pts[ipt][iqy] << "   " << qz_PTdep_pts[ipt][iqz] << "   "
+		//		<< Cal_dN_dypTdpTdphi_with_weights_function(current_FOsurf_ptr, target_particle_id, SPinterp_pT[ipt], SPinterp_pphi[ipphi],
+		//														q_interp[0], qx_PTdep_pts[ipt][iqx], qy_PTdep_pts[ipt][iqy], qz_PTdep_pts[ipt][iqz]) / (tmp_spectra*tmp_spectra) << endl;
+		CFvals[ipt][ipphi][iqx][iqy][iqz] = interpcheck;
 	}
-	*global_out_stream_ptr << "Finished computing correlator." << endl;
+	sw.Stop();
+	*global_out_stream_ptr << "Finished computing correlator in " << sw.printTime() << " seconds." << endl;
 
-	/*// this is just to check the interpolation routines...
-	for (int ipt = 0; ipt < n_interp_pT_pts; ipt+=n_interp_pT_pts-1)
-	//for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-	for (int iqt = 0; iqt < 11; ++iqt)
-	for (int iqx = 0; iqx < 11; ++iqx)
-	for (int iqy = 0; iqy < 11; ++iqy)
-	for (int iqz = 0; iqz < 11; ++iqz)
-	{
-		double nonFTd_spectra = spectra[target_particle_id][ipt][0];
-		//uniform grid for simplicity
-		q_interp[0] = qt_PTdep_pts[ipt][0] + 0.1 * iqt * (qt_PTdep_pts[ipt][qtnpts - 1] - qt_PTdep_pts[ipt][0]);
-		q_interp[1] = qx_PTdep_pts[ipt][0] + 0.1 * iqx * (qx_PTdep_pts[ipt][qxnpts - 1] - qx_PTdep_pts[ipt][0]);
-		q_interp[2] = qy_PTdep_pts[ipt][0] + 0.1 * iqy * (qy_PTdep_pts[ipt][qynpts - 1] - qy_PTdep_pts[ipt][0]);
-		q_interp[3] = qz_PTdep_pts[ipt][0] + 0.1 * iqz * (qz_PTdep_pts[ipt][qznpts - 1] - qz_PTdep_pts[ipt][0]);
-
-		cout << "TEST GRID: " << SPinterp_pT[ipt] << "   " << SPinterp_pphi[0] << "   "
-				<< q_interp[0] << "   " << q_interp[1] << "   " << q_interp[2] << "   " << q_interp[3] << "   "
-				<< Compute_correlationfunction(ipt, 0, q_interp) << "   " << Compute_correlationfunction_ALT(ipt, 0, q_interp) << "   "
-				<< Cal_dN_dypTdpTdphi_with_weights_function( current_FOsurf_ptr, target_particle_id, SPinterp_pT[ipt], SPinterp_pphi[0],
-															q_interp[0], q_interp[1], q_interp[2], q_interp[3] )/(nonFTd_spectra*nonFTd_spectra) << endl;
-	}*/
-
+	delete [] q_interp;
 
 	return;
 }
@@ -415,7 +206,7 @@ void CorrelationFunction::Cal_correlationfunction_in_XYZ()
 // Gaussian fit routines below
 //**************************************************************
 
-void CorrelationFunction::Fit_Correlationfunction3D(double *** Correl_3D, int ipt, int ipphi, int coords /*== 0*/)
+void CorrelationFunction::Fit_Correlationfunction3D(double *** Correl_3D, int ipt, int ipphi)
 {
 	const size_t data_length = q1npts*q2npts*q3npts;  // # of points
 	const size_t n_para = 4;  // # of parameters
@@ -438,34 +229,17 @@ void CorrelationFunction::Fit_Correlationfunction3D(double *** Correl_3D, int ip
 	Correlfun3D_data.sigma = new double [data_length];
 
 	int idx = 0;
-	if (coords == 0)		// osl coordinates
+	double ckp = cos_SPinterp_pphi[ipphi], skp = sin_SPinterp_pphi[ipphi];
+	for (int i = 0; i < q1npts; i++)
+	for (int j = 0; j < q2npts; j++)
+	for (int k = 0; k < q3npts; k++)
 	{
-		for (int i = 0; i < q1npts; i++)
-		for (int j = 0; j < q2npts; j++)
-		for (int k = 0; k < q3npts; k++)
-		{
-			Correlfun3D_data.q_o[idx] = qo_pts[i];
-			Correlfun3D_data.q_s[idx] = qs_pts[j];
-			Correlfun3D_data.q_l[idx] = ql_pts[k];
-			Correlfun3D_data.y[idx] = Correl_3D[i][j][k];
-			Correlfun3D_data.sigma[idx] = Correl_3D_err[i][j][k];
-			idx++;
-		}
-	}
-	else if (coords == 1)	// xyz coordinates
-	{
-		double ckp = cos_SPinterp_pphi[ipphi], skp = sin_SPinterp_pphi[ipphi];
-		for (int i = 0; i < q1npts; i++)
-		for (int j = 0; j < q2npts; j++)
-		for (int k = 0; k < q3npts; k++)
-		{
-			Correlfun3D_data.q_o[idx] = qx_pts[i] * ckp + qy_pts[j] * skp;
-			Correlfun3D_data.q_s[idx] = -qx_pts[i] * skp + qy_pts[j] * ckp;
-			Correlfun3D_data.q_l[idx] = qz_pts[k];
-			Correlfun3D_data.y[idx] = Correl_3D[i][j][k];
-			Correlfun3D_data.sigma[idx] = Correl_3D_err[i][j][k];
-			idx++;
-		}
+		Correlfun3D_data.q_o[idx] = qx_PTdep_pts[ipt][i] * ckp + qy_PTdep_pts[ipt][j] * skp;
+		Correlfun3D_data.q_s[idx] = -qx_PTdep_pts[ipt][i] * skp + qy_PTdep_pts[ipt][j] * ckp;
+		Correlfun3D_data.q_l[idx] = qz_PTdep_pts[ipt][k];
+		Correlfun3D_data.y[idx] = Correl_3D[i][j][k];
+		Correlfun3D_data.sigma[idx] = Correl_3D_err[i][j][k];
+		idx++;
 	}
 
 	double para_init[n_para] = { 1.0, 1.0, 1.0, 1.0 };  // initial guesses of parameters
@@ -580,7 +354,7 @@ void CorrelationFunction::Fit_Correlationfunction3D(double *** Correl_3D, int ip
 	return;
 }
 
-void CorrelationFunction::Fit_Correlationfunction3D_withlambda(double *** Correl_3D, int ipt, int ipphi, int coords /*== 0*/)
+void CorrelationFunction::Fit_Correlationfunction3D_withlambda(double *** Correl_3D, int ipt, int ipphi)
 {
 	const size_t data_length = q1npts*q2npts*q3npts;  // # of points
 	const size_t n_para = 5;  // # of parameters
@@ -603,34 +377,17 @@ void CorrelationFunction::Fit_Correlationfunction3D_withlambda(double *** Correl
 	Correlfun3D_data.sigma = new double [data_length];
 
 	int idx = 0;
-	if (coords == 0)		// osl coordinates
+	double ckp = cos_SPinterp_pphi[ipphi], skp = sin_SPinterp_pphi[ipphi];
+	for (int i = 0; i < q1npts; i++)
+	for (int j = 0; j < q2npts; j++)
+	for (int k = 0; k < q3npts; k++)
 	{
-		for (int i = 0; i < q1npts; i++)
-		for (int j = 0; j < q2npts; j++)
-		for (int k = 0; k < q3npts; k++)
-		{
-			Correlfun3D_data.q_o[idx] = qo_pts[i];
-			Correlfun3D_data.q_s[idx] = qs_pts[j];
-			Correlfun3D_data.q_l[idx] = ql_pts[k];
-			Correlfun3D_data.y[idx] = Correl_3D[i][j][k];
-			Correlfun3D_data.sigma[idx] = Correl_3D_err[i][j][k];
-			idx++;
-		}
-	}
-	else if (coords == 1)	// xyz coordinates
-	{
-		double ckp = cos_SPinterp_pphi[ipphi], skp = sin_SPinterp_pphi[ipphi];
-		for (int i = 0; i < q1npts; i++)
-		for (int j = 0; j < q2npts; j++)
-		for (int k = 0; k < q3npts; k++)
-		{
-			Correlfun3D_data.q_o[idx] = qx_pts[i] * ckp + qy_pts[j] * skp;
-			Correlfun3D_data.q_s[idx] = -qx_pts[i] * skp + qy_pts[j] * ckp;
-			Correlfun3D_data.q_l[idx] = qz_pts[k];
-			Correlfun3D_data.y[idx] = Correl_3D[i][j][k];
-			Correlfun3D_data.sigma[idx] = Correl_3D_err[i][j][k];
-			idx++;
-		}
+		Correlfun3D_data.q_o[idx] = qx_PTdep_pts[ipt][i] * ckp + qy_PTdep_pts[ipt][j] * skp;
+		Correlfun3D_data.q_s[idx] = -qx_PTdep_pts[ipt][i] * skp + qy_PTdep_pts[ipt][j] * ckp;
+		Correlfun3D_data.q_l[idx] = qz_PTdep_pts[ipt][k];
+		Correlfun3D_data.y[idx] = Correl_3D[i][j][k];
+		Correlfun3D_data.sigma[idx] = Correl_3D_err[i][j][k];
+		idx++;
 	}
 	double para_init[n_para] = { 1.0, 1.0, 1.0, 1.0, 1.0 };  // initial guesses of parameters
 

@@ -17,7 +17,7 @@ class Chebyshev
 
 		inline double dot(double * x, double * y, int length);
 		void set_nodes(int number_of_points, double * nodes);
-		void get_nodes(double a, double b, int number_of_points, double * nodes, double * adjnodes);
+		//void get_nodes(double a, double b, int number_of_points, double * nodes, double * adjnodes);
 		void get_Chebyshev_points(int number_of_points, int order, double * nodes, double ** Tpts);
 		void set_total_coeffs_length();
 		void set_total_fpts_length();
@@ -28,6 +28,8 @@ class Chebyshev
 
 	public:
 		Chebyshev(double * fpts_in, int * numbers_of_points_in, int * orders_in, double * lower_limits_in, double * upper_limits_in, int dimension_in);
+
+		void get_nodes(double a, double b, int number_of_points, double * nodes, double * adjnodes);
 
 		double eval(double * p);
 		void eval(double ** points, int npoints, double * results);

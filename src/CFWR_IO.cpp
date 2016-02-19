@@ -171,12 +171,12 @@ void CorrelationFunction::Output_correlationfunction(int folderindex)
 
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-	for (int iqo = 0; iqo < qonpts; ++iqo)
-	for (int iqs = 0; iqs < qsnpts; ++iqs)
-	for (int iql = 0; iql < qlnpts; ++iql)
+	for (int iqx = 0; iqx < qxnpts; ++iqx)
+	for (int iqy = 0; iqy < qynpts; ++iqy)
+	for (int iqz = 0; iqz < qznpts; ++iqz)
 		oCorrFunc << scientific << setprecision(7) << setw(15)
-			<< SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   " << qo_pts[iqo] << "   "
-			<< qs_pts[iqs] << "   " << ql_pts[iql] << "   " << CFvals[ipt][ipphi][iqo][iqs][iql] << endl;
+			<< SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   " << qx_PTdep_pts[ipt][iqx] << "   "
+			<< qy_PTdep_pts[ipt][iqy] << "   " << qz_PTdep_pts[ipt][iqz] << "   " << CFvals[ipt][ipphi][iqx][iqy][iqz] << endl;
 
 	oCorrFunc.close();
 				
@@ -330,6 +330,8 @@ void CorrelationFunction::Output_total_target_eiqx_dN_dypTdpTdphi(int folderinde
 
 	int HDFloadTargetSuccess = Get_resonance_from_HDF_array(target_particle_id, current_dN_dypTdpTdphi_moments);
 
+	double local_epsilon = 1.e-4;
+
 	for (int iqt = 0; iqt < qtnpts; ++iqt)
 	for (int iqx = 0; iqx < qxnpts; ++iqx)
 	for (int iqy = 0; iqy < qynpts; ++iqy)
@@ -354,14 +356,19 @@ void CorrelationFunction::Output_total_target_eiqx_dN_dypTdpTdphi(int folderinde
 		double sin_transf_tspectra = thermal_target_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
 
 		//linearly interpolate between them to get estimate for full resonance calculation
-		double CF = 1. + (cos_transf_spectra*cos_transf_spectra + sin_transf_spectra*sin_transf_spectra)/(nonFTd_spectra*nonFTd_spectra);
-		double thermal_target_CF = 1. + (cos_transf_tspectra*cos_transf_tspectra + sin_transf_tspectra*sin_transf_tspectra)/(nonFTd_tspectra*nonFTd_tspectra);
+		double num = cos_transf_spectra*cos_transf_spectra + sin_transf_spectra*sin_transf_spectra;
+		double den = nonFTd_spectra*nonFTd_spectra;
+		double numt = cos_transf_tspectra*cos_transf_tspectra + sin_transf_tspectra*sin_transf_tspectra;
+		double dent = nonFTd_tspectra*nonFTd_tspectra;
+		//double CF = (num < local_epsilon && den < local_epsilon) ? 1. : 1. + num / den;
+		//double thermal_target_CF = (numt < local_epsilon && dent < local_epsilon) ? 1. : 1. + numt / dent;
+		double CF = 1. + num / den;
+		double thermal_target_CF = 1. + numt / dent;
 		double shift = (CF - thermal_target_CF) / fraction_of_resonances;
 		if (fraction_of_resonances < 1.e-12)
 			shift = 0.0;
 
 		output_target_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12)
-			//<< qt_pts[iqt] << "   " << qx_pts[iqx] << "   " << qy_pts[iqy] << "   " << qz_pts[iqz] << "   "
 			<< qt_PTdep_pts[ipt][iqt] << "   " << qx_PTdep_pts[ipt][iqx] << "   " << qy_PTdep_pts[ipt][iqy] << "   " << qz_PTdep_pts[ipt][iqz] << "   "
 			<< SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   " << nonFTd_spectra << "   " << cos_transf_spectra << "   " << sin_transf_spectra << "   "
 			<< CF << "   " << thermal_target_CF + shift << endl;
@@ -382,8 +389,10 @@ void CorrelationFunction::Readin_total_target_eiqx_dN_dypTdpTdphi(int folderinde
 
 	double dummy = 0.0;
 
-	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-		Set_q_pTdep_pts(ipt);
+	//Need some way to set these guys!  probably write q points out to file and then read them back in as needed...
+	//THIS FUNCTION NOT STABLE UNTIL THIS IS FIXED
+	//for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+	//	Set_q_pTdep_pts(ipt);
 
 	for (int iqt = 0; iqt < qtnpts; ++iqt)
 	for (int iqx = 0; iqx < qxnpts; ++iqx)

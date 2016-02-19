@@ -109,7 +109,7 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
 		if (VERBOSE > 0) *global_out_stream_ptr << "Thermal pion(+) only!" << endl;
 		decay_channels = new decay_info [n_decay_channels];
 		decay_channels[0].resonance_decay_masses = new double [Maxdecaypart];	// Maxdecaypart == 5
-debugger(__LINE__, __FILE__);
+//debugger(__LINE__, __FILE__);
 	}
 	else
 	{
@@ -414,7 +414,7 @@ debugger(__LINE__, __FILE__);
 		}
 	}
 
-debugger(__LINE__, __FILE__);
+//debugger(__LINE__, __FILE__);
 
 	//pair momentum
 	K_T = new double [n_localp_T];
@@ -445,7 +445,7 @@ debugger(__LINE__, __FILE__);
 	//	cout << "PointCheck, eta_s: " << scientific << setprecision(17) << setw(20) << eta_s[ieta] << "   " << 2.*eta_s_weight[ieta] << endl;
 
 
-debugger(__LINE__, __FILE__);
+//debugger(__LINE__, __FILE__);
 	R2_side = new double * [n_interp_pT_pts];
 	R2_out = new double * [n_interp_pT_pts];
 	R2_long = new double * [n_interp_pT_pts];
@@ -482,7 +482,7 @@ debugger(__LINE__, __FILE__);
 		lambda_Correl[ipt] = new double [n_interp_pphi_pts];
 		lambda_Correl_err[ipt] = new double [n_interp_pphi_pts];
 	}
-debugger(__LINE__, __FILE__);
+//debugger(__LINE__, __FILE__);
 	//initialize all source variances and HBT radii/coeffs
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 	{
@@ -616,153 +616,63 @@ void CorrelationFunction::Update_sourcefunction(particle_info* particle, int FOa
    return;
 }
 
-void CorrelationFunction::estimate_radii(double pT_local, double & Rperp, double & Rparallel, double & R0)
+void CorrelationFunction::Fill_out_pts(double * pointsarray, int numpoints, double max_val, int spacing_type)
 {
-	double tausum = 0.0, tau2sum = 0.0, vT2sum = 0.0, rT2sum = 0.0;
-	double Delta_tau2 = 0.0, factor1 = 0.0, factor2 = 0.0;
-	for (int isurf = 0; isurf < FO_length; ++isurf)
+	// spacing_type:		0 - uniform spacing
+	//						1 - Chebyshev-node based spacing
+	if (numpoints == 1)
+		pointsarray[0] = 0.0;
+	else
 	{
-		FO_surf * surf = &current_FOsurf_ptr[isurf];
-		double tau = surf->tau;
-		double vx = surf->vx;
-		double vy = surf->vy;
-		double vT2 = vx*vx+vy*vy;
-		vT2sum += vT2;
-		rT2sum += (surf->r)*(surf->r);
-		Delta_tau2 -= tau*tausum;
-		tausum += tau;
-		tau2sum += tau*tau;
+		// if I want q-points equally spaced...
+		if (spacing_type == 0)
+		{
+			for (int iqd = 0; iqd < numpoints; ++iqd)
+				pointsarray[iqd] = -max_val + (double)iqd * 2.*max_val / double(numpoints - 1+1e-100);
+		}
+		// else, use Chebyshev nodes instead...
+		else if (spacing_type == 1)
+		{
+			//double local_scale = max_val / cos(M_PI / (2.*qtnpts));
+			double local_scale = -max_val;
+			for (int iqd = 0; iqd < numpoints; ++iqd)
+				pointsarray[iqd] = local_scale * cos( M_PI*(2.*(iqd+1.) - 1.) / (2.*numpoints) );
+		}
 	}
-	double N = FO_length;
-	factor1 = 1./N;
-	factor2 = 2./(N*(N-1.));
-	Delta_tau2 *= factor2;
-	Delta_tau2 += factor1*tau2sum;
-
-	double mpion = 0.13957;
-
-	//estimate necessary parameters
-	double eta_f = atanh(sqrt(vT2sum/N));
-	double T0 = current_FOsurf_ptr[0].Tdec;
-	double MT = sqrt(mpion*mpion + pT_local*pT_local);
-	double R = sqrt(rT2sum/N);
-	double tau_0 = tausum/N;
-	double Delta_tau = sqrt(Delta_tau2);
-
-	Rperp = sqrt( R*R / (1. + eta_f*eta_f*MT/T0) );
-	//double R2l_factor = 1.;
-	double R2l_factor = 1. + ( 1./(1.+MT*vT2sum/(N*T0)) + 0.5 )*(T0/MT);
-	Rparallel = tau_0 * sqrt(R2l_factor * T0 / MT);
-	R0 = sqrt( Delta_tau2 + 2.*tau_0*tau_0*pow( sqrt(1.0 - (T0/MT)) - 1.0 , 2.0) );
-
 	return;
 }
 
-void CorrelationFunction::Set_q_pTdep_pts(int ipt)
+void CorrelationFunction::Set_q_pTdep_pts(int ipt, double qxw, double qyw, double qzw)
 {
 	double pT_local = SPinterp_pT[ipt];
-	double Rperp = 0.0, Rparallel = 0.0, R0 = 0.0;
 
-	//might need to toy with these estimators...
-	estimate_radii(pT_local, Rperp, Rparallel, R0);		//use Rperp to set scale for q_points in transverse plane (qx and qy)
-														//use Rparallel to set scale for "longitudinal" q_points in transverse plane (qt and qz)
 	qt_PTdep_pts[ipt] = new double [qtnpts];
 	qx_PTdep_pts[ipt] = new double [qxnpts];
 	qy_PTdep_pts[ipt] = new double [qynpts];
 	qz_PTdep_pts[ipt] = new double [qznpts];
 
-	double eps = 1.e-3;									//specifies approximate CF value at which to truncate calculation
+	double mpion = all_particles[target_particle_id].mass;
+	double eps = 1.e-1;									//specifies approximate CF value at which to truncate calculation
 														// (used for computing q(i)max)
 	double ln_one_by_eps = hbarC*sqrt(log(1./eps));
-//R0 = 2.593134875;
-	double qtmax = 1.5 * ln_one_by_eps / R0;
-	double qxmax = 1.5 * ln_one_by_eps / Rperp;
-	double qymax = 1.5 * ln_one_by_eps / Rperp;
-	double qzmax = ln_one_by_eps / Rparallel;
-	//these estimates just need to be ball-park correct, to make sure that the most interesting parts of the CF are captured
-	//cout << "Estimates for pT = " << SPinterp_pT[ipt] << endl
-	//	<< "\t R0 = " << R0 << endl
-	//	<< "\t Rperp = " << Rperp << endl
-	//	<< "\t Rparallel = " << Rparallel << endl;
+
+////////////////////////////////////////////////////////////////////////
+	double qxmax = ln_one_by_eps / sqrt(qxw*qxw+qyw*qyw);
+	double qymax = ln_one_by_eps / sqrt(qxw*qxw+qyw*qyw);
+	double qzmax = ln_one_by_eps / qzw;
+//double qzmax = qxmax;
+	double xi2 = mpion*mpion + pT_local*pT_local + 2.0*0.25*qxmax*qxmax;	//pretend that Kphi == 0, qx == qo and qs == ql == 0, to maximize qtmax
+	double qtmax = sqrt(xi2 + sqrt(2.0)*pT_local*qxmax) - sqrt(xi2 - sqrt(2.0)*pT_local*qxmax) + 1.e-10;
+
+cout << "pt and qmax list: " << pT_local << "   " << qtmax << "   " << qxmax << "   " << qymax << "   " << qzmax << endl;
+	//double qtmax = 2.0 * qxmax;
+////////////////////////////////////////////////////////////////////////
 
 	//finally, set q(i)_PTdep_pts
-	if (qtnpts == 1)
-		qt_PTdep_pts[ipt][0] = 0.0;
-	else
-	{
-		// if I want q-points equally spaced...
-		if (QT_POINTS_SPACING == 0)
-		{
-			for (int iqt = 0; iqt < qtnpts; ++iqt)
-				qt_PTdep_pts[ipt][iqt] =  -qtmax + (double)iqt * 2.*qtmax / double(qtnpts - 1+1e-100);
-		}
-		// else, use Chebyshev nodes instead...
-		else if (QT_POINTS_SPACING == 1)
-		{
-			//double local_scale = qtmax / cos(M_PI / (2.*qtnpts));
-			double local_scale = -qtmax;
-			for (int iqt = 0; iqt < qtnpts; ++iqt)
-				qt_PTdep_pts[ipt][iqt] = local_scale * cos( M_PI*(2.*(iqt+1.) - 1.) / (2.*qtnpts) );
-		}
-	}
-	if (qxnpts == 1)
-		qx_PTdep_pts[ipt][0] = 0.0;
-	else
-	{
-		// if I want q-points equally spaced...
-		if (QX_POINTS_SPACING == 0)
-		{
-			for (int iqx = 0; iqx < qxnpts; ++iqx)
-				qx_PTdep_pts[ipt][iqx] =  -qxmax + (double)iqx * 2.*qxmax / double(qxnpts - 1+1e-100);
-		}
-		// else, use Chebyshev nodes instead...
-		else if (QX_POINTS_SPACING == 1)
-		{
-			//double local_scale = qxmax / cos(M_PI / (2.*qxnpts));
-			double local_scale = -qxmax;
-			for (int iqx = 0; iqx < qxnpts; ++iqx)
-				qx_PTdep_pts[ipt][iqx] = local_scale * cos( M_PI*(2.*(iqx+1.) - 1.) / (2.*qxnpts) );
-		}
-	}
-	if (qynpts == 1)
-		qy_PTdep_pts[ipt][0] = 0.0;
-	else
-	{
-		// if I want q-points equally spaced...
-		if (QY_POINTS_SPACING == 0)
-		{
-			for (int iqy = 0; iqy < qynpts; ++iqy)
-				qy_PTdep_pts[ipt][iqy] =  -qymax + (double)iqy * 2.*qymax / double(qynpts - 1+1e-100);
-		}
-		// else, use Chebyshev nodes instead...
-		else if (QY_POINTS_SPACING == 1)
-		{
-			//double local_scale = qymax / cos(M_PI / (2.*qynpts));
-			double local_scale = -qymax;
-			for (int iqy = 0; iqy < qynpts; ++iqy)
-				qy_PTdep_pts[ipt][iqy] = local_scale * cos( M_PI*(2.*(iqy+1.) - 1.) / (2.*qynpts) );
-		}
-	}
-	if (qznpts == 1)
-		qz_PTdep_pts[ipt][0] = 0.0;
-	else
-	{
-		// if I want q-points equally spaced...
-		if (QZ_POINTS_SPACING == 0)
-		{
-			for (int iqz = 0; iqz < qznpts; ++iqz)
-				qz_PTdep_pts[ipt][iqz] =  -qzmax + (double)iqz * 2.*qzmax / double(qznpts - 1+1e-100);
-		}
-		// else, use Chebyshev nodes instead...
-		else if (QZ_POINTS_SPACING == 1)
-		{
-			//double local_scale = qzmax / cos(M_PI / (2.*qznpts));
-			double local_scale = -qzmax;
-			for (int iqz = 0; iqz < qznpts; ++iqz)
-				qz_PTdep_pts[ipt][iqz] = local_scale * cos( M_PI*(2.*(iqz+1.) - 1.) / (2.*qznpts) );
-		}
-	}
-
+	Fill_out_pts(qt_PTdep_pts[ipt], qtnpts, qtmax, QT_POINTS_SPACING);
+	Fill_out_pts(qx_PTdep_pts[ipt], qxnpts, qxmax, QX_POINTS_SPACING);
+	Fill_out_pts(qy_PTdep_pts[ipt], qynpts, qymax, QY_POINTS_SPACING);
+	Fill_out_pts(qz_PTdep_pts[ipt], qznpts, qzmax, QZ_POINTS_SPACING);
 
 	return;
 }
@@ -877,50 +787,23 @@ CorrelationFunction::~CorrelationFunction()
    return;
 }
 
-void CorrelationFunction::Allocate_CFvals(int coords /*== 0*/)
+void CorrelationFunction::Allocate_CFvals()
 {
-	//coords ==	0 - use o-s-l coordinate system
-	//			1 - use x-y-z coordinate system
-	if (coords == 0)
+	CFvals = new double **** [n_interp_pT_pts];
+	for (int ipT = 0; ipT < n_interp_pT_pts; ++ipT)
 	{
-		CFvals = new double **** [n_interp_pT_pts];
-		for (int ipT = 0; ipT < n_interp_pT_pts; ++ipT)
+		CFvals[ipT] = new double *** [n_interp_pphi_pts];
+		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 		{
-			CFvals[ipT] = new double *** [n_interp_pphi_pts];
-			for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+			CFvals[ipT][ipphi] = new double ** [qxnpts];
+			for (int iqx = 0; iqx < qxnpts; ++iqx)
 			{
-				CFvals[ipT][ipphi] = new double ** [qonpts];
-				for (int iqo = 0; iqo < qonpts; ++iqo)
+				CFvals[ipT][ipphi][iqx] = new double * [qynpts];
+				for (int iqy = 0; iqy < qynpts; ++iqy)
 				{
-					CFvals[ipT][ipphi][iqo] = new double * [qsnpts];
-					for (int iqs = 0; iqs < qsnpts; ++iqs)
-					{
-						CFvals[ipT][ipphi][iqo][iqs] = new double [qlnpts];
-						for (int iql = 0; iql < qlnpts; ++iql)
-							CFvals[ipT][ipphi][iqo][iqs][iql] = 0.0;
-					}
-				}
-			}
-		}
-	}
-	else if (coords == 1)
-	{
-		CFvals = new double **** [n_interp_pT_pts];
-		for (int ipT = 0; ipT < n_interp_pT_pts; ++ipT)
-		{
-			CFvals[ipT] = new double *** [n_interp_pphi_pts];
-			for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-			{
-				CFvals[ipT][ipphi] = new double ** [qxnpts];
-				for (int iqx = 0; iqx < qxnpts; ++iqx)
-				{
-					CFvals[ipT][ipphi][iqx] = new double * [qynpts];
-					for (int iqy = 0; iqy < qynpts; ++iqy)
-					{
-						CFvals[ipT][ipphi][iqx][iqy] = new double [qznpts];
-						for (int iqz = 0; iqz < qznpts; ++iqz)
-							CFvals[ipT][ipphi][iqx][iqy][iqz] = 0.0;
-					}
+					CFvals[ipT][ipphi][iqx][iqy] = new double [qznpts];
+					for (int iqz = 0; iqz < qznpts; ++iqz)
+						CFvals[ipT][ipphi][iqx][iqy][iqz] = 0.0;
 				}
 			}
 		}
@@ -1114,7 +997,7 @@ void CorrelationFunction::Set_q_points()
 			iqz0 = iqz;
 	}
 
-	cerr << "Output iq*0 = " << iqt0 << "   " << iqx0 << "   " << iqy0 << "   " << iqz0 << endl;
+	//cerr << "Output iq*0 = " << iqt0 << "   " << iqx0 << "   " << iqy0 << "   " << iqz0 << endl;
 
 //if (1) exit;
 
@@ -1163,65 +1046,26 @@ void CorrelationFunction::Set_sorted_q_pts_list()
 	return;
 }
 
-void CorrelationFunction::Set_correlation_function_q_pts(int coords /*== 0*/)
+void CorrelationFunction::Set_correlation_function_q_pts()
 {
-	//coords ==	0 - use o-s-l coordinate system
-	//			1 - use x-y-z coordinate system
-	// initialize q-points for actual correlation function
-	if (coords == 0)
-	{
-		q1npts = qonpts;
-		q2npts = qsnpts;
-		q3npts = qlnpts;
+	q1npts = qxnpts;
+	q2npts = qynpts;
+	q3npts = qznpts;
 
-		qo_pts = new double [qonpts];
-		qs_pts = new double [qsnpts];
-		ql_pts = new double [qlnpts];
+	qx_pts = new double [qxnpts];
+	qy_pts = new double [qynpts];
+	qz_pts = new double [qznpts];
 	
-		double q_osl_init = init_q/sqrt(2.0);	//sqrt(2) is a cheat to keep q_interp inside range already calculated for qt-qx-qy-qz
-		double delta_q_osl = double(qnpts-1)*delta_q/(sqrt(2.0)*double(qonpts-1));
-	
-		for (int iq = 0; iq < qonpts; ++iq)
-			qo_pts[iq] = q_osl_init + (double)iq * delta_q_osl;
-		for (int iq = 0; iq < qsnpts; ++iq)
-			qs_pts[iq] = q_osl_init + (double)iq * delta_q_osl;
-		for (int iq = 0; iq < qlnpts; ++iq)
-			ql_pts[iq] = q_osl_init + (double)iq * delta_q_osl;
-	
-		// initialize error matrix
-		Correl_3D_err = new double ** [qonpts];
-		for (int iqo = 0; iqo < qonpts; ++iqo)
-		{
-			Correl_3D_err[iqo] = new double * [qsnpts];
-			for (int iqs = 0; iqs < qsnpts; ++iqs)
-			{
-				Correl_3D_err[iqo][iqs] = new double [qlnpts];
-				for (int iql = 0; iql < qlnpts; ++iql)
-					Correl_3D_err[iqo][iqs][iql] = 1e-2;	//naive choice for now
-			}
-		}
-	}
-	else if (coords == 1)
+	// initialize error matrix
+	Correl_3D_err = new double ** [qxnpts];
+	for (int iqx = 0; iqx < qxnpts; ++iqx)
 	{
-		q1npts = qxnpts;
-		q2npts = qynpts;
-		q3npts = qznpts;
-
-		qx_pts = new double [qxnpts];
-		qy_pts = new double [qynpts];
-		qz_pts = new double [qznpts];
-	
-		// initialize error matrix
-		Correl_3D_err = new double ** [qxnpts];
-		for (int iqx = 0; iqx < qxnpts; ++iqx)
+		Correl_3D_err[iqx] = new double * [qynpts];
+		for (int iqy = 0; iqy < qynpts; ++iqy)
 		{
-			Correl_3D_err[iqx] = new double * [qynpts];
-			for (int iqy = 0; iqy < qynpts; ++iqy)
-			{
-				Correl_3D_err[iqx][iqy] = new double [qznpts];
-				for (int iqz = 0; iqz < qznpts; ++iqz)
-					Correl_3D_err[iqx][iqy][iqz] = 1e-2;	//naive choice for now
-			}
+			Correl_3D_err[iqx][iqy] = new double [qznpts];
+			for (int iqz = 0; iqz < qznpts; ++iqz)
+				Correl_3D_err[iqx][iqy][iqz] = 1e-3;	//naive choice for now
 		}
 	}
 
@@ -1231,30 +1075,19 @@ void CorrelationFunction::Set_correlation_function_q_pts(int coords /*== 0*/)
 
 // returns points in q-space for computing weighted spectra grid corresponding to to given q and K choices
 // weighted spectra grid thus needs to be interpolated at point returned in qgridpts
-void CorrelationFunction::Get_q_points(double q1, double q2, double q3, double pT, double pphi, double * qgridpts, int coords /*== 0*/)
+void CorrelationFunction::Get_q_points(double q1, double q2, double q3, double pT, double pphi, double * qgridpts)
 {
 	double mtarget = all_particles[target_particle_id].mass;
-	double xi2 = 0.25*mtarget*mtarget + pT*pT + q1*q1 + q2*q2 + q3*q3;
+	double xi2 = mtarget*mtarget + pT*pT + 0.25*(q1*q1 + q2*q2 + q3*q3);
 	double ckp = cos(pphi), skp = sin(pphi);
 
-	if (coords == 0)
-	{
-		// set qpts at which to interpolate spectra
-		qgridpts[0] = sqrt(xi2 + q1*pT) - sqrt(xi2 - q1*pT);	//set qt component
-		qgridpts[1] = q1*ckp - q2*skp;							//set qx component
-		qgridpts[2] = q1*skp + q2*ckp;							//set qy component
-		qgridpts[3] = q3;										//set qz component, since qz = ql
-	}
-	else if (coords == 1)
-	{
-		double qo = ckp * q1 + skp * q2;
+	double qo = ckp * q1 + skp * q2;
 		
-		// set qpts at which to interpolate spectra
-		qgridpts[0] = sqrt(xi2 + qo*pT) - sqrt(xi2 - qo*pT);	//set qt component
-		qgridpts[1] = q1;										//set qx component
-		qgridpts[2] = q2;										//set qy component
-		qgridpts[3] = q3;										//set qz component, since qz = ql
-	}
+	// set qpts at which to interpolate spectra
+	qgridpts[0] = sqrt(xi2 + qo*pT) - sqrt(xi2 - qo*pT);	//set qt component
+	qgridpts[1] = q1;										//set qx component
+	qgridpts[2] = q2;										//set qy component
+	qgridpts[3] = q3;										//set qz component, since qz = ql
 
 	return;
 }

@@ -29,12 +29,12 @@ using namespace std;
 							// 1 - use usr_def_pc_markers
 							// 2 - use usr_def_pc_markers_thinned
 #define COMPUTE_RESONANCE_ARRAYS	true		// alternative is to read them in from a file
-#define QT_POINTS_SPACING		0		// 0 - uniform from -qmax to +qmax
+#define QT_POINTS_SPACING		1		// 0 - uniform from -qmax to +qmax
 							// 1 - Chebyshev nodes from -qmax to +qmax
 #define QX_POINTS_SPACING		0
 #define QY_POINTS_SPACING		0
 #define QZ_POINTS_SPACING		0
-
+#define VARY_ALPHA			false		// (not yet implemented) feature to treat power in exponential as a fit variable (alpha == 2 <==> traditional Gaussian)
 
 #ifndef H5_NO_NAMESPACE
     using namespace H5;
@@ -67,12 +67,7 @@ const int rational_function_denominator_order = 4;
 const int UDPMsize = 15;
 const int UDPMTsize = 10;
 static double usr_def_pc_markers[UDPMsize] = {
-					0.00, /*0.10, 0.20, 0.30, 0.40,
-					0.50, 0.60, 0.68, 0.69, 0.70,
-					0.71, 0.72, 0.73, 0.74, 0.75,
-					0.76, 0.77, 0.78, 0.79, 0.80,
-					0.81, 0.82, 0.83, 0.84, */0.85,
-					0.86, 0.87, 0.88, 0.89, 0.90,
+					0.00, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90,
 					0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98
 				};
 static double usr_def_pc_markers_thinned[UDPMTsize] = { 0.00, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90 };
@@ -81,45 +76,15 @@ static double usr_def_pc_markers_thinned[UDPMTsize] = { 0.00, 0.10, 0.20, 0.30, 
 const int qonpts = 11;
 const int qsnpts = 11;
 const int qlnpts = 11;
-//const int qnpts = 11;
-//const double delta_q = 0.02;
-//const double init_q = -5.0*delta_q;
-//const int qnpts = 7;
-//const double delta_q = 0.02;
-//const double init_q = -3.0*delta_q;
-//const int qnpts = 6;
-//const double delta_q = 0.05;
-//const double init_q = -2.5*delta_q;
-//const int qnpts = 5;
-//const double delta_q = 0.03;
-//const double init_q = -2.0 * delta_q;
-//const int qnpts = 3;
-//const double delta_q = 0.02;
-//const double init_q = -delta_q;
-//const int qnpts = 2;
-//const double delta_q = 0.05;
-//const double init_q = -0.5*delta_q;
 const int qnpts = 1;
 const double delta_q = 0.005;
 const double init_q = 0.0;
 
 //all direction-specific q points information here
-/*const int qtnpts = qnpts;
-const int qxnpts = qnpts;
-const int qynpts = qnpts;
-const int qznpts = qnpts;
-const double delta_qt = delta_q;
-const double delta_qx = delta_q;
-const double delta_qy = delta_q;
-const double delta_qz = delta_q;
-const double init_qt = init_q;
-const double init_qx = init_q;
-const double init_qy = init_q;
-const double init_qz = init_q;*/
-const int qtnpts = 3;
-const int qxnpts = 1;
-const int qynpts = 1;
-const int qznpts = 1;
+const int qtnpts = 9;
+const int qxnpts = 5;
+const int qynpts = 5;
+const int qznpts = 7;
 const double delta_qt = 0.02;
 const double delta_qx = 0.02;
 const double delta_qy = 0.02;
