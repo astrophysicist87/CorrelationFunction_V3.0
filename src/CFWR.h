@@ -78,7 +78,7 @@ class CorrelationFunction
 		double particle_sign;   //+/- 1 for Fermi/Bose statistics for baryon/meson
 		double particle_gspin;  //particle degeneracy 
 		double particle_mu;
-		double current_total_resonance_percentage;
+		double current_total_resonance_percentage, previous_total_resonance_percentage;
 		particle_info * all_particles;
 		vector<int> chosen_resonances;
 		bool thermal_pions_only;
@@ -124,8 +124,8 @@ class CorrelationFunction
 		//	pair momentum info, currently assumes pT != 0
 		double p_y, pT, pphi, mT, mass, ch_p_y, sh_p_y;
 		//	resonance momentum info
-		double P_Y, PT, PPhi, MT, Mres, PPhip, PPhim, m2, m3, Gamma, br, m2Gamma, m3Gamma;
-		double * Pp, * Pm;
+		double P_Y, PT, PPhi, MT, Mres, PPhip, PPhim, m2, m3, Gamma, br, m2Gamma, m3Gamma, one_by_Gamma_Mres;
+		double * Pp, * Pm, * currentPpm;
 
 		//SP momentum arrays for interpolation grid
 		double * SPinterp_pT, * SPinterp_pphi;
@@ -167,10 +167,12 @@ class CorrelationFunction
 		double * VEC_n2_v_factor;
 		double ** VEC_n2_zeta_factor;
 		double VEC_n2_g_s;
+		double **** VEC_n2_Ppm;
 		//	use these for n_body = 3
 		double * VEC_pstar, * VEC_Estar, * VEC_DeltaY, * VEC_Yp, * VEC_Ym, * VEC_s_factor, * VEC_g_s;
 		double ** VEC_P_Y, ** VEC_MTbar, ** VEC_DeltaMT, ** VEC_MTp, ** VEC_MTm, ** VEC_v_factor;
 		double *** VEC_MT, *** VEC_PPhi_tilde, *** VEC_PPhi_tildeFLIP, *** VEC_PT, *** VEC_zeta_factor;
+		double ***** VEC_Ppm;
 		double * ssum_vec, * vsum_vec, * zetasum_vec, * Csum_vec;
 		
 		double *** spectra, *** abs_spectra;
@@ -183,6 +185,7 @@ class CorrelationFunction
 		double * q1_pts, * q2_pts, * q3_pts;
 		int iqt0, iqx0, iqy0, iqz0;
 		vector<vector<int> > sorted_q_pts_list;
+		double *** qlist, ** current_qlist_slice;
 		
 		//store correlation functions
 		//double *** Correl_3D;
@@ -251,7 +254,7 @@ class CorrelationFunction
 		void Get_spacetime_moments(FO_surf* FOsurf_ptr, int dc_idx);
 		void Recycle_spacetime_moments();
 		void Load_resonance_and_daughter_spectra(int local_pid);
-		void Update_daughter_spectra();
+		void Update_daughter_spectra(int local_pid);
 		void Set_current_resonance_logs_and_signs();
 		void Set_current_daughters_resonance_logs_and_signs(int n_daughters);
 		void Allocate_decay_channel_info();
@@ -277,6 +280,7 @@ class CorrelationFunction
 		double get_Q();
 		double g(double s);
 		inline void set_to_zero(double * array, size_t arraylength);
+		static inline double dot_four_vectors(double * a, double * b);
 		void adaptive_simpson_integration(void (*f) (double, double *), double a, double b, double * results);
 		double place_in_range(double phi, double min, double max);
 		void Get_current_decay_string(int dc_idx, string * decay_string);
@@ -296,6 +300,7 @@ class CorrelationFunction
 		void Setup_current_daughters_dN_dypTdpTdphi_moments(int n_daughter);
 		void Cleanup_current_daughters_dN_dypTdpTdphi_moments(int n_daughter);
 		void Delete_S_p_withweight_array();
+		void test_interpolator();
 
 		// Gaussian fit / correlation function routines
 		void Allocate_CFvals();
@@ -317,7 +322,7 @@ class CorrelationFunction
 		void Output_dN_dypTdpT(int folderindex);
 		void Output_all_dN_dypTdpTdphi(int folderindex);
 		void Output_total_target_dN_dypTdpTdphi(int folderindex);
-		void Output_total_target_eiqx_dN_dypTdpTdphi(int folderindex);
+		void Output_total_target_eiqx_dN_dypTdpTdphi(int folderindex, double current_fraction = -1.0);
 		void Readin_total_target_eiqx_dN_dypTdpTdphi(int folderindex);
 		void Output_results(int folderindex);
 		void Readin_results(int folderindex);
@@ -330,6 +335,7 @@ class CorrelationFunction
 		bool use_delta_f;
 		bool append_output;
 		int n_events;
+		vector<int> osr;
 		int initial_event, currentfolderindex;
 		bool read_in_all_dN_dypTdpTdphi, output_all_dN_dypTdpTdphi;
 		double fraction_of_resonances;

@@ -197,8 +197,92 @@ void CorrelationFunction::Cal_correlationfunction()
 	sw.Stop();
 	*global_out_stream_ptr << "Finished computing correlator in " << sw.printTime() << " seconds." << endl;
 
+	//put test_interpolator() here...
+	//*global_out_stream_ptr << "Testing interpolator..." << endl;
+	//sw.Start();
+	//test_interpolator();
+	//sw.Stop();
+	//*global_out_stream_ptr << "Finished testing interpolator in " << sw.printTime() << " seconds." << endl;
+
 	delete [] q_interp;
 
+	//exit(1);
+
+	return;
+}
+
+void CorrelationFunction::test_interpolator()
+{
+	//need grid_points to be Chebyshev-spaced...
+	if (QX_POINTS_SPACING != 1 or QY_POINTS_SPACING != 1 or QZ_POINTS_SPACING != 1)
+		return;
+
+	int local_qnpts = 25;
+	double mtarget = all_particles[target_particle_id].mass;
+	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+	{
+		double qxmin = qx_PTdep_pts[ipt][0];
+		double qxmax = qx_PTdep_pts[ipt][qxnpts-1];
+		double qymin = qy_PTdep_pts[ipt][0];
+		double qymax = qy_PTdep_pts[ipt][qynpts-1];
+		double qzmin = qz_PTdep_pts[ipt][0];
+		double qzmax = qz_PTdep_pts[ipt][qznpts-1];
+		double del_qx = (qxmax - qxmin) / double(local_qnpts - 1 + 1.e-100);
+		double del_qy = (qymax - qymin) / double(local_qnpts - 1 + 1.e-100);
+		double del_qz = (qzmax - qzmin) / double(local_qnpts - 1 + 1.e-100);
+
+		//assumes q(i)-grids has already been computed at (adjusted) Chebyshev nodes!!!
+		//set up Chebyshev calculation
+		const int dim_loc = 3;
+		int npts_loc[dim_loc] = { qxnpts, qynpts, qznpts };
+		int os[dim_loc] = { qxnpts-1, qynpts-1, qznpts-1 };
+		double lls[dim_loc] = { qxmin, qymin, qzmin };
+		double uls[dim_loc] = { qxmax, qymax, qzmax };
+		
+		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		{
+			//set up local grid for interpolation
+			int iq = 0;
+			double C_at_q[qxnpts*qynpts*qznpts];
+			double *** current_C_slice = CFvals[ipt][ipphi];
+			for (int iqx = 0; iqx < qxnpts; ++iqx)
+			for (int iqy = 0; iqy < qynpts; ++iqy)
+			for (int iqz = 0; iqz < qznpts; ++iqz)
+				C_at_q[iq++] = current_C_slice[iqx][iqy][iqz];
+	
+			//generate Chebyshev approximation to use below
+			Chebyshev cf(C_at_q, npts_loc, os, lls, uls, dim_loc);
+
+			double local_pT = SPinterp_pT[ipt];
+			double local_pphi = SPinterp_pphi[ipphi];
+			double ckp = cos_SPinterp_pphi[ipphi], skp = sin_SPinterp_pphi[ipphi];
+			double local_spectra = spectra[target_particle_id][ipt][ipphi];
+			//now use Chebyshev approximator to do interpolation
+			for (int iqx = 0; iqx < local_qnpts; ++iqx)
+			for (int iqy = 0; iqy < local_qnpts; ++iqy)
+			for (int iqz = 0; iqz < local_qnpts; ++iqz)
+			{
+				//set interpolation point
+				double qx_interp = qxmin + (double)iqx * del_qx;
+				double qy_interp = qymin + (double)iqy * del_qy;
+				double qz_interp = qzmin + (double)iqz * del_qz;
+				double xi2 = mtarget*mtarget + local_pT*local_pT + 0.25*(qx_interp*qx_interp+qy_interp*qy_interp+qz_interp*qz_interp);
+				double qo = ckp * qx_interp + skp * qy_interp;
+				double qt_interp = sqrt(xi2 + qo*local_pT) - sqrt(xi2 - qo*local_pT);	//set qt component
+	
+				double point[dim_loc] = { qx_interp, qy_interp, qz_interp };
+		
+				double interpolated_result = cf.eval(point);
+				double exact_result = Cal_dN_dypTdpTdphi_with_weights_function(current_FOsurf_ptr, target_particle_id, local_pT, local_pphi,
+																				qt_interp, qx_interp, qy_interp, qz_interp) / (local_spectra*local_spectra);
+
+				cout << "test_interpolator(): " << ipt << "   " << ipphi << "   " << iqx << "   " << iqy << "   " << iqz
+						<< setprecision(12) << setw(16)
+						<< "   " << local_pT << "   " << local_pphi << "   " << qx_interp << "   " << qy_interp << "   " << qz_interp
+						<< "   " << interpolated_result << "   " << exact_result << endl;
+			}
+		}
+	}
 	return;
 }
 

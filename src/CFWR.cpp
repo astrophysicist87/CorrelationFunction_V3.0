@@ -186,16 +186,25 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 			if (!Do_this_daughter_particle(idc, idc_DI, &daughter_resonance_particle_id))
 				continue;
 			Set_current_daughter_info(idc, idc_DI);
+//debugger(__LINE__, __FILE__);
 			Do_resonance_integrals(current_resonance_particle_id, daughter_resonance_particle_id, idc);
+//debugger(__LINE__, __FILE__);
 		}
 
-		Update_daughter_spectra();
+		Update_daughter_spectra(decay_channels[idc-1].resonance_particle_id);
 		Delete_decay_channel_info();				// free up memory
 	}											// END of decay channel loop
+	BIGsw.toc();
+	*global_out_stream_ptr << "\t ...finished computing all phase-space integrals in " << BIGsw.takeTime() << " seconds." << endl;
 
 	correlation_function_calculation:
 		// Now, with all resonance contributions to correlation function computed, do the actual calculation
+		*global_out_stream_ptr << "Calculating the correlation function..." << endl;
+		BIGsw.tic();
 		Cal_correlationfunction();
+		BIGsw.toc();
+		*global_out_stream_ptr << "\t ...finished calculating the correlation function in " << BIGsw.takeTime() << " seconds." << endl;
+
 
    return;
 }
@@ -531,7 +540,7 @@ void CorrelationFunction::Load_resonance_and_daughter_spectra(int local_pid)
 	return;
 }
 
-void CorrelationFunction::Update_daughter_spectra()
+void CorrelationFunction::Update_daughter_spectra(int local_pid)
 {
 	int d_idx = 0;
 	for (set<int>::iterator it = daughter_resonance_indices.begin(); it != daughter_resonance_indices.end(); ++it)
@@ -539,12 +548,28 @@ void CorrelationFunction::Update_daughter_spectra()
 		int daughter_pid = *it;		//daughter pid is pointed to by iterator
 		int setHDFresonanceSpectra = Set_resonance_in_HDF_array(daughter_pid, current_daughters_dN_dypTdpTdphi_moments[d_idx]);
 
-		for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-			spectra[daughter_pid][ipt][ipphi] = current_daughters_dN_dypTdpTdphi_moments[d_idx][ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0];
+		//now doing this in actual resonance integral functions
+		//for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+		//for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		//	spectra[daughter_pid][ipt][ipphi] = current_daughters_dN_dypTdpTdphi_moments[d_idx][ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0];
 
 		++d_idx;
 	}
+
+/*
+	//keep track of %-age of pions which have been computed
+	double dump_resonance_threshholds[5] = {0.1, 0.2, 0.3, 0.4, 0.5};
+	previous_total_resonance_percentage = current_total_resonance_percentage;
+	current_total_resonance_percentage += all_particles[local_pid].percent_contribution;
+
+	//if most recent resonance pushes total %-age above a specified threshhold (e.g., 20%), then output just FTd spectra from these + thermal
+	for (int idrt = 0; idrt < 5; ++idrt)
+	if (current_total_resonance_percentage >= dump_resonance_threshholds[idrt] && previous_total_resonance_percentage < dump_resonance_threshholds[idrt])
+	{	//conditions should only hold for one threshhold at a time
+		//dump FTd spectra to appropriately named file
+		Output_total_target_eiqx_dN_dypTdpTdphi(global_folderindex, current_total_resonance_percentage);
+	}
+*/
 
 	// cleanup previous iteration and setup the new one
 	Cleanup_current_daughters_dN_dypTdpTdphi_moments(daughter_resonance_indices.size());
@@ -637,7 +662,15 @@ void CorrelationFunction::Get_spacetime_moments(FO_surf* FOsurf_ptr, int dc_idx)
 				exit(1);
 			}
 		}
-		Set_dN_dypTdpTdphi_moments(FOsurf_ptr, current_resonance_particle_id);
+
+		//allows to omit thermal spectra calculations from specified resonances, e.g., all resonances which contribute up to 60% of decay pions
+		if (find(osr.begin(), osr.end(), current_resonance_particle_id) != osr.end())
+			*global_out_stream_ptr << "  --> ACTUALLY SKIPPING WEIGHTED THERMAL SPECTRA FOR " << local_name << endl;
+		else
+		{
+			*global_out_stream_ptr << "  --> ACTUALLY DOING WEIGHTED THERMAL SPECTRA FOR " << local_name << endl;
+			Set_dN_dypTdpTdphi_moments(FOsurf_ptr, current_resonance_particle_id);
+		}
 	}
 //**************************************************************
 //Spacetime moments now set
@@ -683,7 +716,6 @@ void CorrelationFunction::Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int lo
 	*global_out_stream_ptr << "Computing weighted thermal spectra..." << endl;
 	sw.Reset();
 	Cal_dN_dypTdpTdphi_with_weights(FOsurf_ptr, local_pid);
-	//Cal_dN_dypTdpTdphi_with_weights_INVERTED_LOOPS(FOsurf_ptr, local_pid);
 	sw.Stop();
 	*global_out_stream_ptr << "CP#2: Took " << sw.printTime() << " seconds." << endl;
 
@@ -817,10 +849,13 @@ pc_cutoff_vals.resize( number_of_percentage_markers );
 					double S_p_withweight = S_p*tau*eta_s_weight[ieta];		//don't include eta_s_symmetry_factor here, for consistency with later calculations...
 
 					//if (ipt==0 && ipphi==n_interp_pphi_pts-1)
-					//	cout << "CPcout: " << isurf << "   " << ieta << "   " << scientific << setprecision(8) << setw(12)
-					//			<< prefactor << "   " << f0 << "   " << 1.+deltaf << "   " << p0*da0 + px*da1 + py*da2
-					//			<< "   " << p0 << "   " << da0 << "   " << px << "   " << da1 << "   " << py << "   " << da2
-					//			<< "   " << eta_s_symmetry_factor*tau*eta_s_weight[ieta] << "   " << eta_s_symmetry_factor*S_p_withweight << endl;
+						//cout << "CPcout: " << isurf << "   " << ieta << "   " << scientific << setprecision(8) << setw(12)
+						//		<< prefactor << "   " << f0 << "   " << 1.+deltaf << "   " << p0*da0 + px*da1 + py*da2
+						//		<< "   " << p0 << "   " << da0 << "   " << px << "   " << da1 << "   " << py << "   " << da2
+						//		<< "   " << eta_s_symmetry_factor*tau*eta_s_weight[ieta] << "   " << eta_s_symmetry_factor*S_p_withweight << endl;
+						//cout << "CPcout: " << isurf << "   " << ieta << "   " << scientific << setprecision(8) << setw(12)
+						//		<< (gammaT*(p0*1. - px*vx - py*vy) - mu)*one_by_Tdec << "   " << eta_s_symmetry_factor*S_p_withweight << endl;
+
 
 					//ignore points where delta f is large or emission function goes negative from pdsigma
 					if ((1. + deltaf < 0.0) || (flagneg == 1 && S_p < tol))
@@ -897,7 +932,6 @@ pc_cutoff_vals.resize( number_of_percentage_markers );
 				default:
 					break;
 			}
-
 
 			for (int ii = 0; ii < FOcells_PQ_size; ii++)
 			{
@@ -1093,7 +1127,7 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 								
 						running_sum += abs(S_p_withweight);
 
-						//if (ipt == 0 && ipphi == 0)
+						//if (ipt == 0 && ipphi == 0 && iqx == 50)
 						//	cout << setprecision(8) << setw(12) << S_p_withweight
 						//		<< "   " << running_sum << "   " << tmla_C << "   " << tmla_S << endl;
 					}
@@ -1190,7 +1224,9 @@ void CorrelationFunction::Load_decay_channel_info(int dc_idx, double K_T_local, 
 {
 	Mres = current_resonance_mass;
 	Gamma = current_resonance_Gamma;
-	double one_by_Gamma_Mres = hbarC/(Gamma*Mres);
+	//one_by_Gamma_Mres = hbarC/(Gamma*Mres + 1.e-25);	//keeps calculation safe when Gamma == 0
+	one_by_Gamma_Mres = 1./(Gamma*Mres + 1.e-25);	//keeps calculation safe when Gamma == 0
+	//N.B. - no need for hbarc, since this will multiply something with GeV^2 units in the end
 	mass = current_daughter_mass;
 	br = current_resonance_direct_br;	//doesn't depend on target daughter particle, just parent resonance and decay channel
 	m2 = current_resonance_decay_masses[0];
@@ -1260,6 +1296,16 @@ void CorrelationFunction::Load_decay_channel_info(int dc_idx, double K_T_local, 
 				VEC_n2_PPhi_tilde[iv][izeta] = place_in_range( K_phi_local + PPhi_tilde_loc, interp_pphi_min, interp_pphi_max);
 				VEC_n2_PPhi_tildeFLIP[iv][izeta] = place_in_range( K_phi_local - PPhi_tilde_loc, interp_pphi_min, interp_pphi_max);
 				VEC_n2_PT[iv][izeta] = PT_loc;
+				//set P^+ components
+				VEC_n2_Ppm[iv][izeta][0][0] = MT_loc * cosh(P_Y_loc);
+				VEC_n2_Ppm[iv][izeta][0][1] = PT_loc * cos(K_phi_local + PPhi_tilde_loc);
+				VEC_n2_Ppm[iv][izeta][0][2] = PT_loc * sin(K_phi_local + PPhi_tilde_loc);
+				VEC_n2_Ppm[iv][izeta][0][3] = MT_loc * sinh(P_Y_loc);
+				//set P^- components
+				VEC_n2_Ppm[iv][izeta][1][0] = MT_loc * cosh(P_Y_loc);
+				VEC_n2_Ppm[iv][izeta][1][1] = PT_loc * cos(K_phi_local - PPhi_tilde_loc);
+				VEC_n2_Ppm[iv][izeta][1][2] = PT_loc * sin(K_phi_local - PPhi_tilde_loc);
+				VEC_n2_Ppm[iv][izeta][1][3] = MT_loc * sinh(P_Y_loc);
 				check_for_NaNs("PT_loc", PT_loc, *global_out_stream_ptr);
 				check_for_NaNs("PPhi_tilde_loc", PPhi_tilde_loc, *global_out_stream_ptr);
 			}
@@ -1316,6 +1362,16 @@ void CorrelationFunction::Load_decay_channel_info(int dc_idx, double K_T_local, 
 					VEC_PPhi_tilde[is][iv][izeta] = place_in_range( K_phi_local + PPhi_tilde_loc, interp_pphi_min, interp_pphi_max);
 					VEC_PPhi_tildeFLIP[is][iv][izeta] = place_in_range( K_phi_local - PPhi_tilde_loc, interp_pphi_min, interp_pphi_max);
 					VEC_PT[is][iv][izeta] = PT_loc;
+					//set P^+ components
+					VEC_Ppm[is][iv][izeta][0][0] = MT_loc * cosh(P_Y_loc);
+					VEC_Ppm[is][iv][izeta][0][1] = PT_loc * cos(K_phi_local + PPhi_tilde_loc);
+					VEC_Ppm[is][iv][izeta][0][2] = PT_loc * sin(K_phi_local + PPhi_tilde_loc);
+					VEC_Ppm[is][iv][izeta][0][3] = MT_loc * sinh(P_Y_loc);
+					//set P^- components
+					VEC_Ppm[is][iv][izeta][1][0] = MT_loc * cosh(P_Y_loc);
+					VEC_Ppm[is][iv][izeta][1][1] = PT_loc * cos(K_phi_local - PPhi_tilde_loc);
+					VEC_Ppm[is][iv][izeta][1][2] = PT_loc * sin(K_phi_local - PPhi_tilde_loc);
+					VEC_Ppm[is][iv][izeta][1][3] = MT_loc * sinh(P_Y_loc);
 				}
 			}
 		}

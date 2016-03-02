@@ -174,14 +174,55 @@ void CorrelationFunction::Output_correlationfunction(int folderindex)
 	for (int iqx = 0; iqx < qxnpts; ++iqx)
 	for (int iqy = 0; iqy < qynpts; ++iqy)
 	for (int iqz = 0; iqz < qznpts; ++iqz)
+	{
+		double ckp = cos_SPinterp_pphi[ipphi], skp = sin_SPinterp_pphi[ipphi];
 		oCorrFunc << scientific << setprecision(7) << setw(15)
 			<< SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   " << qx_PTdep_pts[ipt][iqx] << "   "
-			<< qy_PTdep_pts[ipt][iqy] << "   " << qz_PTdep_pts[ipt][iqz] << "   " << CFvals[ipt][ipphi][iqx][iqy][iqz] << endl;
+			<< qy_PTdep_pts[ipt][iqy] << "   " << qz_PTdep_pts[ipt][iqz] << "   "
+			<< qx_PTdep_pts[ipt][iqx] * ckp + qy_PTdep_pts[ipt][iqy] * skp << "   "
+			<< -qx_PTdep_pts[ipt][iqx] * skp + qy_PTdep_pts[ipt][iqy] * ckp << "   "
+			<< qz_PTdep_pts[ipt][iqz] << "   "
+			<< CFvals[ipt][ipphi][iqx][iqy][iqz] << endl;
+	}
 
 	oCorrFunc.close();
 				
 	return;
 }
+
+/*void CorrelationFunction::Readin_correlationfunction(int folderindex)
+{
+	ostringstream iCorrFunc_stream;
+	string temp_particle_name = particle_name;
+	replace_parentheses(temp_particle_name);
+	iCorrFunc_stream << global_path << "/correlfunct3D" << "_" << temp_particle_name << ".dat";
+	ifstream iCorrFunc;
+	iCorrFunc.open(iCorrFunc_stream.str().c_str());
+
+	double dummy = 0.0;
+
+	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+	for (int iqx = 0; iqx < qxnpts; ++iqx)
+	for (int iqy = 0; iqy < qynpts; ++iqy)
+	for (int iqz = 0; iqz < qznpts; ++iqz)
+	{
+		iCorrFunc 
+			>> dummy
+			>> dummy
+			>> dummy
+			>> dummy
+			>> dummy
+			>> dummy
+			>> dummy
+			>> dummy
+			>> CFvals[ipt][ipphi][iqx][iqy][iqz];
+	}
+
+	iCorrFunc.close();
+				
+	return;
+}*/
 
 void CorrelationFunction::Readin_results(int folderindex)
 {
@@ -320,12 +361,13 @@ void CorrelationFunction::Readin_current_correlator(int folderindex)
 }*/
 
 
-void CorrelationFunction::Output_total_target_eiqx_dN_dypTdpTdphi(int folderindex)
+void CorrelationFunction::Output_total_target_eiqx_dN_dypTdpTdphi(int folderindex, double current_fraction /*==-1.0*/)
 {
 	string local_name = all_particles[target_particle_id].name;
+	string current_fraction_string = (current_fraction >= 0.0) ? "_" + patch::to_string(current_fraction) : "";
 	replace_parentheses(local_name);
 	ostringstream filename_stream_target_dN_dypTdpTdphi;
-	filename_stream_target_dN_dypTdpTdphi << global_path << "/total_" << local_name << "_eiqx_dN_dypTdpTdphi_ev" << folderindex << no_df_stem << ".dat";
+	filename_stream_target_dN_dypTdpTdphi << global_path << "/total_" << local_name << current_fraction_string << "_eiqx_dN_dypTdpTdphi_ev" << folderindex << no_df_stem << ".dat";
 	ofstream output_target_dN_dypTdpTdphi(filename_stream_target_dN_dypTdpTdphi.str().c_str());
 
 	int HDFloadTargetSuccess = Get_resonance_from_HDF_array(target_particle_id, current_dN_dypTdpTdphi_moments);
@@ -372,6 +414,16 @@ void CorrelationFunction::Output_total_target_eiqx_dN_dypTdpTdphi(int folderinde
 			<< qt_PTdep_pts[ipt][iqt] << "   " << qx_PTdep_pts[ipt][iqx] << "   " << qy_PTdep_pts[ipt][iqy] << "   " << qz_PTdep_pts[ipt][iqz] << "   "
 			<< SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   " << nonFTd_spectra << "   " << cos_transf_spectra << "   " << sin_transf_spectra << "   "
 			<< CF << "   " << thermal_target_CF + shift << endl;
+		//output_target_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12)
+		//	<< qt_PTdep_pts[ipt][iqt] << "   " << qx_PTdep_pts[ipt][iqx] << "   " << qy_PTdep_pts[ipt][iqy] << "   " << qz_PTdep_pts[ipt][iqz] << "   "
+		//	<< SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   " << nonFTd_spectra << "   " << cos_transf_spectra << "   " << sin_transf_spectra << "   "
+		//	<< 1.0 + (
+		//				( cos_transf_spectra - cos_transf_tspectra ) * ( cos_transf_spectra - cos_transf_tspectra )
+		//					+ ( sin_transf_spectra - sin_transf_tspectra ) * ( sin_transf_spectra - sin_transf_tspectra )
+		//			) / (
+		//				( nonFTd_spectra - nonFTd_tspectra ) * ( nonFTd_spectra - nonFTd_tspectra )
+		//			) << endl;
+
 	}
 
 	output_target_dN_dypTdpTdphi.close();

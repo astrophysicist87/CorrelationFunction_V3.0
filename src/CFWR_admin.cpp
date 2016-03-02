@@ -261,6 +261,30 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
 		}
 	}
 
+	qlist = new double ** [n_interp_pT_pts];
+	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+	{
+		int qidx = 0;
+		qlist[ipt] = new double * [qtnpts*qxnpts*qynpts*qznpts];
+		for (int iqt = 0; iqt < qtnpts; ++iqt)
+		for (int iqx = 0; iqx < qxnpts; ++iqx)
+		for (int iqy = 0; iqy < qynpts; ++iqy)
+		for (int iqz = 0; iqz < qznpts; ++iqz)
+			qlist[ipt][qidx++] = new double [4];
+	}
+	int qidx = 0;
+	current_qlist_slice = new double * [qtnpts*qxnpts*qynpts*qznpts];
+	for (int iqt = 0; iqt < qtnpts; ++iqt)
+	for (int iqx = 0; iqx < qxnpts; ++iqx)
+	for (int iqy = 0; iqy < qynpts; ++iqy)
+	for (int iqz = 0; iqz < qznpts; ++iqz)
+	{
+		current_qlist_slice[qidx] = new double [4];
+		for (int i = 0; i < 4; ++i)
+			current_qlist_slice[qidx][i] = 0.0;
+		qidx++;
+	}
+
 	res_log_info = new double ** [n_interp_pT_pts];
 	res_sign_info = new double ** [n_interp_pT_pts];
 	res_moments_info = new double ** [n_interp_pT_pts];
@@ -664,7 +688,7 @@ void CorrelationFunction::Set_q_pTdep_pts(int ipt, double qxw, double qyw, doubl
 	double xi2 = mpion*mpion + pT_local*pT_local + 2.0*0.25*qxmax*qxmax;	//pretend that Kphi == 0, qx == qo and qs == ql == 0, to maximize qtmax
 	double qtmax = sqrt(xi2 + sqrt(2.0)*pT_local*qxmax) - sqrt(xi2 - sqrt(2.0)*pT_local*qxmax) + 1.e-10;
 
-cout << "pt and qmax list: " << pT_local << "   " << qtmax << "   " << qxmax << "   " << qymax << "   " << qzmax << endl;
+//cout << "pt and qmax list: " << pT_local << "   " << qtmax << "   " << qxmax << "   " << qymax << "   " << qzmax << endl;
 	//double qtmax = 2.0 * qxmax;
 ////////////////////////////////////////////////////////////////////////
 
@@ -673,6 +697,21 @@ cout << "pt and qmax list: " << pT_local << "   " << qtmax << "   " << qxmax << 
 	Fill_out_pts(qx_PTdep_pts[ipt], qxnpts, qxmax, QX_POINTS_SPACING);
 	Fill_out_pts(qy_PTdep_pts[ipt], qynpts, qymax, QY_POINTS_SPACING);
 	Fill_out_pts(qz_PTdep_pts[ipt], qznpts, qzmax, QZ_POINTS_SPACING);
+
+	int qidx = 0;
+	//qlist[ipt] = new double * [qtnpts*qxnpts*qynpts*qznpts];
+	for (int iqt = 0; iqt < qtnpts; ++iqt)
+	for (int iqx = 0; iqx < qxnpts; ++iqx)
+	for (int iqy = 0; iqy < qynpts; ++iqy)
+	for (int iqz = 0; iqz < qznpts; ++iqz)
+	//for (int itrig = 0; itrig < 2; ++itrig)
+	{
+		qlist[ipt][qidx][0] = qt_PTdep_pts[ipt][iqt];
+		qlist[ipt][qidx][1] = qx_PTdep_pts[ipt][iqx];
+		qlist[ipt][qidx][2] = qy_PTdep_pts[ipt][iqy];
+		qlist[ipt][qidx][3] = qz_PTdep_pts[ipt][iqz];
+		qidx++;
+	}
 
 	return;
 }
@@ -835,13 +874,21 @@ void CorrelationFunction::Allocate_decay_channel_info()
 	VEC_n2_PPhi_tilde = new double * [n_v_pts];
 	VEC_n2_PPhi_tildeFLIP = new double * [n_v_pts];
 	VEC_n2_PT = new double * [n_v_pts];
-	for(int iv = 0; iv < n_v_pts; ++iv)
+	VEC_n2_Ppm = new double *** [n_v_pts];
+	for (int iv = 0; iv < n_v_pts; ++iv)
 	{
 		VEC_n2_MT[iv] = new double [n_zeta_pts];
 		VEC_n2_PPhi_tilde[iv] = new double [n_zeta_pts];
 		VEC_n2_PPhi_tildeFLIP[iv] = new double [n_zeta_pts];
 		VEC_n2_PT[iv] = new double [n_zeta_pts];
 		VEC_n2_zeta_factor[iv] = new double [n_zeta_pts];
+		VEC_n2_Ppm[iv] = new double ** [n_zeta_pts];
+		for (int izeta = 0; izeta < n_zeta_pts; ++izeta)
+		{
+			VEC_n2_Ppm[iv][izeta] = new double * [2];		//two corresponds to +/-
+			for (int i = 0; i < 2; ++i)
+				VEC_n2_Ppm[iv][izeta][i] = new double [4];	//four corresponds to space-time components
+		}
 	}
 	NEW_s_pts = new double [n_s_pts];
 	NEW_s_wts = new double [n_s_pts];
@@ -863,6 +910,7 @@ void CorrelationFunction::Allocate_decay_channel_info()
 	VEC_PPhi_tilde = new double ** [n_s_pts];
 	VEC_PPhi_tildeFLIP = new double ** [n_s_pts];
 	VEC_PT = new double ** [n_s_pts];
+	VEC_Ppm = new double **** [n_s_pts];
 	for(int is = 0; is < n_s_pts; ++is)
 	{
 		VEC_v_factor[is] = new double [n_v_pts];
@@ -876,6 +924,7 @@ void CorrelationFunction::Allocate_decay_channel_info()
 		VEC_PPhi_tilde[is] = new double * [n_v_pts];
 		VEC_PPhi_tildeFLIP[is] = new double * [n_v_pts];
 		VEC_PT[is] = new double * [n_v_pts];
+		VEC_Ppm[is] = new double *** [n_v_pts];
 		for(int iv = 0; iv < n_v_pts; ++iv)
 		{
 			VEC_MT[is][iv] = new double [n_zeta_pts];
@@ -883,6 +932,13 @@ void CorrelationFunction::Allocate_decay_channel_info()
 			VEC_PPhi_tildeFLIP[is][iv] = new double [n_zeta_pts];
 			VEC_PT[is][iv] = new double [n_zeta_pts];
 			VEC_zeta_factor[is][iv] = new double [n_zeta_pts];
+			VEC_Ppm[is][iv] = new double ** [n_zeta_pts];
+			for (int izeta = 0; izeta < n_zeta_pts; ++izeta)
+			{
+				VEC_Ppm[is][iv][izeta] = new double * [2];		//two corresponds to +/-
+				for (int i = 0; i < 2; ++i)
+					VEC_Ppm[is][iv][izeta][i] = new double [4];	//four corresponds to space-time components
+			}
 		}
 	}
 	if (VERBOSE > 2) *global_out_stream_ptr << "Reallocated memory for decay channel information." << endl;
@@ -900,6 +956,13 @@ void CorrelationFunction::Delete_decay_channel_info()
 		delete [] VEC_n2_PPhi_tildeFLIP[iv];
 		delete [] VEC_n2_PT[iv];
 		delete [] VEC_n2_zeta_factor[iv];
+		for (int izeta = 0; izeta < n_zeta_pts; ++izeta)
+		{
+			for (int i = 0; i < 2; ++i)
+				delete [] VEC_n2_Ppm[iv][izeta][i];
+			delete [] VEC_n2_Ppm[iv][izeta];
+		}
+		delete [] VEC_n2_Ppm[iv];
 	}
 	delete [] VEC_n2_v_factor;
 	delete [] VEC_n2_zeta_factor;
@@ -912,6 +975,7 @@ void CorrelationFunction::Delete_decay_channel_info()
 	delete [] VEC_n2_PPhi_tilde;
 	delete [] VEC_n2_PPhi_tildeFLIP;
 	delete [] VEC_n2_PT;
+	delete [] VEC_n2_Ppm;
 
 	for(int is = 0; is < n_s_pts; ++is)
 	{
@@ -922,6 +986,13 @@ void CorrelationFunction::Delete_decay_channel_info()
 			delete [] VEC_PPhi_tildeFLIP[is][iv];
 			delete [] VEC_PT[is][iv];
 			delete [] VEC_zeta_factor[is][iv];
+			for (int izeta = 0; izeta < n_zeta_pts; ++izeta)
+			{
+				for (int i = 0; i < 2; ++i)
+					delete [] VEC_Ppm[is][iv][izeta][i];
+				delete [] VEC_Ppm[is][iv][izeta];
+			}
+			delete [] VEC_Ppm[is][iv];
 		}
 		delete [] VEC_v_factor[is];
 		delete [] VEC_zeta_factor[is];
@@ -934,6 +1005,7 @@ void CorrelationFunction::Delete_decay_channel_info()
 		delete [] VEC_PPhi_tilde[is];
 		delete [] VEC_PPhi_tildeFLIP[is];
 		delete [] VEC_PT[is];
+		delete [] VEC_Ppm[is];
 	}
 	delete [] NEW_s_pts;
 	delete [] NEW_s_wts;
@@ -955,6 +1027,7 @@ void CorrelationFunction::Delete_decay_channel_info()
 	delete [] VEC_PPhi_tilde;
 	delete [] VEC_PPhi_tildeFLIP;
 	delete [] VEC_PT;
+	delete [] VEC_Ppm;
 	if (VERBOSE > 2) *global_out_stream_ptr << "Deleted memory for decay channel information." << endl;
 
 	return;
@@ -1353,6 +1426,14 @@ inline double CorrelationFunction::lin_int(double x_m_x1, double one_by_x2_m_x1,
 	return ( f1 + (f2 - f1) * x_m_x1 * one_by_x2_m_x1 );
 }
 
+//dots 4-vectors together
+inline double CorrelationFunction::dot_four_vectors(double * a, double * b)
+{
+	double sum = a[0]*b[0];
+	for (size_t i=1; i<4; ++i) sum -= a[i]*b[i];
+	return (sum);
+}
+
 void CorrelationFunction::Edndp3(double ptr, double phir, double * results)
 {
 	double phi0, phi1;
@@ -1419,14 +1500,23 @@ void CorrelationFunction::Edndp3(double ptr, double phir, double * results)
 
 	// set index for looping
 	int qpt_cs_idx = 0;
+	int qlist_idx = 0;
 
 	for (int iqt = 0; iqt < qtnpts; ++iqt)
 	for (int iqx = 0; iqx < qxnpts; ++iqx)
 	for (int iqy = 0; iqy < qynpts; ++iqy)
 	for (int iqz = 0; iqz < qznpts; ++iqz)
-	for (int itrig = 0; itrig < 2; ++itrig)
+	//for (int itrig = 0; itrig < 2; ++itrig)
 	{
+		double arg = one_by_Gamma_Mres * dot_four_vectors(current_qlist_slice[qlist_idx], currentPpm);
+		double akr = 1./(1.+arg*arg);
+		double aki = arg/(1.+arg*arg);
+
+		/////////////////////////////////////////////////////////////////
+		// DO COSINE PART FIRST
+		/////////////////////////////////////////////////////////////////
 		// interpolate over pT values first
+		/////////////////////////////////////////////////////////////////
 		if(ptr > PTCHANGE)				// if pT interpolation point is larger than PTCHANGE (currently 1.0 GeV)
 		{
 			double sign_of_f11 = sign_of_f11_arr[qpt_cs_idx];
@@ -1464,31 +1554,60 @@ void CorrelationFunction::Edndp3(double ptr, double phir, double * results)
 					
 		// now, interpolate f1 and f2 over the pphi direction
 		// note "+=", since must sum over "+" and "-" roots in Eq. (A19) in Wiedemann & Heinz (1997)
-		results[qpt_cs_idx] += lin_int(phir-phi0, one_by_pphidiff, f1, f2);
-//results[qpt_cs_idx] += exp(-phir*phir);
-/*if (iqt==1 && current_ipt==12 && current_ipphi==16)
-{
-		*global_out_stream_ptr << "DEBUG: "
-				<< "   ptr = " << ptr
-				<< "   pt0 = " << pT0
-				<< "   pt1 = " << pT1
-				<< "   phir = " << phir
-				<< "   phi0 = " << phi0
-				<< "   phi1 = " << phi1
-				<< "   f11 = " << f11_arr[qpt_cs_idx]
-				<< "   f12 = " << f12_arr[qpt_cs_idx]
-				<< "   f21 = " << f21_arr[qpt_cs_idx]
-				<< "   f22 = " << f22_arr[qpt_cs_idx]
-				<< "   f1 = " << f1
-				<< "   f2 = " << f2 << endl;
-}*/
+		//results[qpt_cs_idx] += lin_int(phir-phi0, one_by_pphidiff, f1, f2);
+		double Zkr = lin_int(phir-phi0, one_by_pphidiff, f1, f2);
 
+		/////////////////////////////////////////////////////////////////
+		// DO SINE PART NEXT
+		/////////////////////////////////////////////////////////////////
+		// interpolate over pT values first
+		/////////////////////////////////////////////////////////////////
+		if(ptr > PTCHANGE)				// if pT interpolation point is larger than PTCHANGE (currently 1.0 GeV)
+		{
+			double sign_of_f11 = sign_of_f11_arr[qpt_cs_idx+1];
+			double sign_of_f12 = sign_of_f12_arr[qpt_cs_idx+1];
+			double sign_of_f21 = sign_of_f21_arr[qpt_cs_idx+1];
+			double sign_of_f22 = sign_of_f22_arr[qpt_cs_idx+1];
+			
+			//*******************************************************************************************************************
+			// set f1 first
+			//*******************************************************************************************************************
+			// if using extrapolation and spectra at pT1 has larger magnitude than at pT0 (or the signs are different), just return zero
+			if ( ptr > pT1 && ( log_f21_arr[qpt_cs_idx+1] > log_f11_arr[qpt_cs_idx+1] || sign_of_f11 * sign_of_f21 < 0 ) )
+				f1 = 0.0;
+			else if (sign_of_f11 * sign_of_f21 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
+				f1 = sign_of_f11 * exp( lin_int(ptr-pT0, one_by_pTdiff, log_f11_arr[qpt_cs_idx+1], log_f21_arr[qpt_cs_idx+1]) );
+			else					// otherwise, just interpolate original vals
+				f1 = lin_int(ptr-pT0, one_by_pTdiff, f11_arr[qpt_cs_idx+1], f21_arr[qpt_cs_idx+1]);
+				
+			//*******************************************************************************************************************
+			// set f2 next
+			//*******************************************************************************************************************
+			if ( ptr > pT1 && ( log_f22_arr[qpt_cs_idx+1] > log_f12_arr[qpt_cs_idx+1] || sign_of_f12 * sign_of_f22 < 0 ) )
+				f2 = 0.0;
+			else if (sign_of_f12 * sign_of_f22 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
+				f2 = sign_of_f12 * exp( lin_int(ptr-pT0, one_by_pTdiff, log_f12_arr[qpt_cs_idx+1], log_f22_arr[qpt_cs_idx+1]) );
+			else					// otherwise, just interpolate original vals
+				f2 = lin_int(ptr-pT0, one_by_pTdiff, f12_arr[qpt_cs_idx+1], f22_arr[qpt_cs_idx+1]);
+			//*******************************************************************************************************************
+		}
+		else						// if pT is smaller than PTCHANGE, just use linear interpolation, no matter what
+		{
+			f1 = lin_int(ptr-pT0, one_by_pTdiff, f11_arr[qpt_cs_idx+1], f21_arr[qpt_cs_idx+1]);
+			f2 = lin_int(ptr-pT0, one_by_pTdiff, f12_arr[qpt_cs_idx+1], f22_arr[qpt_cs_idx+1]);
+		}
 					
-		if ( isinf( results[qpt_cs_idx] ) || isnan( results[qpt_cs_idx] ) )
+		// now, interpolate f1 and f2 over the pphi direction
+		// note "+=", since must sum over "+" and "-" roots in Eq. (A19) in Wiedemann & Heinz (1997)
+		//results[qpt_cs_idx+1] += lin_int(phir-phi0, one_by_pphidiff, f1, f2);
+		double Zki = lin_int(phir-phi0, one_by_pphidiff, f1, f2);
+					
+		/*if ( isinf( results[qpt_cs_idx] ) || isnan( results[qpt_cs_idx] ) || isinf( results[qpt_cs_idx+1] ) || isnan( results[qpt_cs_idx+1] ) )
 		{
 			*global_out_stream_ptr << "ERROR in Edndp3(double, double, double*): problems encountered!" << endl
 				<< "results(" << iqt << "," << iqx << "," << iqy << "," << iqz << "," << itrig << ") = "
 				<< setw(8) << setprecision(15) << results[qpt_cs_idx] << endl
+				<< results[qpt_cs_idx+1] << endl
 				<< "  --> ptr = " << ptr << endl
 				<< "  --> pt0 = " << pT0 << endl
 				<< "  --> pt1 = " << pT1 << endl
@@ -1502,8 +1621,17 @@ void CorrelationFunction::Edndp3(double ptr, double phir, double * results)
 				<< "  --> f1 = " << f1 << endl
 				<< "  --> f2 = " << f2 << endl;
 							//exit(1);
-		}
-		++qpt_cs_idx;	// step to next cell in results array
+		}*/
+
+		//Finally, update results vectors appropriately
+		//--> update the real part of weighted daughter spectra
+		results[qpt_cs_idx] += akr*Zkr-aki*Zki;
+		//--> update the imaginary part of weighted daughter spectra
+		results[qpt_cs_idx+1] += akr*Zki+aki*Zkr;
+
+		//++qpt_cs_idx;	// step to next cell in results array
+		qpt_cs_idx += 2;
+		qlist_idx++;
 	}	// ending all loops at once in linearized version
 
 	return;

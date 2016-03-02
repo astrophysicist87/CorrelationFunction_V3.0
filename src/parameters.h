@@ -20,7 +20,7 @@ using namespace std;
 #define DO_ALL_DECAY_CHANNELS		false		// duh
 #define USE_HDF5			false		// utilizes HDF5 software to store large arrays
 #define USE_LAMBDA			false		// fit correlation function with adjustable intercept parameter
-#define USE_EXTRAPOLATION		true		// extrapolates results of CF integrals instead of competing them, false just calculates full integrals (slower)
+#define USE_EXTRAPOLATION		false		// extrapolates results of CF integrals instead of competing them, false just calculates full integrals (slower)
 #define EXTRAPOLATION_METHOD		0		// 0 - GSL polynomial fit
 							// 1 - direct calculation of rational function fit using ratint in Arsenal.* files (numerator and denominator
 							// orders chosen automatically to be n+m+1==number of percentage markers)
@@ -29,6 +29,8 @@ using namespace std;
 							// 1 - use usr_def_pc_markers
 							// 2 - use usr_def_pc_markers_thinned
 #define COMPUTE_RESONANCE_ARRAYS	true		// alternative is to read them in from a file
+#define IGNORE_LONG_LIVED_RESONANCES	false		// particularly, whether to include eta or eta' in spectra calculations
+							// true means C(q=0) ~ 1 + \lambda
 #define QT_POINTS_SPACING		1		// 0 - uniform from -qmax to +qmax
 							// 1 - Chebyshev nodes from -qmax to +qmax
 #define QX_POINTS_SPACING		0
@@ -81,12 +83,12 @@ const double delta_q = 0.005;
 const double init_q = 0.0;
 
 //all direction-specific q points information here
-const int qtnpts = 9;
-const int qxnpts = 5;
-const int qynpts = 5;
-const int qznpts = 7;
+const int qtnpts = 1;
+const int qxnpts = 1;
+const int qynpts = 11;
+const int qznpts = 1;
 const double delta_qt = 0.02;
-const double delta_qx = 0.02;
+const double delta_qx = 0.0016;
 const double delta_qy = 0.02;
 const double delta_qz = 0.02;
 const double init_qt = -0.5*double(qtnpts-1)*delta_qt;

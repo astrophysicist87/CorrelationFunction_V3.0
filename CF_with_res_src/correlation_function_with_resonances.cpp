@@ -159,17 +159,28 @@ int main(int argc, char *argv[])
 
 	correlation_function.Update_sourcefunction(&particle[particle_idx], FO_length, particle_idx);
 
+	bool omit_specific_resonances = false;
+	if (omit_specific_resonances)
+	{
+		vector<int> thermal_resonances_to_omit;
+		double tmp = 0.0;
+		double threshhold_of_thermal_resonances_to_omit = 0.6;	//60%
+		get_important_resonances(particle_idx, &thermal_resonances_to_omit, particle, Nparticle, threshhold_of_thermal_resonances_to_omit, tmp, output);
+		get_all_descendants(&thermal_resonances_to_omit, particle, Nparticle, output);
+		correlation_function.osr = thermal_resonances_to_omit;
+	}
+
 	output << "Calculating HBT radii via Gaussian fit method..." << endl;
 	correlation_function.Compute_correlation_function(FOsurf_ptr);
 
 	correlation_function.Output_total_target_dN_dypTdpTdphi(folderindex);
 	correlation_function.Output_total_target_eiqx_dN_dypTdpTdphi(folderindex);
 
-	correlation_function.Get_GF_HBTradii(FOsurf_ptr, folderindex);	//does outputting of results too
+	//correlation_function.Get_GF_HBTradii(FOsurf_ptr, folderindex);	//does outputting of results too
 
 	//correlation_function.Cal_correlationfunction();
    
-	correlation_function.Output_correlationfunction(folderindex);
+	//correlation_function.Output_correlationfunction(folderindex);
 
 	//if (1)
 	//	return(0);
@@ -178,7 +189,7 @@ int main(int argc, char *argv[])
 	//	correlation_function.Output_correlationfunction(folderindex);
 	//correlation_function.Output_all_dN_dypTdpTdphi(folderindex);
 	//correlation_function.Output_chosen_resonances();
-	correlation_function.Output_results(folderindex);
+	//correlation_function.Output_results(folderindex);
 	output << "Finished calculating HBT radii via Gaussian fit method" << endl;
 
 
