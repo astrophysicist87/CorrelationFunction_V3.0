@@ -68,12 +68,6 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
 			break;
 	}
 
-	//set arrays containing q points
-	Set_q_points();
-
-	//sort by proximity to origin (where CF is largest) and do those points first
-	Set_sorted_q_pts_list();
-
 	n_zeta_pts = 12;
 	n_v_pts = 12;
 	n_s_pts = 12;
@@ -304,18 +298,30 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
 	// initialize spectra and correlation function arrays
 	spectra = new double ** [Nparticle];
 	abs_spectra = new double ** [Nparticle];
+	thermal_spectra = new double ** [Nparticle];
+	log_spectra = new double ** [Nparticle];
+	sign_spectra = new double ** [Nparticle];
 	for (int ir = 0; ir < Nparticle; ++ir)
 	{
 		spectra[ir] = new double * [n_interp_pT_pts];
 		abs_spectra[ir] = new double * [n_interp_pT_pts];
+		thermal_spectra[ir] = new double * [n_interp_pT_pts];
+		log_spectra[ir] = new double * [n_interp_pT_pts];
+		sign_spectra[ir] = new double * [n_interp_pT_pts];
 		for (int ipT = 0; ipT < n_interp_pT_pts; ++ipT)
 		{
 			spectra[ir][ipT] = new double [n_interp_pphi_pts];
 			abs_spectra[ir][ipT] = new double [n_interp_pphi_pts];
+			thermal_spectra[ir][ipT] = new double [n_interp_pphi_pts];
+			log_spectra[ir][ipT] = new double [n_interp_pphi_pts];
+			sign_spectra[ir][ipT] = new double [n_interp_pphi_pts];
 			for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 			{
 				spectra[ir][ipT][ipphi] = 0.0;
 				abs_spectra[ir][ipT][ipphi] = 0.0;
+				thermal_spectra[ir][ipT][ipphi] = 0.0;
+				log_spectra[ir][ipT][ipphi] = 0.0;
+				sign_spectra[ir][ipT][ipphi] = 0.0;
 			}
 		}
 	}
@@ -391,13 +397,6 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
 	{
 		SPinterp_p0[ipt] = new double [eta_s_npts];
 		SPinterp_pz[ipt] = new double [eta_s_npts];
-	}
-	SPinterp_p0_Transpose = new double * [eta_s_npts];
-	SPinterp_pz_Transpose = new double * [eta_s_npts];
-	for (int ieta = 0; ieta < eta_s_npts; ieta++)
-	{
-		SPinterp_p0_Transpose[ieta] = new double [n_interp_pT_pts];
-		SPinterp_pz_Transpose[ieta] = new double [n_interp_pT_pts];
 	}
 	double * dummywts3 = new double [n_interp_pT_pts];
 	double * dummywts4 = new double [n_interp_pphi_pts];
@@ -538,12 +537,12 @@ void CorrelationFunction::Update_sourcefunction(particle_info* particle, int FOa
 {
 	full_FO_length = FOarray_length * eta_s_npts;
 
-	osc0 = new double *** [FOarray_length];					//to hold cos/sin(q0 t)
-	osc1 = new double ** [FOarray_length];					//to hold cos/sin(qx x)
-	osc2 = new double ** [FOarray_length];					//to hold cos/sin(qy y)
-	osc3 = new double *** [FOarray_length];				//to hold cos/sin(+/- qz z)
+	//osc0 = new double *** [FOarray_length];					//to hold cos/sin(q0 t)
+	//osc1 = new double ** [FOarray_length];					//to hold cos/sin(qx x)
+	//osc2 = new double ** [FOarray_length];					//to hold cos/sin(qy y)
+	//osc3 = new double *** [FOarray_length];				//to hold cos/sin(+/- qz z)
 
-	for (int isurf = 0; isurf < FOarray_length; ++isurf)
+	/*for (int isurf = 0; isurf < FOarray_length; ++isurf)
 	{
 		FO_surf * surf = &current_FOsurf_ptr[isurf];
 
@@ -592,7 +591,7 @@ void CorrelationFunction::Update_sourcefunction(particle_info* particle, int FOa
 				osc3[isurf][ieta][iqz][1] = sin(hbarCm1*qz_pts[iqz]*zpt);
 			}
 		}
-	}
+	}*/
 
 	eiqtt = new double * [qtnpts];					//to hold cos/sin(q0 t)
 	eiqxx = new double * [qxnpts];					//to hold cos/sin(qx x)
@@ -1033,92 +1032,6 @@ void CorrelationFunction::Delete_decay_channel_info()
 	return;
 }
 
-// sets points in q-space for computing weighted spectra grid
-void CorrelationFunction::Set_q_points()
-{
-	q_pts = new double [qnpts];
-	for (int iq = 0; iq < qnpts; ++iq)
-		q_pts[iq] = init_q + (double)iq * delta_q;
-	q_axes = new double [3];
-
-	qt_pts = new double [qtnpts];
-	qx_pts = new double [qxnpts];
-	qy_pts = new double [qynpts];
-	qz_pts = new double [qznpts];
-	for (int iqt = 0; iqt < qtnpts; ++iqt)
-	{
-		qt_pts[iqt] = init_qt + (double)iqt * delta_qt;
-		if (abs(qt_pts[iqt]) < 1.e-15)
-			iqt0 = iqt;
-	}
-	for (int iqx = 0; iqx < qxnpts; ++iqx)
-	{
-		qx_pts[iqx] = init_qx + (double)iqx * delta_qx;
-		if (abs(qx_pts[iqx]) < 1.e-15)
-			iqx0 = iqx;
-	}
-	for (int iqy = 0; iqy < qynpts; ++iqy)
-	{
-		qy_pts[iqy] = init_qy + (double)iqy * delta_qy;
-		if (abs(qy_pts[iqy]) < 1.e-15)
-			iqy0 = iqy;
-	}
-	for (int iqz = 0; iqz < qznpts; ++iqz)
-	{
-		qz_pts[iqz] = init_qz + (double)iqz * delta_qz;
-		if (abs(qz_pts[iqz]) < 1.e-15)
-			iqz0 = iqz;
-	}
-
-	//cerr << "Output iq*0 = " << iqt0 << "   " << iqx0 << "   " << iqy0 << "   " << iqz0 << endl;
-
-//if (1) exit;
-
-	return;
-}
-
-inline int norm (vector<int> v) { int norm2 = 0; for (size_t iv = 0; iv < v.size(); ++iv) norm2+=v[iv]*v[iv]; return (norm2); }
-
-inline bool qpt_comparator (vector<int> i, vector<int> j) { return (norm(i) < norm(j)); }
-
-void CorrelationFunction::Set_sorted_q_pts_list()
-{
-	vector<int> tmp (4);
-
-	//sort through all q-points with qt <= 0 by proximity to origin in q-space
-	//allows to do largest CF values first
-	for (int iqt = 0; iqt < (qtnpts / 2) + 1; ++iqt)
-	for (int iqx = 0; iqx < qxnpts; ++iqx)
-	for (int iqy = 0; iqy < qynpts; ++iqy)
-	for (int iqz = 0; iqz < qznpts; ++iqz)
-	{
-		tmp[0] = iqt - iqt0;
-		tmp[1] = iqx - iqx0;
-		tmp[2] = iqy - iqy0;
-		tmp[3] = iqz - iqz0;
-
-		sorted_q_pts_list.push_back(tmp);
-	}
-
-	sort(sorted_q_pts_list.begin(), sorted_q_pts_list.end(), qpt_comparator);
-
-	//cout << "Checking sorting of q-points: " << endl;
-	for (size_t iq = 0; iq < sorted_q_pts_list.size(); ++iq)
-	{
-		sorted_q_pts_list[iq][0] += iqt0;
-		sorted_q_pts_list[iq][1] += iqx0;
-		sorted_q_pts_list[iq][2] += iqy0;
-		sorted_q_pts_list[iq][3] += iqz0;
-
-		//cout << "   --> iq = " << iq << ": ";
-		//for (size_t iqmu = 0; iqmu < 4; ++iqmu)
-		//	cout << sorted_q_pts_list[iq][iqmu] << "   ";
-		//cout << endl;
-	}
-
-	return;
-}
-
 void CorrelationFunction::Set_correlation_function_q_pts()
 {
 	q1npts = qxnpts;
@@ -1434,7 +1347,7 @@ inline double CorrelationFunction::dot_four_vectors(double * a, double * b)
 	return (sum);
 }
 
-void CorrelationFunction::Edndp3(double ptr, double phir, double * results)
+double CorrelationFunction::Edndp3(double ptr, double phir)
 {
 	double phi0, phi1;
 	double f1, f2;
@@ -1477,6 +1390,111 @@ void CorrelationFunction::Edndp3(double ptr, double phir, double * results)
 	if (pT0==pT1 || phi0==phi1)
 	{
 		cerr << "ERROR in Edndp3(): pT and/or pphi values equal!" << endl;
+		exit(1);
+	}
+
+	double one_by_pTdiff = 1./(pT1 - pT0), one_by_pphidiff = 1./(phi1 - phi0);
+
+	// choose pt-pphi slice of resonance info arrays
+	double log_f11 = spec_log_info[npt-1][nphim1];
+	double log_f12 = spec_log_info[npt-1][nphi];
+	double log_f21 = spec_log_info[npt][nphim1];
+	double log_f22 = spec_log_info[npt][nphi];
+
+	double f11 = spec_vals_info[npt-1][nphim1];
+	double f12 = spec_vals_info[npt-1][nphi];
+	double f21 = spec_vals_info[npt][nphim1];
+	double f22 = spec_vals_info[npt][nphi];
+
+	/////////////////////////////////////////////////////////////////
+	// interpolate over pT values first
+	/////////////////////////////////////////////////////////////////
+	if(ptr > PTCHANGE)				// if pT interpolation point is larger than PTCHANGE (currently 1.0 GeV)
+	{
+		double sign_of_f11 = spec_sign_info[npt-1][nphim1];
+		double sign_of_f12 = spec_sign_info[npt-1][nphi];
+		double sign_of_f21 = spec_sign_info[npt][nphim1];
+		double sign_of_f22 = spec_sign_info[npt][nphi];
+		
+		//*******************************************************************************************************************
+		// set f1 first
+		//*******************************************************************************************************************
+		// if using extrapolation and spectra at pT1 has larger magnitude than at pT0 (or the signs are different), just return zero
+		if ( ptr > pT1 && ( log_f21 > log_f11 || sign_of_f11 * sign_of_f21 < 0 ) )
+			f1 = 0.0;
+		else if (sign_of_f11 * sign_of_f21 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
+			f1 = sign_of_f11 * exp( lin_int(ptr-pT0, one_by_pTdiff, log_f11, log_f21) );
+		else					// otherwise, just interpolate original vals
+			f1 = lin_int(ptr-pT0, one_by_pTdiff, f11, f21);
+			
+		//*******************************************************************************************************************
+		// set f2 next
+		//*******************************************************************************************************************
+		if ( ptr > pT1 && ( log_f22 > log_f12 || sign_of_f12 * sign_of_f22 < 0 ) )
+			f2 = 0.0;
+		else if (sign_of_f12 * sign_of_f22 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
+			f2 = sign_of_f12 * exp( lin_int(ptr-pT0, one_by_pTdiff, log_f12, log_f22) );
+		else					// otherwise, just interpolate original vals
+			f2 = lin_int(ptr-pT0, one_by_pTdiff, f12, f22);
+		//*******************************************************************************************************************
+	}
+	else						// if pT is smaller than PTCHANGE, just use linear interpolation, no matter what
+	{
+		f1 = lin_int(ptr-pT0, one_by_pTdiff, f11, f21);
+		f2 = lin_int(ptr-pT0, one_by_pTdiff, f12, f22);
+	}
+				
+	// now, interpolate f1 and f2 over the pphi direction
+	//double result = lin_int(phir-phi0, one_by_pphidiff, f1, f2);
+
+	//return (result);
+	return ( lin_int(phir-phi0, one_by_pphidiff, f1, f2) );
+}
+
+
+void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results)
+{
+	double phi0, phi1;
+	double f1, f2;
+
+	int npphi_max = n_interp_pphi_pts - 1;
+	int npT_max = n_interp_pT_pts - 1;
+
+	// locate pT interval
+	int npt = 1;
+	while ((ptr > SPinterp_pT[npt]) &&
+			(npt < npT_max)) ++npt;
+	double pT0 = SPinterp_pT[npt-1];
+	double pT1 = SPinterp_pT[npt];
+
+	// locate pphi interval
+	int nphi = 1, nphim1 = 0;
+	if(phir < SPinterp_pphi[0])			//if angle is less than minimum angle grid point
+	{
+		phi0 = SPinterp_pphi[npphi_max] - 2. * M_PI;
+		phi1 = SPinterp_pphi[0];
+		nphi = 0;
+		nphim1 = npphi_max;
+	}
+	else if(phir > SPinterp_pphi[npphi_max])	//if angle is greater than maximum angle grid point
+	{
+		phi0 = SPinterp_pphi[npphi_max];
+		phi1 = SPinterp_pphi[0] + 2. * M_PI;
+		nphi = 0;
+		nphim1 = npphi_max;
+	}
+	else						//if angle is within grid range
+	{
+		while ((phir > SPinterp_pphi[nphi]) &&
+				(nphi < npphi_max)) ++nphi;
+		nphim1 = nphi - 1;
+		phi0 = SPinterp_pphi[nphim1];
+		phi1 = SPinterp_pphi[nphi];
+	}
+
+	if (pT0==pT1 || phi0==phi1)
+	{
+		cerr << "ERROR in eiqxEdndp3(): pT and/or pphi values equal!" << endl;
 		exit(1);
 	}
 
@@ -1604,7 +1622,7 @@ void CorrelationFunction::Edndp3(double ptr, double phir, double * results)
 					
 		/*if ( isinf( results[qpt_cs_idx] ) || isnan( results[qpt_cs_idx] ) || isinf( results[qpt_cs_idx+1] ) || isnan( results[qpt_cs_idx+1] ) )
 		{
-			*global_out_stream_ptr << "ERROR in Edndp3(double, double, double*): problems encountered!" << endl
+			*global_out_stream_ptr << "ERROR in eiqxEdndp3(double, double, double*): problems encountered!" << endl
 				<< "results(" << iqt << "," << iqx << "," << iqy << "," << iqz << "," << itrig << ") = "
 				<< setw(8) << setprecision(15) << results[qpt_cs_idx] << endl
 				<< results[qpt_cs_idx+1] << endl

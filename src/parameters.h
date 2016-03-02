@@ -84,8 +84,8 @@ const double init_q = 0.0;
 
 //all direction-specific q points information here
 const int qtnpts = 1;
-const int qxnpts = 1;
-const int qynpts = 11;
+const int qxnpts = 10;
+const int qynpts = 1;
 const int qznpts = 1;
 const double delta_qt = 0.02;
 const double delta_qx = 0.0016;

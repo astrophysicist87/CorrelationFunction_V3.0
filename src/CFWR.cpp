@@ -55,31 +55,6 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 	Stopwatch BIGsw;
 	int decay_channel_loop_cutoff = n_decay_channels;			//loop over direct pions and decay_channels
 
-	///////////////////////////////////////////////////////////////////////
-	// just for debugging
-	///////////////////////////////////////////////////////////////////////
-	/**global_out_stream_ptr << "TESTING HDF opening..." << endl;
-
-	Load_resonance_and_daughter_spectra(1);
-
-	for (int iqt = 0; iqt < qtnpts; ++iqt)
-	for (int iqx = 0; iqx < qxnpts; ++iqx)
-	for (int iqy = 0; iqy < qynpts; ++iqy)
-	for (int iqz = 0; iqz < qznpts; ++iqz)
-	{
-		current_dN_dypTdpTdphi_moments[0][0][iqt0][iqx0][iqy0][iqz0][1] = 0.0;
-		*global_out_stream_ptr << scientific << setprecision(8) << setw(12)
-			<< qt_pts[iqt] << "   " << qx_pts[iqx] << "   " << qy_pts[iqy] << "   " << qz_pts[iqz] << "   "
-			<< SPinterp_pT[0] << "   " << SPinterp_pphi[0] << "   " << current_dN_dypTdpTdphi_moments[0][0][iqt][iqx][iqy][iqz][0]
-			<< "   " << current_dN_dypTdpTdphi_moments[0][0][iqt][iqx][iqy][iqz][1] << endl;
-	}
-
-
-	if (1) exit(1);*/
-	///////////////////////////////////////////////////////////////////////
-	// end debugging section
-	///////////////////////////////////////////////////////////////////////
-
 	//int HDFResonanceExtrapolationSuccess = 0, tmp = 0;
 	//int getHDFresonanceSpectra;
 
@@ -131,13 +106,13 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 		*global_out_stream_ptr << "\t ...finished all (thermal) space-time moments in " << BIGsw.takeTime() << " seconds." << endl;
 
 		// Now dump all thermal spectra before continuing with resonance decay calculations
-		*global_out_stream_ptr << "Dumping all thermal spectra to thermal_spectra.out..." << endl;
-		BIGsw.tic();
-		int HDFDumpSuccess = Dump_resonance_HDF_array_spectra("thermal_spectra.dat", current_dN_dypTdpTdphi_moments);
+		//*global_out_stream_ptr << "Dumping all thermal spectra to thermal_spectra.out..." << endl;
+		//BIGsw.tic();
+		//int HDFDumpSuccess = Dump_resonance_HDF_array_spectra("thermal_spectra.dat", current_dN_dypTdpTdphi_moments);
 		//also retain pion(+) moments for later use...
-		int getHDFresonanceSpectra = Get_resonance_from_HDF_array(target_particle_id, thermal_target_dN_dypTdpTdphi_moments);
-		BIGsw.toc();
-		*global_out_stream_ptr << "\t ...finished dumping all thermal spectra to thermal_spectra.out in " << BIGsw.takeTime() << " seconds." << endl;
+		//int getHDFresonanceSpectra = Get_resonance_from_HDF_array(target_particle_id, thermal_target_dN_dypTdpTdphi_moments);
+		//BIGsw.toc();
+		//*global_out_stream_ptr << "\t ...finished dumping all thermal spectra to thermal_spectra.out in " << BIGsw.takeTime() << " seconds." << endl;
 
 		if (SPACETIME_MOMENTS_ONLY)
 			return;
@@ -696,8 +671,6 @@ void CorrelationFunction::Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int lo
 			double mT = sqrt(localmass*localmass + SPinterp_pT[ipt]*SPinterp_pT[ipt]);
 			SPinterp_p0[ipt][i] = mT*local_cosh;
 			SPinterp_pz[ipt][i] = mT*local_sinh;
-			SPinterp_p0_Transpose[i][ipt] = mT*local_cosh;
-			SPinterp_pz_Transpose[i][ipt] = mT*local_sinh;
 		}
 	}
 	
@@ -996,6 +969,9 @@ pc_cutoff_vals.resize( number_of_percentage_markers );
 	{
 		spectra[local_pid][ipt][ipphi] = eta_s_symmetry_factor * temp_moments_array[ipt][ipphi];
 		abs_spectra[local_pid][ipt][ipphi] = abs_temp_moments_array[ipt][ipphi];
+		thermal_spectra[local_pid][ipt][ipphi] = spectra[local_pid][ipt][ipphi];
+		log_spectra[local_pid][ipt][ipphi] = log(abs(spectra[local_pid][ipt][ipphi])+1.e-100);
+		sign_spectra[local_pid][ipt][ipphi] = sgn(spectra[local_pid][ipt][ipphi]);
 	}
 
 	for(int ipt = 0; ipt < n_interp_pT_pts; ++ipt)

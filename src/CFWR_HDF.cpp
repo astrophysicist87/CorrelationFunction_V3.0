@@ -387,8 +387,8 @@ int CorrelationFunction::Dump_resonance_HDF_array_spectra(string output_filename
 
 			for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 			{
-				for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-					out << scientific << setprecision(8) << setw(12) << resonance_array_to_use[ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0] << "   ";
+				//for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+				//	out << scientific << setprecision(8) << setw(12) << resonance_array_to_use[ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0] << "   ";
 				out << endl;
 			}
 		}

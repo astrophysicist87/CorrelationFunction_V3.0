@@ -59,10 +59,16 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 
 	Flatten_dN_dypTdpTdphi_moments();
 
+	//set these for quick look-up in EdNd3p() routine
+	spec_vals_info = spectra[parent_resonance_particle_id];
+	spec_log_info = log_spectra[parent_resonance_particle_id];
+	spec_sign_info = sign_spectra[parent_resonance_particle_id];
+
 	int tmp_parent_monval = all_particles[parent_resonance_particle_id].monval;
 	n_body = current_reso_nbody;
-	double tmp_spec_save = current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][0][0][0][0][0][0][0];
+	//double tmp_spec_save = current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][0][0][0][0][0][0][0];
 
+	//double ssumarray[n_s_pts], vsumarray[n_v_pts], zetasumarray[n_zeta_pts], Csumarray[];
 
 	if (n_body == 2)
 	{
@@ -82,14 +88,17 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 
 			//then g(s) is delta-function, skip s-integration entirely
 			//double s_loc = m2*m2;
+			double vsum = 0.0;
 			for (int iv = 0; iv < n_v_pts; ++iv)
 			{
 				time (&rawtime);
 				timeinfo = localtime (&rawtime);
 				Zero_resonance_running_sum_vector(zetasum_vec);
+				double zetasum = 0.0;
 				for (int izeta = 0; izeta < n_zeta_pts; ++izeta)
 				{
 					Zero_resonance_running_sum_vector(Csum_vec);
+					double Csum = 0.0;
 					double PKT = VEC_n2_PT[iv][izeta];
 					double PKY = VEC_n2_P_Y[iv];
 					double PKphi = VEC_n2_PPhi_tilde[iv][izeta];
@@ -98,16 +107,20 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 						if (tempidx != 0)
 							PKphi = VEC_n2_PPhi_tildeFLIP[iv][izeta];		//also takes Pp --> Pm
 						currentPpm = VEC_n2_Ppm[iv][izeta][tempidx];
-						Edndp3(PKT, PKphi, Csum_vec);
+						Csum += Edndp3(PKT, PKphi);							//now set spectra and weights separately
+						eiqxEdndp3(PKT, PKphi, Csum_vec);
 					}												// end of tempidx sum
 					for (int qpt_cs_idx = 0; qpt_cs_idx < qspace_cs_slice_length; ++qpt_cs_idx)
 						zetasum_vec[qpt_cs_idx] += VEC_n2_zeta_factor[iv][izeta]*Csum_vec[qpt_cs_idx];
+					zetasum += VEC_n2_zeta_factor[iv][izeta]*Csum;
 				}													// end of zeta sum
 				for (int qpt_cs_idx = 0; qpt_cs_idx < qspace_cs_slice_length; ++qpt_cs_idx)
 					vsum_vec[qpt_cs_idx] += VEC_n2_v_factor[iv]*zetasum_vec[qpt_cs_idx];
+				vsum += VEC_n2_v_factor[iv]*zetasum;
 			}														// end of v sum
 			for (int qpt_cs_idx = 0; qpt_cs_idx < qspace_cs_slice_length; ++qpt_cs_idx)
 				ssum_vec[qpt_cs_idx] += Mres*VEC_n2_s_factor*vsum_vec[qpt_cs_idx];
+			double ssum = Mres*VEC_n2_s_factor*vsum;
 
 			//update all gridpoints for all daughter moments
 			int qpt_cs_idx = 0;
@@ -123,10 +136,12 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 				++qpt_cs_idx;
 			}
 
+			//update daughter spectra separately
+			spectra[daughter_particle_id][ipt][ipphi] += ssum;
+			log_spectra[daughter_particle_id][ipt][ipphi] = log(abs(spectra[daughter_particle_id][ipt][ipphi])+1.e-100);
+			sign_spectra[daughter_particle_id][ipt][ipphi] = sgn(spectra[daughter_particle_id][ipt][ipphi]);
 
-			//set the spectra here, instead of in Update_daughter_spectra
-			spectra[daughter_particle_id][ipt][ipphi] = current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0];
-
+/*
 			//now, if ignoring long-lived resonances, take them out of the correlator numerator, but keep them in the denominator (AKA, spectra)
 			if (IGNORE_LONG_LIVED_RESONANCES && Gamma < 1.e-3)		//i.e., the eta and eta'(958) mesons
 			{
@@ -135,7 +150,7 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 				current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0] -= ssum_vec[tmp_qpt_cs_idx];
 				current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt0][iqx0][iqy0][iqz0][1] -= ssum_vec[tmp_qpt_cs_idx+1];
 			}
-
+*/
 	
 			if (isnan(current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][0][0][0][0][0]
 					+ current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][0][0][0][0][1]))
@@ -180,15 +195,18 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 			Zero_resonance_running_sum_vector(Csum_vec);
 			Load_decay_channel_info(decay_channel, local_pT, local_pphi);	// set decay channel information
 
+			double ssum = 0.0;
 			for (int is = 0; is < n_s_pts; ++is)
 			{
 				double vsum = 0.0;
  		  		Zero_resonance_running_sum_vector(vsum_vec);
 				for (int iv = 0; iv < n_v_pts; ++iv)
 				{
+					double zetasum = 0.0;
 					Zero_resonance_running_sum_vector(zetasum_vec);
 					for (int izeta = 0; izeta < n_zeta_pts; ++izeta)
 					{
+						double Csum = 0.0;
 						Zero_resonance_running_sum_vector(Csum_vec);
 						double PKT = VEC_PT[is][iv][izeta];
 						double PKY = VEC_P_Y[is][iv];
@@ -198,16 +216,20 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 							if (tempidx != 0)
 								PKphi = VEC_PPhi_tildeFLIP[is][iv][izeta];		//also takes Pp --> Pm
 							currentPpm = VEC_Ppm[is][iv][izeta][tempidx];
-							Edndp3(PKT, PKphi, Csum_vec);
+							Csum += Edndp3(PKT, PKphi);							//now set spectra and weights separately
+							eiqxEdndp3(PKT, PKphi, Csum_vec);
 						}										// end of tempidx sum
 						for (int qpt_cs_idx = 0; qpt_cs_idx < qspace_cs_slice_length; ++qpt_cs_idx)
 							zetasum_vec[qpt_cs_idx] += VEC_zeta_factor[is][iv][izeta]*Csum_vec[qpt_cs_idx];
+						zetasum += VEC_zeta_factor[is][iv][izeta]*Csum;
 					}											// end of zeta sum
 					for (int qpt_cs_idx = 0; qpt_cs_idx < qspace_cs_slice_length; ++qpt_cs_idx)
 					    vsum_vec[qpt_cs_idx] += VEC_v_factor[is][iv]*zetasum_vec[qpt_cs_idx];
+					vsum += VEC_v_factor[is][iv]*zetasum;
 				}												// end of v sum
 				for (int qpt_cs_idx = 0; qpt_cs_idx < qspace_cs_slice_length; ++qpt_cs_idx)
 					ssum_vec[qpt_cs_idx] += Mres*VEC_s_factor[is]*vsum_vec[qpt_cs_idx];
+				ssum += Mres*VEC_s_factor[is]*vsum;
 			}													// end of s sum
 			//update all gridpoints for daughter moments
 			int qpt_cs_idx = 0;
@@ -223,9 +245,12 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 				++qpt_cs_idx;
 			}
 
-			//set the spectra here, instead of in Update_daughter_spectra
-			spectra[daughter_particle_id][ipt][ipphi] = current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0];
+			//update daughter spectra separately
+			spectra[daughter_particle_id][ipt][ipphi] += ssum;
+			log_spectra[daughter_particle_id][ipt][ipphi] = log(abs(spectra[daughter_particle_id][ipt][ipphi])+1.e-100);
+			sign_spectra[daughter_particle_id][ipt][ipphi] = sgn(spectra[daughter_particle_id][ipt][ipphi]);
 
+/*
 			//now, if ignoring long-lived resonances, take them out of the correlator numerator, but keep them in the denominator (AKA, spectra)
 			if (IGNORE_LONG_LIVED_RESONANCES && Gamma < 1.e-3)		//i.e., the eta and eta'(958) mesons
 			{
@@ -234,6 +259,7 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 				current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0] -= ssum_vec[tmp_qpt_cs_idx];
 				current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt0][iqx0][iqy0][iqz0][1] -= ssum_vec[tmp_qpt_cs_idx+1];
 			}
+*/
 
 			if (isnan(current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][0][0][0][0][0]
 					+ current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][0][0][0][0][1]))

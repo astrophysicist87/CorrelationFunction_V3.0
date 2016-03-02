@@ -115,7 +115,7 @@ class CorrelationFunction
 		double ******* thermal_target_dN_dypTdpTdphi_moments;
 
 		// needed these to avoid too many trigonometric evaluations
-		double **** osc0, *** osc1, *** osc2, **** osc3;
+		//double **** osc0, *** osc1, *** osc2, **** osc3;
 		double ** eiqtt, ** eiqxx, ** eiqyy, ** eiqzz;
 	
 		//needed for resonance calculations
@@ -130,8 +130,7 @@ class CorrelationFunction
 		//SP momentum arrays for interpolation grid
 		double * SPinterp_pT, * SPinterp_pphi;
 		double * sin_SPinterp_pphi, * cos_SPinterp_pphi;
-		double ** SPinterp_p0, ** SPinterp_p0_Transpose;
-		double ** SPinterp_pz, ** SPinterp_pz_Transpose;
+		double ** SPinterp_p0, ** SPinterp_pz;
 
 		//Freeze-out surface information
 		FO_surf* current_FOsurf_ptr;
@@ -175,7 +174,7 @@ class CorrelationFunction
 		double ***** VEC_Ppm;
 		double * ssum_vec, * vsum_vec, * zetasum_vec, * Csum_vec;
 		
-		double *** spectra, *** abs_spectra;
+		double *** spectra, *** abs_spectra, *** thermal_spectra, *** log_spectra, *** sign_spectra;
 		
 		// relative momentum information
 		double * qo_pts, * qs_pts, * ql_pts, * q_pts, * q_axes, * qt_pts, * qx_pts, * qy_pts, * qz_pts;
@@ -183,8 +182,8 @@ class CorrelationFunction
 		double * q_out, * q_side, * q_long;
 		int q1npts, q2npts, q3npts;		//123 indexing allows these to refer to either q[osl]npts or q[xyz]npts
 		double * q1_pts, * q2_pts, * q3_pts;
-		int iqt0, iqx0, iqy0, iqz0;
-		vector<vector<int> > sorted_q_pts_list;
+		//int iqt0, iqx0, iqy0, iqz0;
+		//vector<vector<int> > sorted_q_pts_list;
 		double *** qlist, ** current_qlist_slice;
 		
 		//store correlation functions
@@ -199,6 +198,7 @@ class CorrelationFunction
 		double **R2_side_err, **R2_out_err, **R2_long_err, **R2_outside_err, **R2_sidelong_err, **R2_outlong_err;
 
 		double *** res_sign_info, *** res_log_info, *** res_moments_info;
+		double ** spec_sign_info, ** spec_log_info, ** spec_vals_info;
 
 		double *** S_p_withweight_array;
 
@@ -287,11 +287,12 @@ class CorrelationFunction
 		int lookup_resonance_idx_from_particle_id(int particle_id);
 		int list_daughters(int parent_resonance_index, set<int> * daughter_resonance_indices_ptr, particle_info * particle, int Nparticle);
 		static inline double lin_int(double x_m_x1, double one_by_x2_m_x1, double f1, double f2);
-		void Edndp3(double ptr, double phir, double * results);
-		void Set_q_points();
+		void eiqxEdndp3(double ptr, double phir, double * results);
+		double Edndp3(double ptr, double phir);
+		//void Set_q_points();
 		void Set_correlation_function_q_pts();
 		void Get_q_points(double qo, double qs, double ql, double KT, double Kphi, double * qgridpts);
-		void Set_sorted_q_pts_list();
+		//void Set_sorted_q_pts_list();
 		void Allocate_resonance_running_sum_vectors();
 		void Delete_resonance_running_sum_vectors();
 		void Zero_resonance_running_sum_vector(double * vec);
