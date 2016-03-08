@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
 	output << "Calculating HBT radii via Gaussian fit method..." << endl;
 	correlation_function.Compute_correlation_function(FOsurf_ptr);
 
-	correlation_function.Output_total_target_dN_dypTdpTdphi(folderindex);
+	//correlation_function.Output_total_target_dN_dypTdpTdphi(folderindex);
 	correlation_function.Output_total_target_eiqx_dN_dypTdpTdphi(folderindex);
 
 	//correlation_function.Get_GF_HBTradii(FOsurf_ptr, folderindex);	//does outputting of results too

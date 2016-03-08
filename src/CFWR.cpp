@@ -11,6 +11,7 @@
 #include<time.h>
 #include<queue>
 #include<map>
+#include<cstdlib>
 #include<numeric>
 
 #include "CFWR.h"
@@ -55,19 +56,10 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 	Stopwatch BIGsw;
 	int decay_channel_loop_cutoff = n_decay_channels;			//loop over direct pions and decay_channels
 
-	//int HDFResonanceExtrapolationSuccess = 0, tmp = 0;
-	//int getHDFresonanceSpectra;
-
 	if (COMPUTE_RESONANCE_ARRAYS)
 	{
-		//debugger(__LINE__, __FILE__);
-		//print_now();
-
 		*global_out_stream_ptr << "Initializing HDF file of resonance spectra..." << endl;
 		int HDFInitializationSuccess = Initialize_resonance_HDF_array();
-
-		//debugger(__LINE__, __FILE__);
-		//print_now();
 
 		*global_out_stream_ptr << "Setting spacetime moments grid..." << endl;
 		BIGsw.tic();
@@ -106,13 +98,22 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 		*global_out_stream_ptr << "\t ...finished all (thermal) space-time moments in " << BIGsw.takeTime() << " seconds." << endl;
 
 		// Now dump all thermal spectra before continuing with resonance decay calculations
-		//*global_out_stream_ptr << "Dumping all thermal spectra to thermal_spectra.out..." << endl;
-		//BIGsw.tic();
-		//int HDFDumpSuccess = Dump_resonance_HDF_array_spectra("thermal_spectra.dat", current_dN_dypTdpTdphi_moments);
+		Dump_spectra_array("thermal_spectra.dat", thermal_spectra);
+
 		//also retain pion(+) moments for later use...
-		//int getHDFresonanceSpectra = Get_resonance_from_HDF_array(target_particle_id, thermal_target_dN_dypTdpTdphi_moments);
-		//BIGsw.toc();
-		//*global_out_stream_ptr << "\t ...finished dumping all thermal spectra to thermal_spectra.out in " << BIGsw.takeTime() << " seconds." << endl;
+		*global_out_stream_ptr << "Saving all thermal " << all_particles[target_particle_id].name << " moments in thermal_target_dN_dypTdpTdphi_moments..." << endl;
+		int getHDFresonanceSpectra = Get_resonance_from_HDF_array(target_particle_id, thermal_target_dN_dypTdpTdphi_moments);
+
+		//set logs and signs!
+		for (int ipid = 0; ipid < Nparticle; ++ipid)
+			Set_spectra_logs_and_signs(ipid);
+
+		//save thermal moments (without resonance decay feeddown) separately
+		int closeHDFresonanceSpectra = Close_resonance_HDF_array();	//finalize HDF spectra file at this stage, then save, then reopen
+		ostringstream local_cmd;
+		local_cmd << "cp " << global_path << "/resonance_spectra.h5 " << global_path << "/resonance_thermal_moments.h5";
+		int cmd_result = system(local_cmd.str().c_str());
+		int openHDFresonanceSpectra = Open_resonance_HDF_array("resonance_spectra.h5");
 
 		if (SPACETIME_MOMENTS_ONLY)
 			return;
@@ -121,56 +122,113 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 	}
 	else	// must be a pre-existing resonances*.h5 file to use this option
 	{
-		int HDFOpenSuccess = Open_resonance_HDF_array();
+		if (COMPUTE_RESONANCE_DECAYS)	//if we're going to do compute the resonance feeddown, we need to copy the thermal moments back over to resonance_spectra.h5...
+		{
+			//save thermal moments (without resonance decay feeddown) separately
+			ostringstream local_cmd;
+			local_cmd << "\\cp " << global_path << "/resonance_thermal_moments.h5 " << global_path << "/resonance_spectra.h5";
+			int cmd_result = system(local_cmd.str().c_str());
+		}
+
+		*global_out_stream_ptr << "Reading in resonance spectra from file!" << endl;
+		int HDFOpenSuccess = Open_resonance_HDF_array("resonance_spectra.h5");
 		if (HDFOpenSuccess < 0)
 		{
-			cerr << "Failed to open HDF array of resonances!  Exiting..." << endl;
+			cerr << "Failed to open HDF array of resonances (resonance_spectra.h5)!  Exiting..." << endl;
 			exit(1);
 		}
+
+		Load_spectra_array("thermal_spectra.dat", thermal_spectra);
+		Load_spectra_array("thermal_spectra.dat", spectra);
+		for (int ipid = 0; ipid < Nparticle; ++ipid)
+			Set_spectra_logs_and_signs(ipid);
+
+		//also retain pion(+) moments for later use...
+		*global_out_stream_ptr << "Saving all thermal " << all_particles[target_particle_id].name << " moments in thermal_target_dN_dypTdpTdphi_moments..." << endl;
+		int getHDFresonanceSpectra = Get_resonance_from_HDF_array(target_particle_id, thermal_target_dN_dypTdpTdphi_moments);
+
+		//also read in pT-dependent q points
+		Load_q_pTdep_pts();
 	}
 
-	*global_out_stream_ptr << "Computing all phase-space integrals..." << endl;
-	BIGsw.tic();
-	// ************************************************************
-	// Compute feeddown with heaviest resonances first
-	// ************************************************************
-	for (int idc = 1; idc <= decay_channel_loop_cutoff; ++idc)
+	/*for (int ir = 0; ir < Nparticle; ++ir)
+	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		cerr << "COMPARISON: " << scientific << setprecision(20) << setw(25) << all_particles[ir].name << "   " << thermal_spectra[ir][ipt][ipphi] << "   " << spectra[ir][ipt][ipphi] << "   " << log_spectra[ir][ipt][ipphi] << endl;
+		for (int ipid = 0; ipid < Nparticle; ++ipid)
+			Set_spectra_logs_and_signs(ipid);
+	for (int ir = 0; ir < Nparticle; ++ir)
+	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		cerr << "SanityCheck: " << scientific << setprecision(20) << setw(25) << all_particles[ir].name << "   " << log_spectra[ir][ipt][ipphi] << endl;*/
+
+
+	if (COMPUTE_RESONANCE_DECAYS)
 	{
-		// ************************************************************
-		// check whether to do this decay channel
-		// ************************************************************
-		if (decay_channels[idc-1].resonance_particle_id == target_particle_id || thermal_pions_only)
-			break;
-		else if (!Do_this_decay_channel(idc))
-			continue;
+		*global_out_stream_ptr << "Computing all phase-space integrals..." << endl;
+		BIGsw.tic();
 
 		// ************************************************************
-		// if so, set decay channel info
+		// Compute feeddown with heaviest resonances first
 		// ************************************************************
-		Set_current_particle_info(idc);
-		Load_resonance_and_daughter_spectra(decay_channels[idc-1].resonance_particle_id);
-
-		// ************************************************************
-		// begin resonance decay calculations here...
-		// ************************************************************
-		Allocate_decay_channel_info();				// allocate needed memory
-
-		for (int idc_DI = 0; idc_DI < current_reso_nbody; ++idc_DI)
+		for (int idc = 1; idc <= decay_channel_loop_cutoff; ++idc)
 		{
-			int daughter_resonance_particle_id = -1;
-			if (!Do_this_daughter_particle(idc, idc_DI, &daughter_resonance_particle_id))
+			// ************************************************************
+			// check whether to do this decay channel
+			// ************************************************************
+			if (decay_channels[idc-1].resonance_particle_id == target_particle_id || thermal_pions_only)
+				break;
+			else if (!Do_this_decay_channel(idc))
 				continue;
-			Set_current_daughter_info(idc, idc_DI);
-//debugger(__LINE__, __FILE__);
-			Do_resonance_integrals(current_resonance_particle_id, daughter_resonance_particle_id, idc);
-//debugger(__LINE__, __FILE__);
+
+			// ************************************************************
+			// if so, set decay channel info
+			// ************************************************************
+			Set_current_particle_info(idc);
+			Load_resonance_and_daughter_spectra(decay_channels[idc-1].resonance_particle_id);
+	
+			// ************************************************************
+			// begin resonance decay calculations here...
+			// ************************************************************
+			Allocate_decay_channel_info();				// allocate needed memory
+
+			for (int idc_DI = 0; idc_DI < current_reso_nbody; ++idc_DI)
+			{
+				int daughter_resonance_particle_id = -1;
+				if (!Do_this_daughter_particle(idc, idc_DI, &daughter_resonance_particle_id))
+				continue;
+				Set_current_daughter_info(idc, idc_DI);
+				Do_resonance_integrals(current_resonance_particle_id, daughter_resonance_particle_id, idc);
+			}
+	
+			Update_daughter_spectra(decay_channels[idc-1].resonance_particle_id);
+			Delete_decay_channel_info();				// free up memory
+		}											// END of decay channel loop
+		BIGsw.toc();
+		*global_out_stream_ptr << "\t ...finished computing all phase-space integrals in " << BIGsw.takeTime() << " seconds." << endl;
+	}
+	else	// must be a pre-existing resonances*.h5 file to use this option
+	{
+		*global_out_stream_ptr << "Reading in resonance spectra from file!" << endl;
+		int HDFOpenSuccess = Open_resonance_HDF_array("resonance_spectra.h5");
+		if (HDFOpenSuccess < 0)
+		{
+			cerr << "Failed to open HDF array of resonances (resonance_spectra.h5)!  Exiting..." << endl;
+			exit(1);
 		}
 
-		Update_daughter_spectra(decay_channels[idc-1].resonance_particle_id);
-		Delete_decay_channel_info();				// free up memory
-	}											// END of decay channel loop
-	BIGsw.toc();
-	*global_out_stream_ptr << "\t ...finished computing all phase-space integrals in " << BIGsw.takeTime() << " seconds." << endl;
+		Load_spectra_array("thermal_spectra.dat", thermal_spectra);
+		Load_spectra_array("thermal_spectra.dat", spectra);
+		for (int ipid = 0; ipid < Nparticle; ++ipid)
+			Set_spectra_logs_and_signs(ipid);
+
+		//also retain pion(+) moments for later use...
+		*global_out_stream_ptr << "Saving all thermal " << all_particles[target_particle_id].name << " moments in thermal_target_dN_dypTdpTdphi_moments..." << endl;
+		int getHDFresonanceSpectra = Get_resonance_from_HDF_array(target_particle_id, thermal_target_dN_dypTdpTdphi_moments);
+
+		//also read in pT-dependent q points
+		Load_q_pTdep_pts();
+	}
 
 	correlation_function_calculation:
 		// Now, with all resonance contributions to correlation function computed, do the actual calculation
@@ -199,7 +257,6 @@ bool CorrelationFunction::Do_this_decay_channel(int dc_idx)
 	}
 	bool tmp_bool = decay_channels[dc_idx-1].include_channel;
 	if (!tmp_bool && VERBOSE > 0) *global_out_stream_ptr << endl << local_name << ": skipping decay " << current_decay_channel_string << "." << endl;
-	//else if (tmp_bool && VERBOSE > 0)*global_out_stream_ptr << endl << local_name << ": doing decay " << current_decay_channel_string << "." << endl;
 
 	return (tmp_bool);
 }
@@ -477,6 +534,13 @@ void CorrelationFunction::Recycle_spacetime_moments()
 {
 	int HDFcopyChunkSuccess = Copy_chunk(current_resonance_particle_id, reso_particle_id_of_moments_to_recycle);
 
+	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+	{
+		spectra[current_resonance_particle_id][ipt][ipphi] = spectra[reso_particle_id_of_moments_to_recycle][ipt][ipphi];
+		thermal_spectra[current_resonance_particle_id][ipt][ipphi] = thermal_spectra[reso_particle_id_of_moments_to_recycle][ipt][ipphi];
+	}
+
 	return;
 }
 
@@ -548,6 +612,18 @@ void CorrelationFunction::Update_daughter_spectra(int local_pid)
 
 	// cleanup previous iteration and setup the new one
 	Cleanup_current_daughters_dN_dypTdpTdphi_moments(daughter_resonance_indices.size());
+
+	return;
+}
+
+void CorrelationFunction::Set_spectra_logs_and_signs(int local_pid)
+{
+	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+	{
+		log_spectra[local_pid][ipt][ipphi] = log(abs(spectra[local_pid][ipt][ipphi])+1.e-100);
+		sign_spectra[local_pid][ipt][ipphi] = sgn(spectra[local_pid][ipt][ipphi]);
+	}
 
 	return;
 }
@@ -700,6 +776,8 @@ void CorrelationFunction::Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int lo
 		exit;
 	}
 
+//if (1) exit(1);
+
 	return;
 }
 
@@ -828,6 +906,9 @@ pc_cutoff_vals.resize( number_of_percentage_markers );
 						//		<< "   " << eta_s_symmetry_factor*tau*eta_s_weight[ieta] << "   " << eta_s_symmetry_factor*S_p_withweight << endl;
 						//cout << "CPcout: " << isurf << "   " << ieta << "   " << scientific << setprecision(8) << setw(12)
 						//		<< (gammaT*(p0*1. - px*vx - py*vy) - mu)*one_by_Tdec << "   " << eta_s_symmetry_factor*S_p_withweight << endl;
+//					if (ipt == 0 && ipphi == 0 && S_p_withweight >= 0)
+//						cerr << "(" << ipt << "," << ipphi << "): " << all_particles[local_pid].name << "   "
+//								<< scientific << setprecision(20) << setw(25) << S_p_withweight << "   " << tempsum << endl;
 
 
 					//ignore points where delta f is large or emission function goes negative from pdsigma
@@ -919,8 +1000,6 @@ pc_cutoff_vals.resize( number_of_percentage_markers );
 					++current_iPC;
 					cutoff_FOcells[ptphi_index].push_back(ii+1);
 				}
-				//if (ipt == 0 && ipphi == 0)
-				//	cerr << setprecision(8) << setw(12) << most_impt_FOcells_vals_vec[ii] << "   " << running_sum << endl;
 			}
 			cutoff_FOcells[ptphi_index].push_back(breaker);
 			cutoff_FOcells[ptphi_index][0] = 0;		//make sure all cells are included!
@@ -938,12 +1017,23 @@ pc_cutoff_vals.resize( number_of_percentage_markers );
 			most_important_FOcells[ipt][ipphi] = new size_t [FOcells_PQ_size];
 
 			// copy over sorted results
+			double checksum = 0.0;
 			for (int ii = 0; ii < FOcells_PQ_size; ++ii)
 			{
 				size_t topFOcell = most_impt_FOcells_vec[ii];
 				most_important_FOcells[ipt][ipphi][ii] = topFOcell;
-				S_p_withweight_array[ipt][ipphi][ii] = tmp_S_p_withweight_array[topFOcell];
+				double tmpval = tmp_S_p_withweight_array[topFOcell];
+				S_p_withweight_array[ipt][ipphi][ii] = tmpval;
+				checksum += tmpval;
+/////////////////////////////////
+//  HERE!!!!!!!!!!!!!!!!!!!!!  //
+/////////////////////////////////
+//				if (ipt == 0 && ipphi == 0)
+//					cerr << "(" << ipt << "," << ipphi << "): " << all_particles[local_pid].name << "   "
+//							<< scientific << setprecision(20) << setw(25) << tmpval << "   " << checksum << "   " << 2.*tmpval << "   " << 2.*checksum << endl;
 			}
+			//try this...
+			temp_moments_array[ipt][ipphi] = checksum;
 
 			//end of the section to time
 			sw3.Stop();
@@ -967,11 +1057,9 @@ pc_cutoff_vals.resize( number_of_percentage_markers );
 	for(int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 	for(int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 	{
-		spectra[local_pid][ipt][ipphi] = eta_s_symmetry_factor * temp_moments_array[ipt][ipphi];
+		//spectra[local_pid][ipt][ipphi] = eta_s_symmetry_factor * temp_moments_array[ipt][ipphi];
 		abs_spectra[local_pid][ipt][ipphi] = abs_temp_moments_array[ipt][ipphi];
-		thermal_spectra[local_pid][ipt][ipphi] = spectra[local_pid][ipt][ipphi];
-		log_spectra[local_pid][ipt][ipphi] = log(abs(spectra[local_pid][ipt][ipphi])+1.e-100);
-		sign_spectra[local_pid][ipt][ipphi] = sgn(spectra[local_pid][ipt][ipphi]);
+		//thermal_spectra[local_pid][ipt][ipphi] = spectra[local_pid][ipt][ipphi];
 	}
 
 	for(int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
@@ -1004,7 +1092,7 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 			//use ipphi = 0 for estimates
 			size_t * mif1_slice = mif1[0];
 			double * slice2 = slice1[0];
-			double Ssum = 0.0, /*tsum = 0.0,*/ xsum = 0.0, ysum = 0.0, zsum = 0.0, /*t2sum = 0.0,*/ x2sum = 0.0, y2sum = 0.0, z2sum = 0.0;
+			double Ssum = 0.0, xsum = 0.0, ysum = 0.0, zsum = 0.0, x2sum = 0.0, y2sum = 0.0, z2sum = 0.0;
 			//choose q_points intelligently based on pT values and rough (SV) estimates of HBT radii
 			for (int iFO = 0; iFO < NOFACA_slice1[0]; ++iFO)
 			{
@@ -1029,7 +1117,7 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 				y2sum += 2.0*tmpS*ypt*ypt;
 				z2sum += 2.0*tmpS*zpt*zpt;
 			}
-			Set_q_pTdep_pts(ipt, /*sqrt(abs((t2sum/Ssum)-(tsum*tsum)/(Ssum*Ssum))),*/ sqrt(abs((x2sum/Ssum)-(xsum*xsum)/(Ssum*Ssum))),
+			Set_q_pTdep_pts(ipt, sqrt(abs((x2sum/Ssum)-(xsum*xsum)/(Ssum*Ssum))),
 									sqrt(abs((y2sum/Ssum)-(ysum*ysum)/(Ssum*Ssum))), sqrt(abs((z2sum/Ssum)-(zsum*zsum)/(Ssum*Ssum))) );
 
 			//set weights corresponding to chosen q_points
@@ -1087,6 +1175,7 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 				vector<double> runsumvals;
 				vector<double> cutoff_FOcell_vals_cos;
 				vector<double> cutoff_FOcell_vals_sin;
+				double checksum = 0.0, checksum2 = 0.0;
 
 				for (int ipc = 0; ipc < tmpvec.size() - 1; ++ipc)
 				{
@@ -1102,12 +1191,22 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 						tmla_S += factor_sin[next_most_important_FOindex] * S_p_withweight;
 								
 						running_sum += abs(S_p_withweight);
+						checksum += S_p_withweight;
+						checksum2 += 2.0 * S_p_withweight;
 
-						//if (ipt == 0 && ipphi == 0 && iqx == 50)
-						//	cout << setprecision(8) << setw(12) << S_p_withweight
-						//		<< "   " << running_sum << "   " << tmla_C << "   " << tmla_S << endl;
+/////////////////////////////////
+//  HERE!!!!!!!!!!!!!!!!!!!!!  //
+/////////////////////////////////
+//						if (ipt == 0 && ipphi == 0)
+//							cout << "(" << ipt << "," << ipphi << "): " << all_particles[local_pid].name << "   " << scientific << setprecision(20) << setw(25) << S_p_withweight
+//								<< "   " << running_sum << "   " << 2.0*S_p_withweight
+//								<< "   " << 2.0*running_sum << "   " << factor_cos[next_most_important_FOindex] << "   " << tmla_C << endl;
 					}
 				}
+
+//*global_out_stream_ptr << "SPECCOMP(" << all_particles[local_pid].name << "; " << ipt << "," << ipphi << "): "
+//						<< scientific << setprecision(20) << setw(25) << tmla_C << "   " << 2.0 * checksum << "   " << checksum2 << endl;
+
 				cutoff_FOcell_vals_cos.push_back(tmla_C);
 				cutoff_FOcell_vals_sin.push_back(tmla_S);
 				runsumvals.push_back(running_sum);
@@ -1157,6 +1256,21 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 				//finally, store projected results
 				current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0] = proj_tmla_C;
 				current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1] = proj_tmla_S;
+
+	//update spectra too
+	//for(int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+	//for(int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+	//{
+		spectra[local_pid][ipt][ipphi] = 2.0 * checksum;
+		thermal_spectra[local_pid][ipt][ipphi] = 2.0 * checksum;
+		log_spectra[local_pid][ipt][ipphi] = log(abs(2.0 * checksum) + 1.e-100);
+		sign_spectra[local_pid][ipt][ipphi] = sgn(2.0 * checksum);
+	//}
+//*global_out_stream_ptr << "SPECCOMP(" << all_particles[local_pid].name << "; " << ipt << "," << ipphi << "): "
+//						<< scientific << setprecision(20) << setw(25) << current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0] << "   "
+//						<< current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1] << "   " << spectra[local_pid][ipt][ipphi] << endl;
+
+
 			}	//end of pphi-loop	
 		}	//end of q-loops
 		debug_sw2.Stop();
@@ -1192,6 +1306,11 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 
 	debug_sw.Stop();
 	*global_out_stream_ptr << "Total function call took " << debug_sw.printTime() << " seconds." << endl;
+
+
+	//save pT-dependent q-points to file
+	Dump_q_pTdep_pts();
+//if (1) exit(1);
 
 	return;
 }
@@ -1292,14 +1411,14 @@ void CorrelationFunction::Load_decay_channel_info(int dc_idx, double K_T_local, 
 		mT = sqrt(mass*mass + pT*pT);
 		double s_min_temp = (m2 + m3)*(m2 + m3);
 		double s_max_temp = (Mres - mass)*(Mres - mass);
-		gauss_quadrature(n_s_pts, 1, 0.0, 0.0, s_min_temp, s_max_temp, NEW_s_pts, NEW_s_wts);
+		gauss_quadrature(n_s_pts, 1, 0.0, 0.0, s_min_temp, s_max_temp, s_pts, s_wts);
 		Qfunc = get_Q();
 		for (int is = 0; is < n_s_pts; ++is)
 		{
-			double s_loc = NEW_s_pts[is];
+			double s_loc = s_pts[is];
 			double g_s_loc = g(s_loc);
 			VEC_g_s[is] = g_s_loc;
-			VEC_s_factor[is] = NEW_s_wts[is]*g_s_loc;
+			VEC_s_factor[is] = s_wts[is]*g_s_loc;
 			double pstar_loc = sqrt(((Mres+mass)*(Mres+mass) - s_loc)*((Mres-mass)*(Mres-mass) - s_loc))/(2.0*Mres);
 			VEC_pstar[is] = pstar_loc;
 			double Estar_loc = sqrt(mass*mass + pstar_loc*pstar_loc);

@@ -279,6 +279,16 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
 		qidx++;
 	}
 
+/*
+	spectra_to_subtract = new double * [n_interp_pT_pts];
+	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+	{
+		spectra_to_subtract[ipt] = new double [n_interp_pphi_pts];
+		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+			spectra_to_subtract[ipt][ipphi] = 0.0;
+	}
+*/
+
 	res_log_info = new double ** [n_interp_pT_pts];
 	res_sign_info = new double ** [n_interp_pT_pts];
 	res_moments_info = new double ** [n_interp_pT_pts];
@@ -348,34 +358,14 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
 	}
 
 	// set-up integration points for resonance integrals
-	s_pts = new double * [n_decay_channels];
-	s_wts = new double * [n_decay_channels];
 	v_pts = new double [n_v_pts];
 	v_wts = new double [n_v_pts];
 	zeta_pts = new double [n_zeta_pts];
 	zeta_wts = new double [n_zeta_pts];
-	for (int idc=0; idc<n_decay_channels; idc++)
-	{
-		s_pts[idc] = new double [n_s_pts];
-		s_wts[idc] = new double [n_s_pts];
-	}
 	//initialize all gaussian points for resonance integrals
 	//syntax: int gauss_quadrature(int order, int kind, double alpha, double beta, double a, double b, double x[], double w[])
 	gauss_quadrature(n_zeta_pts, 1, 0.0, 0.0, zeta_min, zeta_max, zeta_pts, zeta_wts);
 	gauss_quadrature(n_v_pts, 1, 0.0, 0.0, v_min, v_max, v_pts, v_wts);
-	for (int idc = 0; idc < n_decay_channels; idc++)
-	{
-		//cerr << "working on resonance #" << idc << "..." << endl;
-		double Gamma_temp = decay_channels[idc].resonance_Gamma;
-		double m2_temp = decay_channels[idc].resonance_decay_masses[0];
-		double m3_temp = decay_channels[idc].resonance_decay_masses[1];
-		double M_temp = decay_channels[idc].resonance_mass;
-		double s_min_temp = (m2_temp + m3_temp)*(m2_temp + m3_temp);
-		double s_max_temp = (M_temp - particle_mass)*(M_temp - particle_mass);
-		// N.B. - this is only really necessary for 3-body decays,
-		//			but doesn't cause any problems for 2-body and is easier/simpler to code...
-		gauss_quadrature(n_s_pts, 1, 0.0, 0.0, s_min_temp, s_max_temp, s_pts[idc], s_wts[idc]);
-	}	
    //single particle spectra for plane angle determination
    /*SP_pT = new double [n_SP_pT];
    SP_pT_weight = new double [n_SP_pT];
@@ -537,62 +527,6 @@ void CorrelationFunction::Update_sourcefunction(particle_info* particle, int FOa
 {
 	full_FO_length = FOarray_length * eta_s_npts;
 
-	//osc0 = new double *** [FOarray_length];					//to hold cos/sin(q0 t)
-	//osc1 = new double ** [FOarray_length];					//to hold cos/sin(qx x)
-	//osc2 = new double ** [FOarray_length];					//to hold cos/sin(qy y)
-	//osc3 = new double *** [FOarray_length];				//to hold cos/sin(+/- qz z)
-
-	/*for (int isurf = 0; isurf < FOarray_length; ++isurf)
-	{
-		FO_surf * surf = &current_FOsurf_ptr[isurf];
-
-		double tau = surf->tau;
-		double xpt = surf->xpt;
-		double ypt = surf->ypt;
-
-		osc0[isurf] = new double ** [eta_s_npts];
-		osc1[isurf] = new double * [qxnpts];
-		osc2[isurf] = new double * [qynpts];
-		osc3[isurf] = new double ** [eta_s_npts];
-
-		for (int iqx = 0; iqx < qxnpts; ++iqx)
-		{
-			osc1[isurf][iqx] = new double [2];
-			osc1[isurf][iqx][0] = cos(hbarCm1*qx_pts[iqx]*xpt);
-			osc1[isurf][iqx][1] = sin(hbarCm1*qx_pts[iqx]*xpt);
-		}
-
-		for (int iqy = 0; iqy < qynpts; ++iqy)
-		{
-			osc2[isurf][iqy] = new double [2];
-			osc2[isurf][iqy][0] = cos(hbarCm1*qy_pts[iqy]*ypt);
-			osc2[isurf][iqy][1] = sin(hbarCm1*qy_pts[iqy]*ypt);
-		}
-
-		for (int ieta = 0; ieta < eta_s_npts; ++ieta)
-		{
-			double tpt = tau*ch_eta_s[ieta];
-			double zpt = tau*sh_eta_s[ieta];
-
-			osc0[isurf][ieta] = new double * [qtnpts];
-			osc3[isurf][ieta] = new double * [qznpts];
-
-			for (int iqt = 0; iqt < qtnpts; ++iqt)
-			{
-				osc0[isurf][ieta][iqt] = new double [2];
-				osc0[isurf][ieta][iqt][0] = cos(hbarCm1*qt_pts[iqt]*tpt);
-				osc0[isurf][ieta][iqt][1] = sin(hbarCm1*qt_pts[iqt]*tpt);
-			}
-
-			for (int iqz = 0; iqz < qznpts; ++iqz)
-			{
-				osc3[isurf][ieta][iqz] = new double [2];
-				osc3[isurf][ieta][iqz][0] = cos(hbarCm1*qz_pts[iqz]*zpt);
-				osc3[isurf][ieta][iqz][1] = sin(hbarCm1*qz_pts[iqz]*zpt);
-			}
-		}
-	}*/
-
 	eiqtt = new double * [qtnpts];					//to hold cos/sin(q0 t)
 	eiqxx = new double * [qxnpts];					//to hold cos/sin(qx x)
 	eiqyy = new double * [qynpts];					//to hold cos/sin(qy y)
@@ -675,7 +609,7 @@ void CorrelationFunction::Set_q_pTdep_pts(int ipt, double qxw, double qyw, doubl
 	qz_PTdep_pts[ipt] = new double [qznpts];
 
 	double mpion = all_particles[target_particle_id].mass;
-	double eps = 1.e-1;									//specifies approximate CF value at which to truncate calculation
+	double eps = 2.e-1;									//specifies approximate CF value at which to truncate calculation
 														// (used for computing q(i)max)
 	double ln_one_by_eps = hbarC*sqrt(log(1./eps));
 
@@ -889,8 +823,8 @@ void CorrelationFunction::Allocate_decay_channel_info()
 				VEC_n2_Ppm[iv][izeta][i] = new double [4];	//four corresponds to space-time components
 		}
 	}
-	NEW_s_pts = new double [n_s_pts];
-	NEW_s_wts = new double [n_s_pts];
+	s_pts = new double [n_s_pts];
+	s_wts = new double [n_s_pts];
 	VEC_pstar = new double [n_s_pts];
 	VEC_Estar = new double [n_s_pts];
 	VEC_DeltaY = new double [n_s_pts];
@@ -1006,8 +940,8 @@ void CorrelationFunction::Delete_decay_channel_info()
 		delete [] VEC_PT[is];
 		delete [] VEC_Ppm[is];
 	}
-	delete [] NEW_s_pts;
-	delete [] NEW_s_wts;
+	delete [] s_pts;
+	delete [] s_wts;
 	delete [] VEC_pstar;
 	delete [] VEC_Estar;
 	delete [] VEC_DeltaY;
@@ -1347,7 +1281,7 @@ inline double CorrelationFunction::dot_four_vectors(double * a, double * b)
 	return (sum);
 }
 
-double CorrelationFunction::Edndp3(double ptr, double phir)
+void CorrelationFunction::Edndp3(double ptr, double phir, double * result, int loc_verb /*==0*/)
 {
 	double phi0, phi1;
 	double f1, f2;
@@ -1406,53 +1340,109 @@ double CorrelationFunction::Edndp3(double ptr, double phir)
 	double f21 = spec_vals_info[npt][nphim1];
 	double f22 = spec_vals_info[npt][nphi];
 
+	double sign_of_f11 = spec_sign_info[npt-1][nphim1];
+	double sign_of_f12 = spec_sign_info[npt-1][nphi];
+	double sign_of_f21 = spec_sign_info[npt][nphim1];
+	double sign_of_f22 = spec_sign_info[npt][nphi];
+
 	/////////////////////////////////////////////////////////////////
 	// interpolate over pT values first
 	/////////////////////////////////////////////////////////////////
 	if(ptr > PTCHANGE)				// if pT interpolation point is larger than PTCHANGE (currently 1.0 GeV)
 	{
-		double sign_of_f11 = spec_sign_info[npt-1][nphim1];
-		double sign_of_f12 = spec_sign_info[npt-1][nphi];
-		double sign_of_f21 = spec_sign_info[npt][nphim1];
-		double sign_of_f22 = spec_sign_info[npt][nphi];
+		//double sign_of_f11 = spec_sign_info[npt-1][nphim1];
+		//double sign_of_f12 = spec_sign_info[npt-1][nphi];
+		//double sign_of_f21 = spec_sign_info[npt][nphim1];
+		//double sign_of_f22 = spec_sign_info[npt][nphi];
 		
 		//*******************************************************************************************************************
 		// set f1 first
 		//*******************************************************************************************************************
 		// if using extrapolation and spectra at pT1 has larger magnitude than at pT0 (or the signs are different), just return zero
 		if ( ptr > pT1 && ( log_f21 > log_f11 || sign_of_f11 * sign_of_f21 < 0 ) )
+		{
 			f1 = 0.0;
+			if ( loc_verb ) *global_out_stream_ptr << "Chose branch 1Aa!" << endl;
+		}
 		else if (sign_of_f11 * sign_of_f21 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
+		{
 			f1 = sign_of_f11 * exp( lin_int(ptr-pT0, one_by_pTdiff, log_f11, log_f21) );
+			if ( loc_verb ) *global_out_stream_ptr << "Chose branch 1Ba!" << endl;
+		}
 		else					// otherwise, just interpolate original vals
+		{
 			f1 = lin_int(ptr-pT0, one_by_pTdiff, f11, f21);
+			if ( loc_verb ) *global_out_stream_ptr << "Chose branch 1Ca!" << endl;
+		}
 			
 		//*******************************************************************************************************************
 		// set f2 next
 		//*******************************************************************************************************************
 		if ( ptr > pT1 && ( log_f22 > log_f12 || sign_of_f12 * sign_of_f22 < 0 ) )
+		{
 			f2 = 0.0;
+			if ( loc_verb ) *global_out_stream_ptr << "Chose branch 1Ab!" << endl;
+		}
 		else if (sign_of_f12 * sign_of_f22 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
+		{
 			f2 = sign_of_f12 * exp( lin_int(ptr-pT0, one_by_pTdiff, log_f12, log_f22) );
+			if ( loc_verb ) *global_out_stream_ptr << "Chose branch 1Bb!" << endl;
+		}
 		else					// otherwise, just interpolate original vals
+		{
 			f2 = lin_int(ptr-pT0, one_by_pTdiff, f12, f22);
+			if ( loc_verb ) *global_out_stream_ptr << "Chose branch 1Cb!" << endl;
+		}
 		//*******************************************************************************************************************
 	}
 	else						// if pT is smaller than PTCHANGE, just use linear interpolation, no matter what
 	{
 		f1 = lin_int(ptr-pT0, one_by_pTdiff, f11, f21);
 		f2 = lin_int(ptr-pT0, one_by_pTdiff, f12, f22);
+		if ( loc_verb ) *global_out_stream_ptr << "Chose branch 2!" << endl;
 	}
 				
 	// now, interpolate f1 and f2 over the pphi direction
 	//double result = lin_int(phir-phi0, one_by_pphidiff, f1, f2);
+	double tmp = lin_int(phir-phi0, one_by_pphidiff, f1, f2);
+	*result += tmp;
 
+if ( loc_verb )
+		{
+			*global_out_stream_ptr << "INFODUMP in Edndp3(double, double, double*):" << endl
+				<< setw(25) << setprecision(20) 
+				<< "  --> result = " << *result << endl
+				<< "  --> ptr = " << ptr << endl
+				<< "  --> pt0 = " << pT0 << endl
+				<< "  --> pt1 = " << pT1 << endl
+				<< "  --> phir = " << phir << endl
+				<< "  --> phi0 = " << phi0 << endl
+				<< "  --> phi1 = " << phi1 << endl
+				<< "  --> f11 = " << f11 << endl
+				<< "  --> f12 = " << f12 << endl
+				<< "  --> f21 = " << f21 << endl
+				<< "  --> f22 = " << f22 << endl
+				<< "  --> lf11 = " << log_f11 << endl
+				<< "  --> lf12 = " << log_f12 << endl
+				<< "  --> lf21 = " << log_f21 << endl
+				<< "  --> lf22 = " << log_f22 << endl
+				<< "  --> sf11 = " << sign_of_f11 << endl
+				<< "  --> sf12 = " << sign_of_f12 << endl
+				<< "  --> sf21 = " << sign_of_f21 << endl
+				<< "  --> sf22 = " << sign_of_f22 << endl
+				<< "  --> f1 = " << f1 << endl
+				<< "  --> f2 = " << f2 << endl
+				<< "  --> tmp = " << tmp << endl;
+		}
+
+//cout << "ADMIN1: " << scientific << setprecision(15) << setw(20) << result << endl;
 	//return (result);
-	return ( lin_int(phir-phi0, one_by_pphidiff, f1, f2) );
+	return;
+	//return ( lin_int(phir-phi0, one_by_pphidiff, f1, f2) );
 }
 
 
-void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results)
+void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, int loc_verb /*==0*/)
 {
 	double phi0, phi1;
 	double f1, f2;
@@ -1575,6 +1565,9 @@ void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results)
 		//results[qpt_cs_idx] += lin_int(phir-phi0, one_by_pphidiff, f1, f2);
 		double Zkr = lin_int(phir-phi0, one_by_pphidiff, f1, f2);
 
+		double f1s = f1;
+		double f2s = f2;
+
 		/////////////////////////////////////////////////////////////////
 		// DO SINE PART NEXT
 		/////////////////////////////////////////////////////////////////
@@ -1620,12 +1613,18 @@ void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results)
 		//results[qpt_cs_idx+1] += lin_int(phir-phi0, one_by_pphidiff, f1, f2);
 		double Zki = lin_int(phir-phi0, one_by_pphidiff, f1, f2);
 					
-		/*if ( isinf( results[qpt_cs_idx] ) || isnan( results[qpt_cs_idx] ) || isinf( results[qpt_cs_idx+1] ) || isnan( results[qpt_cs_idx+1] ) )
+		//Finally, update results vectors appropriately
+		//--> update the real part of weighted daughter spectra
+		results[qpt_cs_idx] += akr*Zkr-aki*Zki;
+		//--> update the imaginary part of weighted daughter spectra
+		results[qpt_cs_idx+1] += akr*Zki+aki*Zkr;
+
+
+		if ( loc_verb || isinf( results[qpt_cs_idx] ) || isnan( results[qpt_cs_idx] ) || isinf( results[qpt_cs_idx+1] ) || isnan( results[qpt_cs_idx+1] ) )
 		{
 			*global_out_stream_ptr << "ERROR in eiqxEdndp3(double, double, double*): problems encountered!" << endl
-				<< "results(" << iqt << "," << iqx << "," << iqy << "," << iqz << "," << itrig << ") = "
-				<< setw(8) << setprecision(15) << results[qpt_cs_idx] << endl
-				<< results[qpt_cs_idx+1] << endl
+				<< "results(" << iqt << "," << iqx << "," << iqy << "," << iqz << ") = "
+				<< setw(25) << setprecision(20) << results[qpt_cs_idx] << ",   " << results[qpt_cs_idx+1] << endl
 				<< "  --> ptr = " << ptr << endl
 				<< "  --> pt0 = " << pT0 << endl
 				<< "  --> pt1 = " << pT1 << endl
@@ -1636,16 +1635,21 @@ void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results)
 				<< "  --> f12 = " << f12_arr[qpt_cs_idx] << endl
 				<< "  --> f21 = " << f21_arr[qpt_cs_idx] << endl
 				<< "  --> f22 = " << f22_arr[qpt_cs_idx] << endl
-				<< "  --> f1 = " << f1 << endl
-				<< "  --> f2 = " << f2 << endl;
+				<< "  --> f1 = " << f1s << endl
+				<< "  --> f2 = " << f2s << endl
+				<< "  --> akr = " << akr << endl
+				<< "  --> aki = " << aki << endl
+				<< "  --> Zkr = " << Zkr << endl
+				<< "  --> Zki = " << Zki << endl
+				<< "  --> akr*Zkr-aki*Zki = " << akr*Zkr-aki*Zki << endl
+				<< "  --> akr*Zki+aki*Zkr = " << akr*Zki+aki*Zkr << endl;
 							//exit(1);
-		}*/
+		}
 
-		//Finally, update results vectors appropriately
-		//--> update the real part of weighted daughter spectra
-		results[qpt_cs_idx] += akr*Zkr-aki*Zki;
-		//--> update the imaginary part of weighted daughter spectra
-		results[qpt_cs_idx+1] += akr*Zki+aki*Zkr;
+
+
+//cout << "ADMIN2: " << scientific << setprecision(15) << setw(20) << results[qpt_cs_idx] << "   " << results[qpt_cs_idx+1] << "   " << akr << "   "
+//					<< aki << "   " << Zkr << "   " << Zki << "   " << akr*Zkr-aki*Zki << "   " << akr*Zki+aki*Zkr << endl;
 
 		//++qpt_cs_idx;	// step to next cell in results array
 		qpt_cs_idx += 2;

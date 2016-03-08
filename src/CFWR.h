@@ -93,6 +93,8 @@ class CorrelationFunction
 		double q_space_CF_cutoff;		// when correlator falls below this value,
 							//	set correlator to zero for any q-points further away from q-origin than that
 		double ** current_q_space_cutoff;	// point in q-space at which cutoff of CF begins (depends on pT and pphi)
+
+		//double ** spectra_to_subtract;
 				
 		//array to hold previous and current resonance info
 		decay_info * decay_channels;
@@ -115,7 +117,6 @@ class CorrelationFunction
 		double ******* thermal_target_dN_dypTdpTdphi_moments;
 
 		// needed these to avoid too many trigonometric evaluations
-		//double **** osc0, *** osc1, *** osc2, **** osc3;
 		double ** eiqtt, ** eiqxx, ** eiqyy, ** eiqzz;
 	
 		//needed for resonance calculations
@@ -154,8 +155,8 @@ class CorrelationFunction
 		//points and weights for resonance integrals
 		int n_zeta_pts, n_v_pts, n_s_pts;
 		double v_min, v_max, zeta_min, zeta_max, s_min, s_max;
-		double * zeta_pts, * v_pts, ** s_pts, * NEW_s_pts;
-		double * zeta_wts, * v_wts, ** s_wts, * NEW_s_wts;
+		double * zeta_pts, * v_pts, * s_pts;
+		double * zeta_wts, * v_wts, * s_wts;
 
 		//some arrays to save unnecessary multiple calculations for resonances
 		//	use these for n_body = 2
@@ -233,7 +234,8 @@ class CorrelationFunction
 		int Get_resonance_from_HDF_array(int local_pid, double ******* resonance_array_to_fill);
 		int Set_resonance_in_HDF_array(int local_pid, double ******* resonance_array_to_use);
 		int Initialize_resonance_HDF_array();
-		int Open_resonance_HDF_array();
+		int Open_resonance_HDF_array(string resonance_local_file_name);
+		int Close_resonance_HDF_array();
 		int Copy_chunk(int current_resonance_index, int reso_idx_to_be_copied);
 		int Dump_resonance_HDF_array_spectra(string output_filename, double ******* resonance_array_to_use);
 
@@ -255,6 +257,7 @@ class CorrelationFunction
 		void Recycle_spacetime_moments();
 		void Load_resonance_and_daughter_spectra(int local_pid);
 		void Update_daughter_spectra(int local_pid);
+		void Set_spectra_logs_and_signs(int local_pid);
 		void Set_current_resonance_logs_and_signs();
 		void Set_current_daughters_resonance_logs_and_signs(int n_daughters);
 		void Allocate_decay_channel_info();
@@ -268,6 +271,8 @@ class CorrelationFunction
 		void Load_eiqx_with_q_pTdep_pts(int ipt);
 		void Dump_phases_to_binary(char direction, int ipt, double ** array, const int nd1, const int nd2);
 		void Load_phases_from_binary(char direction, int ipt, double ** array, const int nd1, const int nd2);
+		void Dump_q_pTdep_pts();
+		void Load_q_pTdep_pts();
 
 		//miscellaneous
 		void Set_ofstream(ofstream& myout);
@@ -287,8 +292,8 @@ class CorrelationFunction
 		int lookup_resonance_idx_from_particle_id(int particle_id);
 		int list_daughters(int parent_resonance_index, set<int> * daughter_resonance_indices_ptr, particle_info * particle, int Nparticle);
 		static inline double lin_int(double x_m_x1, double one_by_x2_m_x1, double f1, double f2);
-		void eiqxEdndp3(double ptr, double phir, double * results);
-		double Edndp3(double ptr, double phir);
+		void eiqxEdndp3(double ptr, double phir, double * results, int loc_verb = 0);
+		void Edndp3(double ptr, double phir, double * result, int loc_verb = 0);
 		//void Set_q_points();
 		void Set_correlation_function_q_pts();
 		void Get_q_points(double qo, double qs, double ql, double KT, double Kphi, double * qgridpts);
@@ -330,6 +335,8 @@ class CorrelationFunction
 		void Read_in_all_dN_dypTdpTdphi(int folderindex);
 		void Output_chosen_resonances();
 		void Output_correlationfunction(int folderindex);
+		void Dump_spectra_array(string output_filename, double *** array_to_dump);
+		void Load_spectra_array(string output_filename, double *** array_to_read);
 
 		//parameters that the user is free to define
 		double plumberg_test_variable;

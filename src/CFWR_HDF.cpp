@@ -25,7 +25,7 @@ const int q_space_size = qtnpts * qxnpts * qynpts * qznpts;
 //*******************************************
 // HDF array for resonances
 //*******************************************
-
+/////////////////////////////////////////////
 int CorrelationFunction::Initialize_resonance_HDF_array()
 {
 	double * resonance_chunk = new double [chunk_size];
@@ -64,9 +64,6 @@ int CorrelationFunction::Initialize_resonance_HDF_array()
 
 			for (int ir = 0; ir < Nparticle; ++ir)
 			{
-				//debugger(__LINE__, __FILE__);
-				//print_now();
-	
 				offset[0] = ir;
 				resonance_dataspace->selectHyperslab(H5S_SELECT_SET, count, offset);
 	
@@ -77,15 +74,6 @@ int CorrelationFunction::Initialize_resonance_HDF_array()
 				resonance_dataset->write(resonance_chunk, PredType::NATIVE_DOUBLE, *resonance_memspace, *resonance_dataspace);
 			}
 		}
-		/*resonance_memspace->close();
-		resonance_dataset->close();
-		resonance_file->close();
-		delete resonance_memspace;
-		delete resonance_file;
-		delete resonance_dataset;
-		resonance_file = new H5::H5File(RESONANCE_FILE_NAME, H5F_ACC_RDWR);
-		resonance_dataset = new H5::DataSet( resonance_file->openDataSet( RESONANCE_DATASET_NAME ) );
-		resonance_memspace = new H5::DataSpace (RANK2D, dimsm, NULL);*/
     }
 
     catch(FileIException error)
@@ -116,11 +104,11 @@ debugger(__LINE__, __FILE__);
 
 	return (0);
 }
-
-int CorrelationFunction::Open_resonance_HDF_array()
+/////////////////////////////////////////////
+int CorrelationFunction::Open_resonance_HDF_array(string resonance_local_file_name)
 {
 	ostringstream filename_stream_ra;
-	filename_stream_ra << global_path << "/resonance_spectra.h5";
+	filename_stream_ra << global_path << "/" << resonance_local_file_name;
 	H5std_string RESONANCE_FILE_NAME(filename_stream_ra.str().c_str());
 	H5std_string RESONANCE_DATASET_NAME("ra");
 
@@ -158,18 +146,51 @@ int CorrelationFunction::Open_resonance_HDF_array()
 		return -3;
     }
 
+
 	return (0);
 }
+/////////////////////////////////////////////
+int CorrelationFunction::Close_resonance_HDF_array()
+{
+	try
+    {
+		Exception::dontPrint();
+	
+		resonance_memspace->close();
+		resonance_dataset->close();
+		resonance_file->close();
+		delete resonance_memspace;
+		delete resonance_file;
+		delete resonance_dataset;
+    }
 
+    catch(FileIException error)
+    {
+		error.printError();
+		cerr << "FileIException error!" << endl;
+		return -1;
+    }
 
+    catch(H5::DataSetIException error)
+    {
+		error.printError();
+		cerr << "DataSetIException error!" << endl;
+		return -2;
+    }
+
+    catch(H5::DataSpaceIException error)
+    {
+		error.printError();
+		cerr << "DataSpaceIException error!" << endl;
+		return -3;
+    }
+
+	return (0);
+}
+/////////////////////////////////////////////
 int CorrelationFunction::Set_resonance_in_HDF_array(int local_pid, double ******* resonance_array_to_use)
 {
 	double * resonance_chunk = new double [chunk_size];
-
-	ostringstream filename_stream_ra;
-	filename_stream_ra << global_path << "/resonance_spectra.h5";
-	H5std_string RESONANCE_FILE_NAME(filename_stream_ra.str().c_str());
-	H5std_string RESONANCE_DATASET_NAME("ra");
 
 	try
     {
@@ -225,15 +246,10 @@ debugger(__LINE__, __FILE__);
 
 	return (0);
 }
-
+/////////////////////////////////////////////
 int CorrelationFunction::Get_resonance_from_HDF_array(int local_pid, double ******* resonance_array_to_fill)
 {
 	double * resonance_chunk = new double [chunk_size];
-
-	ostringstream filename_stream_ra;
-	filename_stream_ra << global_path << "/resonance_spectra.h5";
-	H5std_string RESONANCE_FILE_NAME(filename_stream_ra.str().c_str());
-	H5std_string RESONANCE_DATASET_NAME("ra");
 
 	try
     {
@@ -256,8 +272,6 @@ int CorrelationFunction::Get_resonance_from_HDF_array(int local_pid, double ****
 		for (int itrig = 0; itrig < ntrig; ++itrig)
 		{
 			double temp = resonance_chunk[iidx];
-			//cerr << "INFODUMP: " << local_pid << "   " << ipt << "   " << ipphi << "   " << iqt << "   "
-			//	<< iqx << "   " << iqy << "   " << iqz << "   " << itrig << "   " << temp << endl;
 			resonance_array_to_fill[ipt][ipphi][iqt][iqx][iqy][iqz][itrig] = temp;
 			++iidx;
 		}
@@ -292,15 +306,10 @@ debugger(__LINE__, __FILE__);
 
 	return (0);
 }
-
+/////////////////////////////////////////////
 int CorrelationFunction::Copy_chunk(int current_resonance_index, int reso_idx_to_be_copied)
 {
 	double * resonance_chunk = new double [chunk_size];
-
-	ostringstream filename_stream_ra;
-	filename_stream_ra << global_path << "/resonance_spectra.h5";
-	H5std_string RESONANCE_FILE_NAME(filename_stream_ra.str().c_str());
-	H5std_string RESONANCE_DATASET_NAME("ra");
 
 	try
     {
@@ -347,15 +356,10 @@ debugger(__LINE__, __FILE__);
 
 	return (0);
 }
-
+/////////////////////////////////////////////
 int CorrelationFunction::Dump_resonance_HDF_array_spectra(string output_filename, double ******* resonance_array_to_use)
 {
 	double * resonance_chunk = new double [chunk_size];
-
-	ostringstream filename_stream_ra;
-	filename_stream_ra << global_path << "/resonance_spectra.h5";
-	H5std_string RESONANCE_FILE_NAME(filename_stream_ra.str().c_str());
-	H5std_string RESONANCE_DATASET_NAME("ra");
 
 	ostringstream filename_stream;
 	filename_stream << global_path << "/" << output_filename;
