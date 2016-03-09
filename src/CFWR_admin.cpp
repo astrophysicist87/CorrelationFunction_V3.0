@@ -1340,20 +1340,20 @@ void CorrelationFunction::Edndp3(double ptr, double phir, double * result, int l
 	double f21 = spec_vals_info[npt][nphim1];
 	double f22 = spec_vals_info[npt][nphi];
 
-	double sign_of_f11 = spec_sign_info[npt-1][nphim1];
-	double sign_of_f12 = spec_sign_info[npt-1][nphi];
-	double sign_of_f21 = spec_sign_info[npt][nphim1];
-	double sign_of_f22 = spec_sign_info[npt][nphi];
+	//double sign_of_f11 = spec_sign_info[npt-1][nphim1];
+	//double sign_of_f12 = spec_sign_info[npt-1][nphi];
+	//double sign_of_f21 = spec_sign_info[npt][nphim1];
+	//double sign_of_f22 = spec_sign_info[npt][nphi];
 
 	/////////////////////////////////////////////////////////////////
 	// interpolate over pT values first
 	/////////////////////////////////////////////////////////////////
 	if(ptr > PTCHANGE)				// if pT interpolation point is larger than PTCHANGE (currently 1.0 GeV)
 	{
-		//double sign_of_f11 = spec_sign_info[npt-1][nphim1];
-		//double sign_of_f12 = spec_sign_info[npt-1][nphi];
-		//double sign_of_f21 = spec_sign_info[npt][nphim1];
-		//double sign_of_f22 = spec_sign_info[npt][nphi];
+		double sign_of_f11 = spec_sign_info[npt-1][nphim1];
+		double sign_of_f12 = spec_sign_info[npt-1][nphi];
+		double sign_of_f21 = spec_sign_info[npt][nphim1];
+		double sign_of_f22 = spec_sign_info[npt][nphi];
 		
 		//*******************************************************************************************************************
 		// set f1 first
@@ -1362,17 +1362,17 @@ void CorrelationFunction::Edndp3(double ptr, double phir, double * result, int l
 		if ( ptr > pT1 && ( log_f21 > log_f11 || sign_of_f11 * sign_of_f21 < 0 ) )
 		{
 			f1 = 0.0;
-			if ( loc_verb ) *global_out_stream_ptr << "Chose branch 1Aa!" << endl;
+			//if ( loc_verb ) *global_out_stream_ptr << "Chose branch 1Aa!" << endl;
 		}
 		else if (sign_of_f11 * sign_of_f21 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
 		{
 			f1 = sign_of_f11 * exp( lin_int(ptr-pT0, one_by_pTdiff, log_f11, log_f21) );
-			if ( loc_verb ) *global_out_stream_ptr << "Chose branch 1Ba!" << endl;
+			//if ( loc_verb ) *global_out_stream_ptr << "Chose branch 1Ba!" << endl;
 		}
 		else					// otherwise, just interpolate original vals
 		{
 			f1 = lin_int(ptr-pT0, one_by_pTdiff, f11, f21);
-			if ( loc_verb ) *global_out_stream_ptr << "Chose branch 1Ca!" << endl;
+			//if ( loc_verb ) *global_out_stream_ptr << "Chose branch 1Ca!" << endl;
 		}
 			
 		//*******************************************************************************************************************
@@ -1381,17 +1381,17 @@ void CorrelationFunction::Edndp3(double ptr, double phir, double * result, int l
 		if ( ptr > pT1 && ( log_f22 > log_f12 || sign_of_f12 * sign_of_f22 < 0 ) )
 		{
 			f2 = 0.0;
-			if ( loc_verb ) *global_out_stream_ptr << "Chose branch 1Ab!" << endl;
+			//if ( loc_verb ) *global_out_stream_ptr << "Chose branch 1Ab!" << endl;
 		}
 		else if (sign_of_f12 * sign_of_f22 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
 		{
 			f2 = sign_of_f12 * exp( lin_int(ptr-pT0, one_by_pTdiff, log_f12, log_f22) );
-			if ( loc_verb ) *global_out_stream_ptr << "Chose branch 1Bb!" << endl;
+			//if ( loc_verb ) *global_out_stream_ptr << "Chose branch 1Bb!" << endl;
 		}
 		else					// otherwise, just interpolate original vals
 		{
 			f2 = lin_int(ptr-pT0, one_by_pTdiff, f12, f22);
-			if ( loc_verb ) *global_out_stream_ptr << "Chose branch 1Cb!" << endl;
+			//if ( loc_verb ) *global_out_stream_ptr << "Chose branch 1Cb!" << endl;
 		}
 		//*******************************************************************************************************************
 	}
@@ -1399,15 +1399,15 @@ void CorrelationFunction::Edndp3(double ptr, double phir, double * result, int l
 	{
 		f1 = lin_int(ptr-pT0, one_by_pTdiff, f11, f21);
 		f2 = lin_int(ptr-pT0, one_by_pTdiff, f12, f22);
-		if ( loc_verb ) *global_out_stream_ptr << "Chose branch 2!" << endl;
+		//if ( loc_verb ) *global_out_stream_ptr << "Chose branch 2!" << endl;
 	}
 				
 	// now, interpolate f1 and f2 over the pphi direction
-	//double result = lin_int(phir-phi0, one_by_pphidiff, f1, f2);
-	double tmp = lin_int(phir-phi0, one_by_pphidiff, f1, f2);
-	*result += tmp;
+	*result += lin_int(phir-phi0, one_by_pphidiff, f1, f2);
+	//double tmp = lin_int(phir-phi0, one_by_pphidiff, f1, f2);
+	//*result += tmp;
 
-if ( loc_verb )
+/*if ( loc_verb )
 		{
 			*global_out_stream_ptr << "INFODUMP in Edndp3(double, double, double*):" << endl
 				<< setw(25) << setprecision(20) 
@@ -1433,9 +1433,8 @@ if ( loc_verb )
 				<< "  --> f1 = " << f1 << endl
 				<< "  --> f2 = " << f2 << endl
 				<< "  --> tmp = " << tmp << endl;
-		}
+		}*/
 
-//cout << "ADMIN1: " << scientific << setprecision(15) << setw(20) << result << endl;
 	//return (result);
 	return;
 	//return ( lin_int(phir-phi0, one_by_pphidiff, f1, f2) );
@@ -1620,7 +1619,7 @@ void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, 
 		results[qpt_cs_idx+1] += akr*Zki+aki*Zkr;
 
 
-		if ( loc_verb || isinf( results[qpt_cs_idx] ) || isnan( results[qpt_cs_idx] ) || isinf( results[qpt_cs_idx+1] ) || isnan( results[qpt_cs_idx+1] ) )
+		/*if ( loc_verb || isinf( results[qpt_cs_idx] ) || isnan( results[qpt_cs_idx] ) || isinf( results[qpt_cs_idx+1] ) || isnan( results[qpt_cs_idx+1] ) )
 		{
 			*global_out_stream_ptr << "ERROR in eiqxEdndp3(double, double, double*): problems encountered!" << endl
 				<< "results(" << iqt << "," << iqx << "," << iqy << "," << iqz << ") = "
@@ -1644,12 +1643,7 @@ void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, 
 				<< "  --> akr*Zkr-aki*Zki = " << akr*Zkr-aki*Zki << endl
 				<< "  --> akr*Zki+aki*Zkr = " << akr*Zki+aki*Zkr << endl;
 							//exit(1);
-		}
-
-
-
-//cout << "ADMIN2: " << scientific << setprecision(15) << setw(20) << results[qpt_cs_idx] << "   " << results[qpt_cs_idx+1] << "   " << akr << "   "
-//					<< aki << "   " << Zkr << "   " << Zki << "   " << akr*Zkr-aki*Zki << "   " << akr*Zki+aki*Zkr << endl;
+		}*/
 
 		//++qpt_cs_idx;	// step to next cell in results array
 		qpt_cs_idx += 2;

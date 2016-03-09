@@ -93,8 +93,6 @@ class CorrelationFunction
 		double q_space_CF_cutoff;		// when correlator falls below this value,
 							//	set correlator to zero for any q-points further away from q-origin than that
 		double ** current_q_space_cutoff;	// point in q-space at which cutoff of CF begins (depends on pT and pphi)
-
-		//double ** spectra_to_subtract;
 				
 		//array to hold previous and current resonance info
 		decay_info * decay_channels;

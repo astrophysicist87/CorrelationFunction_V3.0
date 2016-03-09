@@ -66,19 +66,11 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 	spec_log_info = log_spectra[parent_resonance_particle_id];
 	spec_sign_info = sign_spectra[parent_resonance_particle_id];
 
-	/*for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-		cerr << "SanityCheck2: " << scientific << setprecision(20) << setw(25) << all_particles[parent_resonance_particle_id].name
-				<< "   " << log_spectra[parent_resonance_particle_id][ipt][ipphi] << "   " << spec_log_info[ipt][ipphi] << endl;*/
-
 	int tmp_parent_monval = all_particles[parent_resonance_particle_id].monval;
 	int tmp_daughter_monval = all_particles[daughter_particle_id].monval;
 	n_body = current_reso_nbody;
 
-//if (tmp_parent_monval == -10213 && tmp_daughter_monval == 223)
-//	local_verbose = 1;
-//else
-	local_verbose = 0;
+	//local_verbose = 0;
 
 	int iqt0 = (qtnpts-1)/2;
 	int iqx0 = (qxnpts-1)/2;
@@ -123,14 +115,8 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 						if (tempidx != 0)
 							PKphi = VEC_n2_PPhi_tildeFLIP[iv][izeta];		//also takes Pp --> Pm
 						currentPpm = VEC_n2_Ppm[iv][izeta][tempidx];
-						//Csum += Edndp3(PKT, PKphi, local_verbose);							//set spectra
-						Edndp3(PKT, PKphi, &Csum, local_verbose);							//set spectra
-						eiqxEdndp3(PKT, PKphi, Csum_vec, local_verbose);					//set weights
-//if (local_verbose)
-//	*global_out_stream_ptr << scientific << setprecision(20) << setw(25)
-//			<< "RESnbody = 2 (" << all_particles[parent_resonance_particle_id].name << "-->" << all_particles[daughter_particle_id].name
-//			<< ";" << 0 << "," << iv << "," << izeta << "," << tempidx << "): "
-//			<< PKT << "   " << PKY << "   " << PKphi << "   " << Csum << "   " << Csum_vec[0] << endl;
+						Edndp3(PKT, PKphi, &Csum);							//set spectra
+						eiqxEdndp3(PKT, PKphi, Csum_vec);					//set weights
 					}												// end of tempidx sum
 					for (int qpt_cs_idx = 0; qpt_cs_idx < qspace_cs_slice_length; ++qpt_cs_idx)
 						zetasum_vec[qpt_cs_idx] += VEC_n2_zeta_factor[iv][izeta]*Csum_vec[qpt_cs_idx];
@@ -143,8 +129,6 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 			for (int qpt_cs_idx = 0; qpt_cs_idx < qspace_cs_slice_length; ++qpt_cs_idx)
 				ssum_vec[qpt_cs_idx] += Mres*VEC_n2_s_factor*vsum_vec[qpt_cs_idx];
 			double ssum = Mres*VEC_n2_s_factor*vsum;
-//if ( abs(ssum - ssum_vec[0]) > 1.e-2 )
-//	local_verbose = 1;
 
 			//update all gridpoints for all daughter moments
 			int qpt_cs_idx = 0;
@@ -163,27 +147,17 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 			log_spectra[daughter_particle_id][ipt][ipphi] = log(abs(spectra[daughter_particle_id][ipt][ipphi])+1.e-100);
 			sign_spectra[daughter_particle_id][ipt][ipphi] = sgn(spectra[daughter_particle_id][ipt][ipphi]);
 
-
 			//only do this if all qpoints array sizes are odd!
 			//now, if ignoring long-lived resonances, take them out of the correlator numerator, but keep them in the denominator (AKA, spectra)
-			/*if (IGNORE_LONG_LIVED_RESONANCES && qtnpts%2==1 && qxnpts%2==1 && qynpts%2==1 && qznpts%2==1 && Gamma < 0.00848)
+			if (IGNORE_LONG_LIVED_RESONANCES && qtnpts%2==1 && qxnpts%2==1 && qynpts%2==1 && qznpts%2==1 && Gamma < 0.00848)
 			{	//i.e., the eta and eta'(958) mesons, and possibly a few others
-				//int iqt0 = (qtnpts-1)/2;
-				//int iqx0 = (qxnpts-1)/2;
-				//int iqy0 = (qynpts-1)/2;
-				//int iqz0 = (qznpts-1)/2;
 				*global_out_stream_ptr << "RESONANCES: Leaving out long-lived resonance " << all_particles[parent_resonance_particle_id].name << " from q=0!" << endl;
-				//int tmp_qpt_cs_idx = ( ( ( iqt0 * qxnpts + iqx0 ) * qynpts + iqy0 ) * qznpts + iqz0 ) * 2;
-				if (daughter_particle_id == target_particle_id)	//not sure whether I should subtract only when pions are direct decays...
-					current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0] -= ssum_vec[tmp_qpt_cs_idx];
-				//spectra_to_subtract[ipt][ipphi] += ssum_vec[tmp_qpt_cs_idx];
-			}
+				current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0] -= ssum_vec[tmp_qpt_cs_idx];
 				*global_out_stream_ptr << "RESONANCES2 (" << all_particles[parent_resonance_particle_id].name << " --> " << all_particles[daughter_particle_id].name
 										<< ", nbody = " << n_body << "): (pt, pphi) = (" << SPinterp_pT[ipt] << "," << SPinterp_pphi[ipphi] << "): "
 										<< ssum_vec[tmp_qpt_cs_idx] << "   " << ssum << "   " << spectra[daughter_particle_id][ipt][ipphi]
-										<< "   " << current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0] << endl;*/
-			//}
-
+										<< "   " << current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0] << endl;
+			}
 	
 			if (isnan(current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][0][0][0][0][0]
 					+ current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][0][0][0][0][1]))
@@ -249,13 +223,8 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 							if (tempidx != 0)
 								PKphi = VEC_PPhi_tildeFLIP[is][iv][izeta];		//also takes Pp --> Pm
 							currentPpm = VEC_Ppm[is][iv][izeta][tempidx];
-							//Csum += Edndp3(PKT, PKphi, local_verbose);							//set spectra
-							Edndp3(PKT, PKphi, &Csum, local_verbose);							//set spectra
-							eiqxEdndp3(PKT, PKphi, Csum_vec, local_verbose);					//set weights
-//if (local_verbose)
-//	*global_out_stream_ptr << scientific << setprecision(20) << setw(25)
-//			<< "RESnbody = 3 (" << all_particles[parent_resonance_particle_id].name << ";" << is << "," << iv << "," << izeta << "," << tempidx << "): "
-//			<< PKT << "   " << PKY << "   " << PKphi << "   " << Csum << "   " << Csum_vec[0] << endl;
+							Edndp3(PKT, PKphi, &Csum);							//set spectra
+							eiqxEdndp3(PKT, PKphi, Csum_vec);					//set weights
 						}										// end of tempidx sum
 						for (int qpt_cs_idx = 0; qpt_cs_idx < qspace_cs_slice_length; ++qpt_cs_idx)
 							zetasum_vec[qpt_cs_idx] += VEC_zeta_factor[is][iv][izeta]*Csum_vec[qpt_cs_idx];
@@ -281,35 +250,22 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 				++qpt_cs_idx;
 			}
 
-//if ( abs(ssum - ssum_vec[0]) > 1.e-2 )
-//	local_verbose = 1;
-
 			//update daughter spectra separately
 			spectra[daughter_particle_id][ipt][ipphi] += ssum;
 			log_spectra[daughter_particle_id][ipt][ipphi] = log(abs(spectra[daughter_particle_id][ipt][ipphi])+1.e-100);
 			sign_spectra[daughter_particle_id][ipt][ipphi] = sgn(spectra[daughter_particle_id][ipt][ipphi]);
 
-
 			//only do this if all qpoints array sizes are odd!
 			//now, if ignoring long-lived resonances, take them out of the correlator numerator, but keep them in the denominator (AKA, spectra)
-			/*if (IGNORE_LONG_LIVED_RESONANCES && qtnpts%2==1 && qxnpts%2==1 && qynpts%2==1 && qznpts%2==1 && Gamma < 0.00848)
+			if (IGNORE_LONG_LIVED_RESONANCES && qtnpts%2==1 && qxnpts%2==1 && qynpts%2==1 && qznpts%2==1 && Gamma < 0.00848)
 			{	//i.e., the eta and eta'(958) mesons, and possibly a few others
-				//int iqt0 = (qtnpts-1)/2;
-				//int iqx0 = (qxnpts-1)/2;
-				//int iqy0 = (qynpts-1)/2;
-				//int iqz0 = (qznpts-1)/2;
 				*global_out_stream_ptr << "RESONANCES: Leaving out long-lived resonance " << all_particles[parent_resonance_particle_id].name << " from q=0!" << endl;
-				//int tmp_qpt_cs_idx = ( ( ( iqt0 * qxnpts + iqx0 ) * qynpts + iqy0 ) * qznpts + iqz0 ) * 2;
-				if (daughter_particle_id == target_particle_id)	//not sure whether I should subtract only when pions are direct decays...
-					current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0] -= ssum_vec[tmp_qpt_cs_idx];
-				//spectra_to_subtract[ipt][ipphi] += ssum_vec[tmp_qpt_cs_idx];
-			}
+				current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0] -= ssum_vec[tmp_qpt_cs_idx];
 				*global_out_stream_ptr << "RESONANCES2 (" << all_particles[parent_resonance_particle_id].name << " --> " << all_particles[daughter_particle_id].name
 										<< ", nbody = " << n_body << "): (pt, pphi) = (" << SPinterp_pT[ipt] << "," << SPinterp_pphi[ipphi] << "): "
 										<< ssum_vec[tmp_qpt_cs_idx] << "   " << ssum << "   " << spectra[daughter_particle_id][ipt][ipphi]
-										<< "   " << current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0] << endl;*/
-			//}
-
+										<< "   " << current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0] << endl;
+			}
 
 			if (isnan(current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][0][0][0][0][0]
 					+ current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][0][0][0][0][1]))
@@ -338,8 +294,6 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 			}
 		}								// end of pT, pphi loops
 	}										// end of nbody == 3
-
-local_verbose = 0;
 
 	/*cout << "Resonance integrals (n_body = " << n_body << "): added " << scientific << setprecision(17) << setw(20)
 			<< current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][0][0][0][0][0][0][0] - tmp_spec_save << endl

@@ -56,6 +56,7 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 	Stopwatch BIGsw;
 	int decay_channel_loop_cutoff = n_decay_channels;			//loop over direct pions and decay_channels
 
+	// section to set the space-time moments
 	if (COMPUTE_RESONANCE_ARRAYS)
 	{
 		*global_out_stream_ptr << "Initializing HDF file of resonance spectra..." << endl;
@@ -150,19 +151,9 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 		//also read in pT-dependent q points
 		Load_q_pTdep_pts();
 	}
+	// end of section to set the space-time moments
 
-	/*for (int ir = 0; ir < Nparticle; ++ir)
-	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-		cerr << "COMPARISON: " << scientific << setprecision(20) << setw(25) << all_particles[ir].name << "   " << thermal_spectra[ir][ipt][ipphi] << "   " << spectra[ir][ipt][ipphi] << "   " << log_spectra[ir][ipt][ipphi] << endl;
-		for (int ipid = 0; ipid < Nparticle; ++ipid)
-			Set_spectra_logs_and_signs(ipid);
-	for (int ir = 0; ir < Nparticle; ++ir)
-	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-		cerr << "SanityCheck: " << scientific << setprecision(20) << setw(25) << all_particles[ir].name << "   " << log_spectra[ir][ipt][ipphi] << endl;*/
-
-
+	// section to compute all decays
 	if (COMPUTE_RESONANCE_DECAYS)
 	{
 		*global_out_stream_ptr << "Computing all phase-space integrals..." << endl;
@@ -196,13 +187,15 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 			{
 				int daughter_resonance_particle_id = -1;
 				if (!Do_this_daughter_particle(idc, idc_DI, &daughter_resonance_particle_id))
-				continue;
+					continue;
+
 				Set_current_daughter_info(idc, idc_DI);
 				Do_resonance_integrals(current_resonance_particle_id, daughter_resonance_particle_id, idc);
 			}
 	
 			Update_daughter_spectra(decay_channels[idc-1].resonance_particle_id);
 			Delete_decay_channel_info();				// free up memory
+
 		}											// END of decay channel loop
 		BIGsw.toc();
 		*global_out_stream_ptr << "\t ...finished computing all phase-space integrals in " << BIGsw.takeTime() << " seconds." << endl;
@@ -229,7 +222,9 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 		//also read in pT-dependent q points
 		Load_q_pTdep_pts();
 	}
+	// end section to compute all decays
 
+	// section to finally get correlation function
 	correlation_function_calculation:
 		// Now, with all resonance contributions to correlation function computed, do the actual calculation
 		*global_out_stream_ptr << "Calculating the correlation function..." << endl;
@@ -587,28 +582,8 @@ void CorrelationFunction::Update_daughter_spectra(int local_pid)
 		int daughter_pid = *it;		//daughter pid is pointed to by iterator
 		int setHDFresonanceSpectra = Set_resonance_in_HDF_array(daughter_pid, current_daughters_dN_dypTdpTdphi_moments[d_idx]);
 
-		//now doing this in actual resonance integral functions
-		//for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-		//for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-		//	spectra[daughter_pid][ipt][ipphi] = current_daughters_dN_dypTdpTdphi_moments[d_idx][ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0];
-
 		++d_idx;
 	}
-
-/*
-	//keep track of %-age of pions which have been computed
-	double dump_resonance_threshholds[5] = {0.1, 0.2, 0.3, 0.4, 0.5};
-	previous_total_resonance_percentage = current_total_resonance_percentage;
-	current_total_resonance_percentage += all_particles[local_pid].percent_contribution;
-
-	//if most recent resonance pushes total %-age above a specified threshhold (e.g., 20%), then output just FTd spectra from these + thermal
-	for (int idrt = 0; idrt < 5; ++idrt)
-	if (current_total_resonance_percentage >= dump_resonance_threshholds[idrt] && previous_total_resonance_percentage < dump_resonance_threshholds[idrt])
-	{	//conditions should only hold for one threshhold at a time
-		//dump FTd spectra to appropriately named file
-		Output_total_target_eiqx_dN_dypTdpTdphi(global_folderindex, current_total_resonance_percentage);
-	}
-*/
 
 	// cleanup previous iteration and setup the new one
 	Cleanup_current_daughters_dN_dypTdpTdphi_moments(daughter_resonance_indices.size());
@@ -906,10 +881,6 @@ pc_cutoff_vals.resize( number_of_percentage_markers );
 						//		<< "   " << eta_s_symmetry_factor*tau*eta_s_weight[ieta] << "   " << eta_s_symmetry_factor*S_p_withweight << endl;
 						//cout << "CPcout: " << isurf << "   " << ieta << "   " << scientific << setprecision(8) << setw(12)
 						//		<< (gammaT*(p0*1. - px*vx - py*vy) - mu)*one_by_Tdec << "   " << eta_s_symmetry_factor*S_p_withweight << endl;
-//					if (ipt == 0 && ipphi == 0 && S_p_withweight >= 0)
-//						cerr << "(" << ipt << "," << ipphi << "): " << all_particles[local_pid].name << "   "
-//								<< scientific << setprecision(20) << setw(25) << S_p_withweight << "   " << tempsum << endl;
-
 
 					//ignore points where delta f is large or emission function goes negative from pdsigma
 					if ((1. + deltaf < 0.0) || (flagneg == 1 && S_p < tol))
@@ -1025,15 +996,16 @@ pc_cutoff_vals.resize( number_of_percentage_markers );
 				double tmpval = tmp_S_p_withweight_array[topFOcell];
 				S_p_withweight_array[ipt][ipphi][ii] = tmpval;
 				checksum += tmpval;
-/////////////////////////////////
-//  HERE!!!!!!!!!!!!!!!!!!!!!  //
-/////////////////////////////////
-//				if (ipt == 0 && ipphi == 0)
-//					cerr << "(" << ipt << "," << ipphi << "): " << all_particles[local_pid].name << "   "
-//							<< scientific << setprecision(20) << setw(25) << tmpval << "   " << checksum << "   " << 2.*tmpval << "   " << 2.*checksum << endl;
 			}
 			//try this...
 			temp_moments_array[ipt][ipphi] = checksum;
+
+			//update spectra
+			abs_spectra[local_pid][ipt][ipphi] = abs_temp_moments_array[ipt][ipphi];
+			spectra[local_pid][ipt][ipphi] = eta_s_symmetry_factor * checksum;
+			thermal_spectra[local_pid][ipt][ipphi] = eta_s_symmetry_factor * checksum;
+			log_spectra[local_pid][ipt][ipphi] = log(abs(eta_s_symmetry_factor * checksum) + 1.e-100);
+			sign_spectra[local_pid][ipt][ipphi] = sgn(eta_s_symmetry_factor * checksum);
 
 			//end of the section to time
 			sw3.Stop();
@@ -1053,14 +1025,6 @@ pc_cutoff_vals.resize( number_of_percentage_markers );
 
 	sw2.Stop();
 	*global_out_stream_ptr << "\t\t\t*** Took " << sw2.printTime() << " seconds for whole function." << endl;
-
-	for(int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-	for(int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-	{
-		//spectra[local_pid][ipt][ipphi] = eta_s_symmetry_factor * temp_moments_array[ipt][ipphi];
-		abs_spectra[local_pid][ipt][ipphi] = abs_temp_moments_array[ipt][ipphi];
-		//thermal_spectra[local_pid][ipt][ipphi] = spectra[local_pid][ipt][ipphi];
-	}
 
 	for(int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 	{
@@ -1175,7 +1139,7 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 				vector<double> runsumvals;
 				vector<double> cutoff_FOcell_vals_cos;
 				vector<double> cutoff_FOcell_vals_sin;
-				double checksum = 0.0, checksum2 = 0.0;
+				//double checksum = 0.0;
 
 				for (int ipc = 0; ipc < tmpvec.size() - 1; ++ipc)
 				{
@@ -1191,21 +1155,9 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 						tmla_S += factor_sin[next_most_important_FOindex] * S_p_withweight;
 								
 						running_sum += abs(S_p_withweight);
-						checksum += S_p_withweight;
-						checksum2 += 2.0 * S_p_withweight;
-
-/////////////////////////////////
-//  HERE!!!!!!!!!!!!!!!!!!!!!  //
-/////////////////////////////////
-//						if (ipt == 0 && ipphi == 0)
-//							cout << "(" << ipt << "," << ipphi << "): " << all_particles[local_pid].name << "   " << scientific << setprecision(20) << setw(25) << S_p_withweight
-//								<< "   " << running_sum << "   " << 2.0*S_p_withweight
-//								<< "   " << 2.0*running_sum << "   " << factor_cos[next_most_important_FOindex] << "   " << tmla_C << endl;
+						//checksum += S_p_withweight;
 					}
 				}
-
-//*global_out_stream_ptr << "SPECCOMP(" << all_particles[local_pid].name << "; " << ipt << "," << ipphi << "): "
-//						<< scientific << setprecision(20) << setw(25) << tmla_C << "   " << 2.0 * checksum << "   " << checksum2 << endl;
 
 				cutoff_FOcell_vals_cos.push_back(tmla_C);
 				cutoff_FOcell_vals_sin.push_back(tmla_S);
@@ -1257,19 +1209,11 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 				current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0] = proj_tmla_C;
 				current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1] = proj_tmla_S;
 
-	//update spectra too
-	//for(int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-	//for(int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-	//{
-		spectra[local_pid][ipt][ipphi] = 2.0 * checksum;
-		thermal_spectra[local_pid][ipt][ipphi] = 2.0 * checksum;
-		log_spectra[local_pid][ipt][ipphi] = log(abs(2.0 * checksum) + 1.e-100);
-		sign_spectra[local_pid][ipt][ipphi] = sgn(2.0 * checksum);
-	//}
-//*global_out_stream_ptr << "SPECCOMP(" << all_particles[local_pid].name << "; " << ipt << "," << ipphi << "): "
-//						<< scientific << setprecision(20) << setw(25) << current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0] << "   "
-//						<< current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1] << "   " << spectra[local_pid][ipt][ipphi] << endl;
-
+				//update spectra too
+				//spectra[local_pid][ipt][ipphi] = 2.0 * checksum;
+				//thermal_spectra[local_pid][ipt][ipphi] = 2.0 * checksum;
+				//log_spectra[local_pid][ipt][ipphi] = log(abs(2.0 * checksum) + 1.e-100);
+				//sign_spectra[local_pid][ipt][ipphi] = sgn(2.0 * checksum);
 
 			}	//end of pphi-loop	
 		}	//end of q-loops
@@ -1310,7 +1254,6 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 
 	//save pT-dependent q-points to file
 	Dump_q_pTdep_pts();
-//if (1) exit(1);
 
 	return;
 }
