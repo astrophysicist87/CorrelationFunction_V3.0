@@ -1209,12 +1209,6 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 				current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0] = proj_tmla_C;
 				current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1] = proj_tmla_S;
 
-				//update spectra too
-				//spectra[local_pid][ipt][ipphi] = 2.0 * checksum;
-				//thermal_spectra[local_pid][ipt][ipphi] = 2.0 * checksum;
-				//log_spectra[local_pid][ipt][ipphi] = log(abs(2.0 * checksum) + 1.e-100);
-				//sign_spectra[local_pid][ipt][ipphi] = sgn(2.0 * checksum);
-
 			}	//end of pphi-loop	
 		}	//end of q-loops
 		debug_sw2.Stop();

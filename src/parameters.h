@@ -30,7 +30,7 @@ using namespace std;
 							// 2 - use usr_def_pc_markers_thinned
 #define COMPUTE_RESONANCE_ARRAYS	true		// alternative is to read them in from a file
 #define COMPUTE_RESONANCE_DECAYS	true		// alternative is to read them in from a file
-#define IGNORE_LONG_LIVED_RESONANCES	true		// particularly, whether to include eta or eta' in spectra calculations
+#define IGNORE_LONG_LIVED_RESONANCES	false		// particularly, whether to include eta or eta' in spectra calculations
 							// true means C(q=0) ~ 1 + \lambda
 #define QT_POINTS_SPACING		1		// 0 - uniform from -qmax to +qmax
 							// 1 - Chebyshev nodes from -qmax to +qmax

@@ -35,8 +35,8 @@ int CorrelationFunction::Initialize_resonance_HDF_array()
 	H5std_string RESONANCE_FILE_NAME(filename_stream_ra.str().c_str());
 	H5std_string RESONANCE_DATASET_NAME("ra");
 
-	//bool file_does_not_already_exist = !fexists(filename_stream_ra.str().c_str());
-	bool file_does_not_already_exist = true;	//force full initialization for timebeing...
+	bool file_does_not_already_exist = !fexists(filename_stream_ra.str().c_str());
+	//bool file_does_not_already_exist = true;	//force full initialization for timebeing...
 
 	try
     {

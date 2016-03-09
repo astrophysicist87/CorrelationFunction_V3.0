@@ -116,9 +116,9 @@ void CorrelationFunction::Dump_spectra_array(string output_filename, double *** 
 	ofstream out(filename_stream.str().c_str());
 
 	for (int ir = 0; ir < Nparticle; ++ir)
-	for (int ipT = 0; ipT < n_interp_pT_pts; ++ipT)
+	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 	{
-		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		for (int ipT = 0; ipT < n_interp_pT_pts; ++ipT)
 			out << scientific << setprecision(8) << setw(12) << array_to_dump[ir][ipT][ipphi] << "   ";
 		out << endl;
 	}
@@ -134,8 +134,8 @@ void CorrelationFunction::Load_spectra_array(string input_filename, double *** a
 	ifstream in(filename_stream.str().c_str());
 
 	for (int ir = 0; ir < Nparticle; ++ir)
-	for (int ipT = 0; ipT < n_interp_pT_pts; ++ipT)
 	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+	for (int ipT = 0; ipT < n_interp_pT_pts; ++ipT)
 		in >> array_to_read[ir][ipT][ipphi];
 
 	in.close();
