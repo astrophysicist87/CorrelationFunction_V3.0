@@ -149,7 +149,8 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 
 			//only do this if all qpoints array sizes are odd!
 			//now, if ignoring long-lived resonances, take them out of the correlator numerator, but keep them in the denominator (AKA, spectra)
-			if (IGNORE_LONG_LIVED_RESONANCES && qtnpts%2==1 && qxnpts%2==1 && qynpts%2==1 && qznpts%2==1 && Gamma < 0.00848)
+			//if (IGNORE_LONG_LIVED_RESONANCES && qtnpts%2==1 && qxnpts%2==1 && qynpts%2==1 && qznpts%2==1 && Gamma < 0.00848 /*&& daughter_particle_id == target_particle_id*/)
+			if (IGNORE_LONG_LIVED_RESONANCES && qtnpts%2==1 && qxnpts%2==1 && qynpts%2==1 && qznpts%2==1 && Gamma < 0.00425 /*&& daughter_particle_id == target_particle_id*/)
 			{	//i.e., the eta and eta'(958) mesons, and possibly a few others
 				*global_out_stream_ptr << "RESONANCES: Leaving out long-lived resonance " << all_particles[parent_resonance_particle_id].name << " from q=0!" << endl;
 				current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0] -= ssum_vec[tmp_qpt_cs_idx];
@@ -257,7 +258,8 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 
 			//only do this if all qpoints array sizes are odd!
 			//now, if ignoring long-lived resonances, take them out of the correlator numerator, but keep them in the denominator (AKA, spectra)
-			if (IGNORE_LONG_LIVED_RESONANCES && qtnpts%2==1 && qxnpts%2==1 && qynpts%2==1 && qznpts%2==1 && Gamma < 0.00848)
+			//if (IGNORE_LONG_LIVED_RESONANCES && qtnpts%2==1 && qxnpts%2==1 && qynpts%2==1 && qznpts%2==1 && Gamma < 0.00848 /*&& daughter_particle_id == target_particle_id*/)
+			if (IGNORE_LONG_LIVED_RESONANCES && qtnpts%2==1 && qxnpts%2==1 && qynpts%2==1 && qznpts%2==1 && Gamma < 0.00425 /*&& daughter_particle_id == target_particle_id*/)
 			{	//i.e., the eta and eta'(958) mesons, and possibly a few others
 				*global_out_stream_ptr << "RESONANCES: Leaving out long-lived resonance " << all_particles[parent_resonance_particle_id].name << " from q=0!" << endl;
 				current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0] -= ssum_vec[tmp_qpt_cs_idx];

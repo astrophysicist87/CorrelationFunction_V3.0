@@ -15,7 +15,7 @@
 
 using namespace std;
 
-void CorrelationFunction::Get_GF_HBTradii(FO_surf* FOsurf_ptr, int folderindex)
+void CorrelationFunction::Get_GF_HBTradii(int folderindex)
 {
 	if (!VARY_ALPHA)
 		*global_out_stream_ptr << "--> Getting HBT radii by Gaussian fit method" << endl;

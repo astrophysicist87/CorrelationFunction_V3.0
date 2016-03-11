@@ -170,29 +170,31 @@ int main(int argc, char *argv[])
 		correlation_function.osr = thermal_resonances_to_omit;
 	}
 
-	output << "Calculating HBT radii via Gaussian fit method..." << endl;
+	////////////////////////////////////////////
+	// Actual calculations start here...
+	////////////////////////////////////////////
+
+	output << "Calculating correlation function with all resonance decays..." << endl;
+	//do calculations
 	correlation_function.Compute_correlation_function(FOsurf_ptr);
 
+	//output results
 	correlation_function.Output_total_target_dN_dypTdpTdphi(folderindex);
 	correlation_function.Output_total_target_eiqx_dN_dypTdpTdphi(folderindex);
+	correlation_function.Output_chosen_resonances();
+	correlation_function.Output_resonance_fraction();
 
-	//correlation_function.Get_GF_HBTradii(FOsurf_ptr, folderindex);	//does outputting of results too
+	output << "Finished calculating correlation function with all resonance decays..." << endl;
 
-	//correlation_function.Cal_correlationfunction();
-   
-	//correlation_function.Output_correlationfunction(folderindex);
-
-	//if (1)
-	//	return(0);
-
-	//if (qnpts > 1)
-	//	correlation_function.Output_correlationfunction(folderindex);
-	//correlation_function.Output_all_dN_dypTdpTdphi(folderindex);
-	//correlation_function.Output_chosen_resonances();
-	//correlation_function.Output_results(folderindex);
-	output << "Finished calculating HBT radii via Gaussian fit method" << endl;
-
-
+	//if there's a full 3D grid to fit over, do the Gaussian fit and get the HBT radii too
+	if (qxnpts > 1 && qynpts > 1 && qznpts > 1)
+	{
+		output << "Calculating HBT radii via Gaussian fit method..." << endl;
+		correlation_function.Get_GF_HBTradii(folderindex);	//does outputting of results too
+		correlation_function.Output_correlationfunction(folderindex);
+		correlation_function.Output_results(folderindex);
+		output << "Finished calculating HBT radii via Gaussian fit method" << endl;
+	}
 
 	sw.toc();
 	output << "Finished in " << sw.takeTime() << " sec." << endl;

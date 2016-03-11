@@ -401,6 +401,30 @@ void CorrelationFunction::Output_total_target_dN_dypTdpTdphi(int folderindex)
 	return;
 }
 
+void CorrelationFunction::Regulate_CF(int ipt, int iqt, int iqx, int iqy, int iqz, double * CF, double * projCF)
+{
+	double mu = target_pphiavgd_CFs[ipt][iqt][iqx][iqy][iqz];
+	double sigma = sqrt(target_pphivar_CFs[ipt][iqt][iqx][iqy][iqz]);
+
+	double zthreshhold = 3.0;
+	double pTcutoff = 2.0;	//GeV
+
+	double zact = abs(mu - *CF) / sigma;
+
+	if (zact >= zthreshhold || abs(*CF-1.5) > 0.500001)
+	{
+		//if (SPinterp_pT[ipt] < pTcutoff)
+			*global_out_stream_ptr << "WARNING: regulated CF point at pT = " << SPinterp_pT[ipt]
+				<< ": (" << *CF << "," << *projCF << ") --> (";
+		*CF = mu;	//if it's an outlier, replace with pphi-averaged value
+		*projCF = mu;
+		//if (SPinterp_pT[ipt] < pTcutoff)
+			*global_out_stream_ptr << *CF << "," << *projCF << ")" << endl;
+	}
+
+	return;
+}
+
 void CorrelationFunction::Output_total_target_eiqx_dN_dypTdpTdphi(int folderindex, double current_fraction /*==-1.0*/)
 {
 	string local_name = all_particles[target_particle_id].name;
@@ -412,7 +436,8 @@ void CorrelationFunction::Output_total_target_eiqx_dN_dypTdpTdphi(int folderinde
 
 	int HDFloadTargetSuccess = Get_resonance_from_HDF_array(target_particle_id, current_dN_dypTdpTdphi_moments);
 
-	double local_epsilon = 1.e-4;
+	//double local_epsilon = 1.e-8;
+	//double local_rel_eps = 0.01;	//check if results are off by more than 1% when perturbed by local epsilon
 
 	// addresses NaN issue in sin component when all q^{\mu} == 0
 	if (qtnpts%2==1 && qxnpts%2==1 && qynpts%2==1 && qznpts%2==1)
@@ -428,6 +453,9 @@ void CorrelationFunction::Output_total_target_eiqx_dN_dypTdpTdphi(int folderinde
 			thermal_target_dN_dypTdpTdphi_moments[ipt][ipphi][iqt0][iqx0][iqy0][iqz0][1] = 0.0;
 		}
 	}
+
+	//use this to help look for outliers when CF calculation gets really choppy and noisy
+	Set_target_pphiavgd_CFs();
 
 	for (int iqt = 0; iqt < qtnpts; ++iqt)
 	for (int iqx = 0; iqx < qxnpts; ++iqx)
@@ -467,7 +495,10 @@ void CorrelationFunction::Output_total_target_eiqx_dN_dypTdpTdphi(int folderinde
 		//projected full value of correlation function by projecting moments *first*
 		double projected_num = projected_cos_transf_spectra*projected_cos_transf_spectra + projected_sin_transf_spectra*projected_sin_transf_spectra;
 		double projected_den = projected_nonFTd_spectra*projected_nonFTd_spectra;
-		double projected_CF = 1. + projected_num / projected_den;		
+		double projected_CF = 1. + projected_num / projected_den;
+
+		//now, regulate results
+		Regulate_CF(ipt, iqt, iqx, iqy, iqz, &CF, &projected_CF);
 
 		output_target_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12)
 			<< qt_PTdep_pts[ipt][iqt] << "   " << qx_PTdep_pts[ipt][iqx] << "   " << qy_PTdep_pts[ipt][iqy] << "   " << qz_PTdep_pts[ipt][iqz] << "   "
@@ -553,6 +584,19 @@ void CorrelationFunction::Output_chosen_resonances()
 		output_crf << all_particles[chosen_resonances[icr]].monval << endl;
 
 	output_crf.close();
+
+	return;
+}
+
+void CorrelationFunction::Output_resonance_fraction()
+{
+	ostringstream filename_stream_rf;
+	filename_stream_rf << global_path << "/resonance_fraction.dat";
+	ofstream output_rf(filename_stream_rf.str().c_str());
+
+	output_rf << fraction_of_resonances << endl;
+
+	output_rf.close();
 
 	return;
 }

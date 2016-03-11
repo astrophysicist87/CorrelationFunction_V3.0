@@ -114,6 +114,9 @@ class CorrelationFunction
 		double ******** current_daughters_sign_of_dN_dypTdpTdphi_moments;
 		double ******* thermal_target_dN_dypTdpTdphi_moments;
 
+		double ***** target_pphiavgd_CFs;
+		double ***** target_pphivar_CFs;
+
 		// needed these to avoid too many trigonometric evaluations
 		double ** eiqtt, ** eiqxx, ** eiqyy, ** eiqzz;
 	
@@ -249,6 +252,7 @@ class CorrelationFunction
 		void Flatten_dN_dypTdpTdphi_moments();
 		void Set_current_daughter_info(int dc_idx, int daughter_idx);
 		void Set_current_particle_info(int dc_idx);
+		void Set_target_pphiavgd_CFs();
 		bool Do_this_decay_channel(int dc_idx);
 		bool Do_this_daughter_particle(int dc_idx, int daughter_idx, int * daughter_resonance_pid);
 		void Get_spacetime_moments(FO_surf* FOsurf_ptr, int dc_idx);
@@ -262,6 +266,7 @@ class CorrelationFunction
 		void Load_decay_channel_info(int dc_idx, double K_T_local, double K_phi_local);
 		void Delete_decay_channel_info();
 		int Set_daughter_list(int parent_resonance_index);
+		void Regulate_CF(int ipt, int iqt, int iqx, int iqy, int iqz, double * CF, double * projCF);
 
 		void Fill_out_pts(double * pointsarray, int numpoints, double max_val, int spacing_type);
 		void Set_q_pTdep_pts(int ipt, double qxw, double qyw, double qzw);
@@ -308,7 +313,7 @@ class CorrelationFunction
 
 		// Gaussian fit / correlation function routines
 		void Allocate_CFvals();
-		void Get_GF_HBTradii(FO_surf* FOsurf_ptr, int folderindex);
+		void Get_GF_HBTradii(int folderindex);
 		double Compute_correlationfunction(int ipt, int ipphi, int iqx, int iqy, int iqz, double qt_interp, int interp_flag = 0);
 		void Cal_correlationfunction();
 		void Fit_Correlationfunction3D(double *** Correl_3D, int ipt, int ipphi);
@@ -332,6 +337,7 @@ class CorrelationFunction
 		void Readin_results(int folderindex);
 		void Read_in_all_dN_dypTdpTdphi(int folderindex);
 		void Output_chosen_resonances();
+		void Output_resonance_fraction();
 		void Output_correlationfunction(int folderindex);
 		void Dump_spectra_array(string output_filename, double *** array_to_dump);
 		void Load_spectra_array(string output_filename, double *** array_to_read);

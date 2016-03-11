@@ -1268,6 +1268,59 @@ void CorrelationFunction::Cleanup_current_daughters_dN_dypTdpTdphi_moments(int n
 	return;
 }
 
+void CorrelationFunction::Set_target_pphiavgd_CFs()
+{
+	double N = (double)n_interp_pphi_pts;
+	double factor1 = 1./N;
+	double factor2 = 2./(N*(N-1.));
+
+	target_pphiavgd_CFs = new double **** [n_interp_pT_pts];
+	target_pphivar_CFs = new double **** [n_interp_pT_pts];
+	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+	{
+		target_pphiavgd_CFs[ipt] = new double *** [qtnpts];
+		target_pphivar_CFs[ipt] = new double *** [qtnpts];
+		for (int iqt = 0; iqt < qtnpts; ++iqt)
+		{
+			target_pphiavgd_CFs[ipt][iqt] = new double ** [qxnpts];
+			target_pphivar_CFs[ipt][iqt] = new double ** [qxnpts];
+			for (int iqx = 0; iqx < qxnpts; ++iqx)
+			{
+				target_pphiavgd_CFs[ipt][iqt][iqx] = new double * [qynpts];
+				target_pphivar_CFs[ipt][iqt][iqx] = new double * [qynpts];
+				for (int iqy = 0; iqy < qynpts; ++iqy)
+				{
+					target_pphiavgd_CFs[ipt][iqt][iqx][iqy] = new double [qznpts];
+					target_pphivar_CFs[ipt][iqt][iqx][iqy] = new double [qznpts];
+					for (int iqz = 0; iqz < qznpts; ++iqz)
+					{
+						target_pphiavgd_CFs[ipt][iqt][iqx][iqy][iqz] = 0.0;
+						target_pphivar_CFs[ipt][iqt][iqx][iqy][iqz] = 0.0;
+						double tmpsum = 0.0, tmp2sum = 0.0;
+						for(int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+						{
+							double tmpC = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
+							double tmpS = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
+							double tmpspec = spectra[target_particle_id][ipt][ipphi];
+							double tmp = 1.0 + (tmpC*tmpC+tmpS*tmpS) / (tmpspec*tmpspec);
+							target_pphiavgd_CFs[ipt][iqt][iqx][iqy][iqz] += tmp;
+							target_pphivar_CFs[ipt][iqt][iqx][iqy][iqz] -= tmp*tmpsum;
+							tmpsum += tmp;
+							tmp2sum += tmp*tmp;
+						}
+						target_pphiavgd_CFs[ipt][iqt][iqx][iqy][iqz] *= factor1;			//set pphi-averaged CF
+						target_pphivar_CFs[ipt][iqt][iqx][iqy][iqz] *= factor2;
+						target_pphivar_CFs[ipt][iqt][iqx][iqy][iqz] += factor1*tmp2sum;		//set "pphi-varianced" CF
+					}
+				}
+			}
+		}
+	}
+
+	return;
+}
+
+
 inline double CorrelationFunction::lin_int(double x_m_x1, double one_by_x2_m_x1, double f1, double f2)
 {
 	return ( f1 + (f2 - f1) * x_m_x1 * one_by_x2_m_x1 );
