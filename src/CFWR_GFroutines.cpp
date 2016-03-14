@@ -53,8 +53,6 @@ double CorrelationFunction::Compute_correlationfunction(int ipt, int ipphi, int 
 	// otherwise, just use linear interpolation/extrapolation, or throw an exception and do return 0
 	double interpolated_result = 0.0;
 
-	double nonFTd_spectra = spectra[target_particle_id][ipt][ipphi];
-
 	int qidx = binarySearch(qt_PTdep_pts[ipt], qtnpts, qt_interp);
 	double q_min = qt_PTdep_pts[ipt][0] / cos(M_PI / (2.*qtnpts)), q_max = qt_PTdep_pts[ipt][qtnpts-1]/ cos(M_PI / (2.*qtnpts));
 
@@ -70,15 +68,9 @@ double CorrelationFunction::Compute_correlationfunction(int ipt, int ipphi, int 
 
 			double ln_C_at_q[2];
 	
-			double ***** current_C_slice = current_dN_dypTdpTdphi_moments[ipt][ipphi];
-	
 			// set values at all vertices of 4D-hypercube used for interpolation
 			for (int iqtidx = 0; iqtidx < 1; ++iqtidx)
-			{
-				double tmp_cos = current_C_slice[qidx+iqtidx][iqx][iqy][iqz][0];
-				double tmp_sin = current_C_slice[qidx+iqtidx][iqx][iqy][iqz][1];
-				ln_C_at_q[iqtidx] = log( (tmp_cos*tmp_cos + tmp_sin*tmp_sin)/(nonFTd_spectra*nonFTd_spectra) + 1.e-100 );
-			}
+				ln_C_at_q[iqtidx] = log( get_CF(ipt, ipphi, qidx+iqtidx, iqx, iqy, iqz, FIT_WITH_PROJECTED_CFVALS && !thermal_pions_only) + 1.e-100 );
 	
 			// interpolating w.r.t. q^2, not q
 			double sgnd_qt2_interp = sgn(qt_interp) * qt_interp * qt_interp;
@@ -94,21 +86,11 @@ double CorrelationFunction::Compute_correlationfunction(int ipt, int ipphi, int 
 		}
 		else
 		{
-			//q_min = qt_PTdep_pts[ipt][0];
-			//q_max = qt_PTdep_pts[ipt][qtnpts-1];
-			double C_at_q[qtnpts];
-			double ***** current_C_slice = current_dN_dypTdpTdphi_moments[ipt][ipphi];
+			double C_at_q[qtnpts];	//C - 1
 	
 			// set CF values along qt-slice for interpolation
 			for (int iqtidx = 0; iqtidx < qtnpts; ++iqtidx)
-			{
-				double tmp_cos = current_C_slice[iqtidx][iqx][iqy][iqz][0];
-				double tmp_sin = current_C_slice[iqtidx][iqx][iqy][iqz][1];
-				C_at_q[iqtidx] = (tmp_cos*tmp_cos + tmp_sin*tmp_sin)/(nonFTd_spectra*nonFTd_spectra);
-//cerr << "INFODUMP: " << iqtidx << "   " << iqx << "   " << iqy << "   " << iqz << "   " << ipt << "   " << ipphi << "   "
-//			<< qt_PTdep_pts[ipt][iqtidx] << "   " << qx_PTdep_pts[ipt][iqx] << "   " << qy_PTdep_pts[ipt][iqy] << "   " << qz_PTdep_pts[ipt][iqz] << "   "
-//			<< SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   " << nonFTd_spectra << "   " << tmp_cos << "   " << tmp_sin << endl;
-			}
+				C_at_q[iqtidx] = get_CF(ipt, ipphi, iqtidx, iqx, iqy, iqz, FIT_WITH_PROJECTED_CFVALS && !thermal_pions_only);
 
 			//assumes qt-grid has already been computed at (adjusted) Chebyshev nodes!!!
 			if (QT_POINTS_SPACING == 1 && interp_flag == 0)
@@ -124,17 +106,10 @@ double CorrelationFunction::Compute_correlationfunction(int ipt, int ipphi, int 
 				Chebyshev cf(C_at_q, npts_loc, os, lls, uls, dim_loc);
 	
 				interpolated_result = cf.eval(point);
-/*if (iqx==2 and iqy==2 and iqz==3)
-{
-*global_out_stream_ptr << "Setting up Chebyshev approximation (C_at_q = {" << C_at_q[0];
-	for (int iqtidx = 1; iqtidx < qtnpts; ++iqtidx)
-		*global_out_stream_ptr << ", " << C_at_q[iqtidx];
-*global_out_stream_ptr << "}, spectra = " << nonFTd_spectra << "): interpolated_result = " << interpolated_result << endl;
-}*/
 			}
 			else	//if not using Chebyshev nodes in qt-direction, just use straight-up linear(0) or cubic(1) interpolation
 			{
-*global_out_stream_ptr << "Using cubic interpolation" << endl;
+				*global_out_stream_ptr << "Using cubic interpolation" << endl;
 				//interpolated_result = interpolate1D(qt_PTdep_pts[ipt], C_at_q, qt_interp, qtnpts, 0, true);
 				interpolated_result = interpolate1D(qt_PTdep_pts[ipt], C_at_q, qt_interp, qtnpts, 1, false);
 			}
@@ -285,6 +260,88 @@ void CorrelationFunction::test_interpolator()
 	}
 	return;
 }
+
+/*void CorrelationFunction::test_interpolator_1Dslices()
+{
+	//need grid_points to be Chebyshev-spaced...
+	if (QX_POINTS_SPACING != 1 or QY_POINTS_SPACING != 1 or QZ_POINTS_SPACING != 1)
+		return;
+
+	int local_qnpts = 25;
+	double mtarget = all_particles[target_particle_id].mass;
+	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+	{
+		double qxmin = qx_PTdep_pts[ipt][0];
+		double qxmax = qx_PTdep_pts[ipt][qxnpts-1];
+		double qymin = qy_PTdep_pts[ipt][0];
+		double qymax = qy_PTdep_pts[ipt][qynpts-1];
+		double qzmin = qz_PTdep_pts[ipt][0];
+		double qzmax = qz_PTdep_pts[ipt][qznpts-1];
+		double del_qx = (qxmax - qxmin) / double(local_qnpts - 1 + 1.e-100);
+		double del_qy = (qymax - qymin) / double(local_qnpts - 1 + 1.e-100);
+		double del_qz = (qzmax - qzmin) / double(local_qnpts - 1 + 1.e-100);
+
+		//assumes q(i)-grids has already been computed at (adjusted) Chebyshev nodes!!!
+		//set up Chebyshev calculation
+		const int dim_loc = 1;
+		int npts_loc_x[dim_loc] = { qxnpts };
+		int npts_loc_y[dim_loc] = { qynpts };
+		int npts_loc_z[dim_loc] = { qznpts };
+		int osx[dim_loc] = { qxnpts-1 };
+		int osy[dim_loc] = { qynpts-1 };
+		int osz[dim_loc] = { qznpts-1 };
+		double llsx[dim_loc] = { qxmin };
+		double ulsx[dim_loc] = { qxmax };
+		double llsy[dim_loc] = { qymin };
+		double ulsy[dim_loc] = { qymax };
+		double llsz[dim_loc] = { qzmin };
+		double ulsz[dim_loc] = { qzmax };
+		
+		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		{
+			//set up local q grids for interpolation
+			int iq = 0;
+			double C_at_qx[qxnpts];
+			double *** current_C_slice = CFvals[ipt][ipphi];
+			for (int iqx = 0; iqx < qxnpts; ++iqx)
+				C_at_qx[iq++] = current_C_slice[iqx][iqy0][iqz0];
+	
+			//generate Chebyshev approximation to use below
+			Chebyshev cfx(C_at_qx, npts_loc_x, osx, llsx, ulsx, dim_loc);
+
+			double local_pT = SPinterp_pT[ipt];
+			double local_pphi = SPinterp_pphi[ipphi];
+			double ckp = cos_SPinterp_pphi[ipphi], skp = sin_SPinterp_pphi[ipphi];
+			double local_spectra = spectra[target_particle_id][ipt][ipphi];
+			//now use Chebyshev approximator to do interpolation
+			for (int iqx = 0; iqx < local_qnpts; ++iqx)
+			for (int iqy = 0; iqy < local_qnpts; ++iqy)
+			for (int iqz = 0; iqz < local_qnpts; ++iqz)
+			{
+				//set interpolation point
+				double qx_interp = qxmin + (double)iqx * del_qx;
+				double qy_interp = qymin + (double)iqy * del_qy;
+				double qz_interp = qzmin + (double)iqz * del_qz;
+				double xi2 = mtarget*mtarget + local_pT*local_pT + 0.25*(qx_interp*qx_interp+qy_interp*qy_interp+qz_interp*qz_interp);
+				double qo = ckp * qx_interp + skp * qy_interp;
+				double qt_interp = sqrt(xi2 + qo*local_pT) - sqrt(xi2 - qo*local_pT);	//set qt component
+	
+				double point[dim_loc] = { qx_interp, qy_interp, qz_interp };
+		
+				double interpolated_result = cf.eval(point);
+				double exact_result = Cal_dN_dypTdpTdphi_with_weights_function(current_FOsurf_ptr, target_particle_id, local_pT, local_pphi,
+																				qt_interp, qx_interp, qy_interp, qz_interp) / (local_spectra*local_spectra);
+
+				cout << "test_interpolator(): " << ipt << "   " << ipphi << "   " << iqx << "   " << iqy << "   " << iqz
+						<< setprecision(12) << setw(16)
+						<< "   " << local_pT << "   " << local_pphi << "   " << qx_interp << "   " << qy_interp << "   " << qz_interp
+						<< "   " << interpolated_result << "   " << exact_result << endl;
+			}
+		}
+	}
+	return;
+}*/
+
 
 //**************************************************************
 // Gaussian fit routines below
@@ -649,7 +706,7 @@ int Fittarget_correlfun3D_f (const gsl_vector *xvec_ptr, void *params_ptr, gsl_v
 
 	for (i = 0; i < n; i++)
 	{
-		double Yi = exp(- q_l[i]*q_l[i]*R2_l - q_s[i]*q_s[i]*R2_s - q_o[i]*q_o[i]*R2_o - 2.*q_o[i]*q_s[i]*R2_os);
+		double Yi = 1.0 + exp(- q_l[i]*q_l[i]*R2_l - q_s[i]*q_s[i]*R2_s - q_o[i]*q_o[i]*R2_o - 2.*q_o[i]*q_s[i]*R2_os);
 		gsl_vector_set (f_ptr, i, (Yi - y[i]) / sigma[i]);
 	}
 
@@ -678,7 +735,7 @@ int Fittarget_correlfun3D_f_withlambda (const gsl_vector *xvec_ptr, void *params
 	{
 		//double Yi = lambda*exp(- q_l[i]*q_l[i]*R_l*R_l - q_s[i]*q_s[i]*R_s*R_s
 		//             - q_o[i]*q_o[i]*R_o*R_o - q_o[i]*q_s[i]*R_os*R_os);
-		double Yi = lambda*exp(- q_l[i]*q_l[i]*R2_l - q_s[i]*q_s[i]*R2_s - q_o[i]*q_o[i]*R2_o - 2.*q_o[i]*q_s[i]*R2_os);
+		double Yi = 1.0 + lambda*exp(- q_l[i]*q_l[i]*R2_l - q_s[i]*q_s[i]*R2_s - q_o[i]*q_o[i]*R2_o - 2.*q_o[i]*q_s[i]*R2_os);
 		gsl_vector_set (f_ptr, i, (Yi - y[i]) / sigma[i]);
 	}
 

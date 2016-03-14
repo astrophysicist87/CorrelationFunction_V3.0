@@ -425,6 +425,36 @@ void CorrelationFunction::Regulate_CF(int ipt, int iqt, int iqx, int iqy, int iq
 	return;
 }
 
+double CorrelationFunction::get_CF(int ipt, int ipphi, int iqt, int iqx, int iqy, int iqz, bool return_projected_value)
+{
+	double nonFTd_spectra = spectra[target_particle_id][ipt][ipphi];
+	double cos_transf_spectra = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
+	double sin_transf_spectra = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
+
+	if (return_projected_value)
+	{
+		//with no resonances
+		double nonFTd_tspectra = thermal_spectra[target_particle_id][ipt][ipphi];
+		double cos_transf_tspectra = thermal_target_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
+		double sin_transf_tspectra = thermal_target_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
+
+		double projected_nonFTd_spectra = nonFTd_tspectra + (nonFTd_spectra - nonFTd_tspectra) / fraction_of_resonances;
+		double projected_cos_transf_spectra = cos_transf_tspectra + (cos_transf_spectra - cos_transf_tspectra) / fraction_of_resonances;
+		double projected_sin_transf_spectra = sin_transf_tspectra + (sin_transf_spectra - sin_transf_tspectra) / fraction_of_resonances;
+
+		//projected full value of correlation function by projecting moments *first*
+		double projected_num = projected_cos_transf_spectra*projected_cos_transf_spectra + projected_sin_transf_spectra*projected_sin_transf_spectra;
+		double projected_den = projected_nonFTd_spectra*projected_nonFTd_spectra;
+		return (1. + projected_num / projected_den);
+	}
+	else
+	{
+		double num = cos_transf_spectra*cos_transf_spectra + sin_transf_spectra*sin_transf_spectra;
+		double den = nonFTd_spectra*nonFTd_spectra;
+		return (1. + num / den);
+	}
+}
+
 void CorrelationFunction::Output_total_target_eiqx_dN_dypTdpTdphi(int folderindex, double current_fraction /*==-1.0*/)
 {
 	string local_name = all_particles[target_particle_id].name;
@@ -435,9 +465,6 @@ void CorrelationFunction::Output_total_target_eiqx_dN_dypTdpTdphi(int folderinde
 	ofstream output_target_dN_dypTdpTdphi(filename_stream_target_dN_dypTdpTdphi.str().c_str());
 
 	int HDFloadTargetSuccess = Get_resonance_from_HDF_array(target_particle_id, current_dN_dypTdpTdphi_moments);
-
-	//double local_epsilon = 1.e-8;
-	//double local_rel_eps = 0.01;	//check if results are off by more than 1% when perturbed by local epsilon
 
 	// addresses NaN issue in sin component when all q^{\mu} == 0
 	if (qtnpts%2==1 && qxnpts%2==1 && qynpts%2==1 && qznpts%2==1)
@@ -464,56 +491,21 @@ void CorrelationFunction::Output_total_target_eiqx_dN_dypTdpTdphi(int folderinde
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 	{
-		// output all FT'd spectra
-		// with all resonance included
-		double nonFTd_spectra = spectra[target_particle_id][ipt][ipphi];
-		double cos_transf_spectra = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
-		double sin_transf_spectra = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
-
-		//with no resonances
-		double nonFTd_tspectra = thermal_spectra[target_particle_id][ipt][ipphi];
-		double cos_transf_tspectra = thermal_target_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
-		double sin_transf_tspectra = thermal_target_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
-
-		double projected_nonFTd_spectra = nonFTd_tspectra + (nonFTd_spectra - nonFTd_tspectra) / fraction_of_resonances;
-		double projected_cos_transf_spectra = cos_transf_tspectra + (cos_transf_spectra - cos_transf_tspectra) / fraction_of_resonances;
-		double projected_sin_transf_spectra = sin_transf_tspectra + (sin_transf_spectra - sin_transf_tspectra) / fraction_of_resonances;
-
-		//linearly interpolate between them to get estimate for full resonance calculation
-		double num = cos_transf_spectra*cos_transf_spectra + sin_transf_spectra*sin_transf_spectra;
-		double den = nonFTd_spectra*nonFTd_spectra;
-		//double numt = cos_transf_tspectra*cos_transf_tspectra + sin_transf_tspectra*sin_transf_tspectra;
-		//double dent = nonFTd_tspectra*nonFTd_tspectra;
-		//double CF = (num < local_epsilon && den < local_epsilon) ? 1. : 1. + num / den;
-		//double thermal_target_CF = (numt < local_epsilon && dent < local_epsilon) ? 1. : 1. + numt / dent;
-		double CF = 1. + num / den;
-		//double thermal_target_CF = 1. + numt / dent;
-		//double shift = (CF - thermal_target_CF) / fraction_of_resonances;
-		//if (fraction_of_resonances < 1.e-12)
-		//	shift = 0.0;
-
-		//projected full value of correlation function by projecting moments *first*
-		double projected_num = projected_cos_transf_spectra*projected_cos_transf_spectra + projected_sin_transf_spectra*projected_sin_transf_spectra;
-		double projected_den = projected_nonFTd_spectra*projected_nonFTd_spectra;
-		double projected_CF = 1. + projected_num / projected_den;
+		//first, get CF and projected CF
+		double CF = get_CF(ipt, ipphi, iqt, iqx, iqy, iqz, false);				//false means don't return projected value
+		double projected_CF = get_CF(ipt, ipphi, iqt, iqx, iqy, iqz, true && !thermal_pions_only);	//true means do return projected value
 
 		//now, regulate results
 		Regulate_CF(ipt, iqt, iqx, iqy, iqz, &CF, &projected_CF);
 
+		double nonFTd_spectra = spectra[target_particle_id][ipt][ipphi];
+		double cos_transf_spectra = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
+		double sin_transf_spectra = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
+
 		output_target_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12)
 			<< qt_PTdep_pts[ipt][iqt] << "   " << qx_PTdep_pts[ipt][iqx] << "   " << qy_PTdep_pts[ipt][iqy] << "   " << qz_PTdep_pts[ipt][iqz] << "   "
 			<< SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   " << nonFTd_spectra << "   " << cos_transf_spectra << "   " << sin_transf_spectra << "   "
-			<< CF << "   " << projected_CF /*<< "   " << thermal_target_CF + shift*/ << endl;
-		////output_target_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12)
-		////	<< qt_PTdep_pts[ipt][iqt] << "   " << qx_PTdep_pts[ipt][iqx] << "   " << qy_PTdep_pts[ipt][iqy] << "   " << qz_PTdep_pts[ipt][iqz] << "   "
-		////	<< SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   " << nonFTd_spectra << "   " << cos_transf_spectra << "   " << sin_transf_spectra << "   "
-		////	<< 1.0 + (
-		////				( cos_transf_spectra - cos_transf_tspectra ) * ( cos_transf_spectra - cos_transf_tspectra )
-		////					+ ( sin_transf_spectra - sin_transf_tspectra ) * ( sin_transf_spectra - sin_transf_tspectra )
-		////			) / (
-		////				( nonFTd_spectra - nonFTd_tspectra ) * ( nonFTd_spectra - nonFTd_tspectra )
-		////			) << endl;
-
+			<< CF << "   " << projected_CF << endl;
 	}
 
 	output_target_dN_dypTdpTdphi.close();

@@ -609,7 +609,7 @@ void CorrelationFunction::Set_q_pTdep_pts(int ipt, double qxw, double qyw, doubl
 	qz_PTdep_pts[ipt] = new double [qznpts];
 
 	double mpion = all_particles[target_particle_id].mass;
-	double eps = 2.e-1;									//specifies approximate CF value at which to truncate calculation
+	double eps = 1.e-1;									//specifies approximate CF value at which to truncate calculation
 														// (used for computing q(i)max)
 	double ln_one_by_eps = hbarC*sqrt(log(1./eps));
 
@@ -1320,6 +1320,45 @@ void CorrelationFunction::Set_target_pphiavgd_CFs()
 	return;
 }
 
+/*void CorrelationFunction::set_axes_and_rays()
+{
+	vector<int> tmpvec (4, 0);
+
+	//set axes
+	for (int iqt = 0; iqt < qtnpts; ++iqt)
+	{
+		tmpvec[0] = iqt;
+		q_axes_and_rays.push_back(tmpvec);
+	}
+	tmpvec.assign(4, 0);
+	//N.B. - range from 1 since (0,0,0,0) already included
+	for (int iqx = 1; iqx < qxnpts; ++iqx)
+	{
+		tmpvec[1] = iqx;
+		q_axes_and_rays.push_back(tmpvec);
+	}
+	tmpvec.assign(4, 0);
+	for (int iqy = 1; iqy < qynpts; ++iqy)
+	{
+		tmpvec[2] = iqy;
+		q_axes_and_rays.push_back(tmpvec);
+	}
+	tmpvec.assign(4, 0);
+	for (int iqz = 1; iqz < qznpts; ++iqz)
+	{
+		tmpvec[3] = iqz;
+		q_axes_and_rays.push_back(tmpvec);
+	}
+
+	//set rays
+}
+
+bool CorrelationFunction::is_on_axis_or_ray(int iqt, int iqx, int iqy, int iqz)
+{
+	//check if this point is on q-axes
+
+	//otherwise, check if it's on a q-ray (e.g., iqx==iqy)
+}*/
 
 inline double CorrelationFunction::lin_int(double x_m_x1, double one_by_x2_m_x1, double f1, double f2)
 {

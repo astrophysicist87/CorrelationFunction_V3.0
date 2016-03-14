@@ -187,6 +187,7 @@ class CorrelationFunction
 		//int iqt0, iqx0, iqy0, iqz0;
 		//vector<vector<int> > sorted_q_pts_list;
 		double *** qlist, ** current_qlist_slice;
+		vector<vector<int> > q_axes_and_rays;
 		
 		//store correlation functions
 		//double *** Correl_3D;
@@ -314,6 +315,7 @@ class CorrelationFunction
 		// Gaussian fit / correlation function routines
 		void Allocate_CFvals();
 		void Get_GF_HBTradii(int folderindex);
+		double get_CF(int ipt, int ipphi, int iqt, int iqx, int iqy, int iqz, bool return_projected_value);
 		double Compute_correlationfunction(int ipt, int ipphi, int iqx, int iqy, int iqz, double qt_interp, int interp_flag = 0);
 		void Cal_correlationfunction();
 		void Fit_Correlationfunction3D(double *** Correl_3D, int ipt, int ipphi);

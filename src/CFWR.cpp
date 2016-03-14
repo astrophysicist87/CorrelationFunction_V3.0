@@ -874,7 +874,7 @@ pc_cutoff_vals.resize( number_of_percentage_markers );
 					// store values to recycle later
 					double S_p_withweight = S_p*tau*eta_s_weight[ieta];		//don't include eta_s_symmetry_factor here, for consistency with later calculations...
 
-					//if (ipt==0 && ipphi==n_interp_pphi_pts-1)
+					//if (ipt==0 && ipphi==0)
 						//cout << "CPcout: " << isurf << "   " << ieta << "   " << scientific << setprecision(8) << setw(12)
 						//		<< prefactor << "   " << f0 << "   " << 1.+deltaf << "   " << p0*da0 + px*da1 + py*da2
 						//		<< "   " << p0 << "   " << da0 << "   " << px << "   " << da1 << "   " << py << "   " << da2
@@ -988,14 +988,15 @@ pc_cutoff_vals.resize( number_of_percentage_markers );
 			most_important_FOcells[ipt][ipphi] = new size_t [FOcells_PQ_size];
 
 			// copy over sorted results
-			double checksum = 0.0;
+			//double checksum = 0.0;
+			double checksum = tempsum;
 			for (int ii = 0; ii < FOcells_PQ_size; ++ii)
 			{
 				size_t topFOcell = most_impt_FOcells_vec[ii];
 				most_important_FOcells[ipt][ipphi][ii] = topFOcell;
 				double tmpval = tmp_S_p_withweight_array[topFOcell];
 				S_p_withweight_array[ipt][ipphi][ii] = tmpval;
-				checksum += tmpval;
+				//checksum += tmpval;
 			}
 			//try this...
 			temp_moments_array[ipt][ipphi] = checksum;
@@ -1097,11 +1098,18 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 			sw_set_eiqx_with_q_pTdep_slice.Stop();
 		}
 	
-		for (int iqt = 0; iqt < (qtnpts / 2) + 1; ++iqt)	//assumes each central q point is zero!!!
+		for (int iqt = 0; iqt < (qtnpts / 2) + 1; ++iqt)
 		for (int iqx = 0; iqx < qxnpts; ++iqx)
 		for (int iqy = 0; iqy < qynpts; ++iqy)
 		for (int iqz = 0; iqz < qznpts; ++iqz)
 		{
+/*
+			//if we're only getting moments along q-axes or pre-specified rays
+			//and this point isn't in them, move on
+			if (Q_AXES_AND_RAYS_ONLY && !is_on_axis_or_ray(iqt, iqx, iqy, iqz))
+				continue;
+*/
+
 			double * eiqttslice = eiqtt[iqt];
 			double * eiqxxslice = eiqxx[iqx];
 			double * eiqyyslice = eiqyy[iqy];
@@ -1223,7 +1231,7 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-	for (int iqt = (qtnpts / 2) + 1; iqt < qtnpts; ++iqt)	//assumes each central q point is zero!!!
+	for (int iqt = (qtnpts / 2) + 1; iqt < qtnpts; ++iqt)
 	for (int iqx = 0; iqx < qxnpts; ++iqx)
 	for (int iqy = 0; iqy < qynpts; ++iqy)
 	for (int iqz = 0; iqz < qznpts; ++iqz)
