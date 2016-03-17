@@ -48,6 +48,23 @@ double CorrelationFunction::place_in_range(double phi, double min, double max)
 	return (phi);
 }
 
+void CorrelationFunction::Unzip_HDF5_arrays()
+{
+	/*if (!COMPUTE_RESONANCE_ARRAYS)
+	{
+		ostringstream local_cmd;
+		local_cmd << "cd ..; unzip " << global_path << "/HDF5.zip " << global_path << "/resonance_thermal_spectra.h5; cd " << global_path;
+		int cmd_result = system(local_cmd.str().c_str());
+	}
+	if (!COMPUTE_RESONANCE_DECAYS)
+	{
+		ostringstream local_cmd;
+		local_cmd << "cd ..; unzip " << global_path << "/HDF5.zip " << global_path << "/resonance_spectra.h5; cd " << global_path;
+		int cmd_result = system(local_cmd.str().c_str());
+	}*/
+	return;
+}
+
 // ************************************************************
 // Compute correlation function at all specified q points for all resonances here
 // ************************************************************
@@ -55,6 +72,10 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 {
 	Stopwatch BIGsw;
 	int decay_channel_loop_cutoff = n_decay_channels;			//loop over direct pions and decay_channels
+
+	//unzip HDF5 files if necessary
+	if (UNZIP_HDF5)
+		Unzip_HDF5_arrays();
 
 	// section to set the space-time moments
 	if (COMPUTE_RESONANCE_ARRAYS)
@@ -129,6 +150,7 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 			ostringstream local_cmd;
 			local_cmd << "\\cp " << global_path << "/resonance_thermal_moments.h5 " << global_path << "/resonance_spectra.h5";
 			int cmd_result = system(local_cmd.str().c_str());
+			Load_spectra_array("thermal_spectra.dat", spectra);
 		}
 
 		*global_out_stream_ptr << "Reading in resonance spectra from file!" << endl;
@@ -140,7 +162,7 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 		}
 
 		Load_spectra_array("thermal_spectra.dat", thermal_spectra);
-		Load_spectra_array("thermal_spectra.dat", spectra);
+		Load_spectra_array("thermal_spectra.dat", spectra);		//probably don't need this...
 		for (int ipid = 0; ipid < Nparticle; ++ipid)
 			Set_spectra_logs_and_signs(ipid);
 
@@ -199,6 +221,8 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 		}											// END of decay channel loop
 		BIGsw.toc();
 		*global_out_stream_ptr << "\t ...finished computing all phase-space integrals in " << BIGsw.takeTime() << " seconds." << endl;
+
+		Dump_spectra_array("full_spectra.dat", spectra);
 	}
 	else	// must be a pre-existing resonances*.h5 file to use this option
 	{
@@ -211,7 +235,7 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 		}
 
 		Load_spectra_array("thermal_spectra.dat", thermal_spectra);
-		Load_spectra_array("thermal_spectra.dat", spectra);
+		Load_spectra_array("full_spectra.dat", spectra);
 		for (int ipid = 0; ipid < Nparticle; ++ipid)
 			Set_spectra_logs_and_signs(ipid);
 
@@ -1147,7 +1171,6 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 				vector<double> runsumvals;
 				vector<double> cutoff_FOcell_vals_cos;
 				vector<double> cutoff_FOcell_vals_sin;
-				//double checksum = 0.0;
 
 				for (int ipc = 0; ipc < tmpvec.size() - 1; ++ipc)
 				{
@@ -1163,7 +1186,6 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 						tmla_S += factor_sin[next_most_important_FOindex] * S_p_withweight;
 								
 						running_sum += abs(S_p_withweight);
-						//checksum += S_p_withweight;
 					}
 				}
 

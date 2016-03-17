@@ -609,7 +609,7 @@ void CorrelationFunction::Set_q_pTdep_pts(int ipt, double qxw, double qyw, doubl
 	qz_PTdep_pts[ipt] = new double [qznpts];
 
 	double mpion = all_particles[target_particle_id].mass;
-	double eps = 1.e-1;									//specifies approximate CF value at which to truncate calculation
+	double eps = 1.e-2;									//specifies approximate CF value at which to truncate calculation
 														// (used for computing q(i)max)
 	double ln_one_by_eps = hbarC*sqrt(log(1./eps));
 

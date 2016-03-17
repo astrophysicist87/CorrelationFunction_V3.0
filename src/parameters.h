@@ -18,8 +18,8 @@ using namespace std;
 #define DEBUG				false		// flag for output of debugging statements
 #define SPACETIME_MOMENTS_ONLY		false		// duh
 #define DO_ALL_DECAY_CHANNELS		false		// duh
-#define USE_HDF5			false		// utilizes HDF5 software to store large arrays
-#define USE_LAMBDA			false		// fit correlation function with adjustable intercept parameter
+#define UNZIP_HDF5			false		// utilizes HDF5 software to store large arrays
+#define USE_LAMBDA			true		// fit correlation function with adjustable intercept parameter
 #define USE_EXTRAPOLATION		true		// extrapolates results of CF integrals instead of competing them, false just calculates full integrals (slower)
 #define EXTRAPOLATION_METHOD		0		// 0 - GSL polynomial fit
 							// 1 - direct calculation of rational function fit using ratint in Arsenal.* files (numerator and denominator
@@ -34,9 +34,9 @@ using namespace std;
 							// true means C(q=0) ~ 1 + \lambda
 #define QT_POINTS_SPACING		1		// 0 - uniform from -qmax to +qmax
 							// 1 - Chebyshev nodes from -qmax to +qmax
-#define QX_POINTS_SPACING		1
-#define QY_POINTS_SPACING		1
-#define QZ_POINTS_SPACING		1
+#define QX_POINTS_SPACING		0
+#define QY_POINTS_SPACING		0
+#define QZ_POINTS_SPACING		0
 #define VARY_ALPHA			false		// (not yet implemented) feature to treat power in exponential as a fit variable (alpha == 2 <==> traditional Gaussian)
 #define Q_AXES_AND_RAYS_ONLY		false		// true - only do points along q-axes (only works for odd points right now)
 							// false - do full grid
@@ -87,10 +87,10 @@ const double delta_q = 0.005;
 const double init_q = 0.0;
 
 //all direction-specific q points information here
-const int qtnpts = 9;
-const int qxnpts = 7;
-const int qynpts = 7;
-const int qznpts = 7;
+const int qtnpts = 1;
+const int qxnpts = 1;
+const int qynpts = 1;
+const int qznpts = 101;
 const double delta_qt = 0.02;
 const double delta_qx = 0.0016;
 const double delta_qy = 0.02;

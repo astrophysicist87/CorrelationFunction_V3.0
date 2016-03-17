@@ -622,7 +622,7 @@ void CorrelationFunction::Fit_Correlationfunction3D_withlambda(double *** Correl
 	cout << scientific << setw(10) << setprecision(5) 
 		<< "chisq/dof = " << chi*chi/dof << endl;
 	cout << scientific << setw(10) << setprecision(5) 
-		<< " lambda = " << lambda_Correl << " +/- " << lambda_Correl_err << endl;
+		<< " lambda = " << lambda_Correl[ipt][ipphi] << " +/- " << lambda_Correl_err[ipt][ipphi] << endl;
 	cout << " R2_out[ipt][ipphi] = " << R2_out[ipt][ipphi] << " +/- " << R2_out_err[ipt][ipphi] << endl;
 	cout << " R2_side[ipt][ipphi] = " << R2_side[ipt][ipphi] << " +/- " << R2_side_err[ipt][ipphi] << endl;
 	cout << " R2_long[ipt][ipphi] = " << R2_long[ipt][ipphi] << " +/- " << R2_long_err[ipt][ipphi] << endl;

@@ -496,7 +496,7 @@ void CorrelationFunction::Output_total_target_eiqx_dN_dypTdpTdphi(int folderinde
 		double projected_CF = get_CF(ipt, ipphi, iqt, iqx, iqy, iqz, true && !thermal_pions_only);	//true means do return projected value
 
 		//now, regulate results
-		Regulate_CF(ipt, iqt, iqx, iqy, iqz, &CF, &projected_CF);
+		//Regulate_CF(ipt, iqt, iqx, iqy, iqz, &CF, &projected_CF);
 
 		double nonFTd_spectra = spectra[target_particle_id][ipt][ipphi];
 		double cos_transf_spectra = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
