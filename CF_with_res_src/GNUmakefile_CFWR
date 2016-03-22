@@ -50,6 +50,7 @@ INC		= 	correlation_function_with_resonances.h \
 			$(SRCDIR)/Arsenal.h \
 			$(SRCDIR)/Stopwatch.h \
 			$(SRCDIR)/CPStopwatch.h \
+			$(SRCDIR)/CFWR_lib.h \
 			$(SRCDIR)/gauss_quadrature.h \
 			$(SRCDIR)/structs.h \
 			$(SRCDIR)/generate_processing_record.h \
@@ -102,15 +103,15 @@ install:	$(TARGET)
 		cp $(TARGET) $(INSTPATH)
 
 # --------------- Dependencies -------------------
+$(SRCDIR)/Arsenal.cpp: $(SRCDIR)/Arsenal.h
+$(SRCDIR)/readindata.cpp: $(SRCDIR)/readindata.h
+$(SRCDIR)/CFWR_HDF.cpp: $(SRCDIR)/CFWR.h $(SRCDIR)/CFWR_lib.h
+$(SRCDIR)/CFWR_admin.cpp: $(SRCDIR)/CFWR.h $(SRCDIR)/Arsenal.h $(SRCDIR)/gauss_quadrature.h $(SRCDIR)/CFWR_lib.h
+$(SRCDIR)/CFWR_IO.cpp: $(SRCDIR)/CFWR.h $(SRCDIR)/Arsenal.h $(SRCDIR)/gauss_quadrature.h
+$(SRCDIR)/CFWR_GFroutines.cpp: $(SRCDIR)/CFWR.h $(SRCDIR)/Arsenal.h $(SRCDIR)/gauss_quadrature.h $(SRCDIR)/Stopwatch.h $(SRCDIR)/CFWR_lib.h
+$(SRCDIR)/CFWR_resonance.cpp: $(SRCDIR)/CFWR.h $(SRCDIR)/Arsenal.h $(SRCDIR)/gauss_quadrature.h $(SRCDIR)/CFWR_lib.h
+$(SRCDIR)/CFWR.cpp: $(SRCDIR)/CFWR.h $(SRCDIR)/Arsenal.h $(SRCDIR)/gauss_quadrature.h $(SRCDIR)/CPStopwatch.h $(SRCDIR)/Stopwatch.h $(SRCDIR)/CFWR_lib.h
 ./correlation_function_with_resonances.cpp: $(SRCDIR)/Stopwatch.h $(SRCDIR)/CPStopwatch.h $(SRCDIR)/parameters.h $(SRCDIR)/readindata.h $(SRCDIR)/CFWR.h \
 				$(SRCDIR)/generate_processing_record.h $(SRCDIR)/plumberglib.h $(SRCDIR)/sorter.h \
 				correlation_function_with_resonances.h $(SRCDIR)/chebyshev.h
-$(SRCDIR)/Arsenal.cpp: $(SRCDIR)/Arsenal.h
-$(SRCDIR)/CFWR.cpp: $(SRCDIR)/CFWR.h $(SRCDIR)/Arsenal.h $(SRCDIR)/gauss_quadrature.h $(SRCDIR)/CPStopwatch.h $(SRCDIR)/Stopwatch.h
-$(SRCDIR)/CFWR_HDF.cpp: $(SRCDIR)/CFWR.h
-$(SRCDIR)/CFWR_admin.cpp: $(SRCDIR)/CFWR.h $(SRCDIR)/Arsenal.h $(SRCDIR)/gauss_quadrature.h
-$(SRCDIR)/CFWR_IO.cpp: $(SRCDIR)/CFWR.h $(SRCDIR)/Arsenal.h $(SRCDIR)/gauss_quadrature.h
-$(SRCDIR)/CFWR_GFroutines.cpp: $(SRCDIR)/CFWR.h $(SRCDIR)/Arsenal.h $(SRCDIR)/gauss_quadrature.h $(SRCDIR)/Stopwatch.h
-$(SRCDIR)/CFWR_resonance.cpp: $(SRCDIR)/CFWR.h $(SRCDIR)/Arsenal.h $(SRCDIR)/gauss_quadrature.h
-$(SRCDIR)/readindata.cpp: $(SRCDIR)/readindata.h
 

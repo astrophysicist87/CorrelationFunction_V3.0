@@ -192,13 +192,15 @@ class CorrelationFunction
 		//store correlation functions
 		//double *** Correl_3D;
 		double ***** CFvals;
+		double *** current_C_slice, *** fleshed_out_CF;
 		double *** Correl_3D_err;
 		double ** lambda_Correl, ** lambda_Correl_err;
 		int *** correlator_minus_one_cutoff_norms;
+		double * qx_fleshed_out_pts, * qy_fleshed_out_pts, * qz_fleshed_out_pts;
 
 		//HBT radii coefficients
-		double **R2_side, **R2_out, **R2_long, **R2_outside, **R2_sidelong, **R2_outlong;
-		double **R2_side_err, **R2_out_err, **R2_long_err, **R2_outside_err, **R2_sidelong_err, **R2_outlong_err;
+		double ** R2_side, ** R2_out, ** R2_long, ** R2_outside, ** R2_sidelong, ** R2_outlong;
+		double ** R2_side_err, ** R2_out_err, ** R2_long_err, ** R2_outside_err, ** R2_sidelong_err, ** R2_outlong_err;
 
 		double *** res_sign_info, *** res_log_info, *** res_moments_info;
 		double ** spec_sign_info, ** spec_log_info, ** spec_vals_info;
@@ -227,6 +229,12 @@ class CorrelationFunction
 		bool Search_for_similar_particle(int dc_idx, int * result);
 
 	public:
+		//library of inline functions
+		inline double lin_int(double x_m_x1, double one_by_x2_m_x1, double f1, double f2);
+		inline void addElementToQueue(priority_queue<pair<double, size_t> >& p, pair<double, size_t> elem, size_t max_size);
+		inline void set_to_zero(double * array, size_t arraylength);
+		inline double dot_four_vectors(double * a, double * b);
+
 		void Determine_plane_angle(FO_surf* FOsurf_ptr, int dc_idx);
 		void Compute_correlation_function(FO_surf* FOsurf_ptr);
 		void Update_sourcefunction(particle_info* particle, int FOarray_length, int particle_idx);
@@ -241,8 +249,6 @@ class CorrelationFunction
 		int Copy_chunk(int current_resonance_index, int reso_idx_to_be_copied);
 		int Dump_resonance_HDF_array_spectra(string output_filename, double ******* resonance_array_to_use);
 		void Unzip_HDF5_arrays();
-
-		inline void addElementToQueue(priority_queue<pair<double, size_t> >& p, pair<double, size_t> elem, size_t max_size);
 
 		void Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int dc_idx);
 		void Cal_dN_dypTdpTdphi(double** SP_p0, double** SP_px, double** SP_py, double** SP_pz, FO_surf* FOsurf_ptr);
@@ -289,20 +295,15 @@ class CorrelationFunction
 		void Set_current_FOsurf_ptr(FO_surf* FOsurf_ptr);
 		double get_Q();
 		double g(double s);
-		inline void set_to_zero(double * array, size_t arraylength);
-		static inline double dot_four_vectors(double * a, double * b);
-		void adaptive_simpson_integration(void (*f) (double, double *), double a, double b, double * results);
+		//void adaptive_simpson_integration(void (*f) (double, double *), double a, double b, double * results);
 		double place_in_range(double phi, double min, double max);
 		void Get_current_decay_string(int dc_idx, string * decay_string);
 		int lookup_resonance_idx_from_particle_id(int particle_id);
 		int list_daughters(int parent_resonance_index, set<int> * daughter_resonance_indices_ptr, particle_info * particle, int Nparticle);
-		static inline double lin_int(double x_m_x1, double one_by_x2_m_x1, double f1, double f2);
 		void eiqxEdndp3(double ptr, double phir, double * results, int loc_verb = 0);
 		void Edndp3(double ptr, double phir, double * result, int loc_verb = 0);
-		//void Set_q_points();
 		void Set_correlation_function_q_pts();
 		void Get_q_points(double qo, double qs, double ql, double KT, double Kphi, double * qgridpts);
-		//void Set_sorted_q_pts_list();
 		void Allocate_resonance_running_sum_vectors();
 		void Delete_resonance_running_sum_vectors();
 		void Zero_resonance_running_sum_vector(double * vec);
@@ -315,13 +316,18 @@ class CorrelationFunction
 
 		// Gaussian fit / correlation function routines
 		void Allocate_CFvals();
+		void Allocate_fleshed_out_CF();
+		void Delete_fleshed_out_CF();
+		void Flesh_out_CF(int ipt, int ipphi);
+		double interpolate_CF(double qx0, double qy0, double qz0, int ipt);
+		double interpolate_qi(double q0, double qi0, double qi1, double f1, double f2, bool use_linear);
 		void Get_GF_HBTradii(int folderindex);
 		double get_CF(int ipt, int ipphi, int iqt, int iqx, int iqy, int iqz, bool return_projected_value);
 		double Compute_correlationfunction(int ipt, int ipphi, int iqx, int iqy, int iqz, double qt_interp, int interp_flag = 0);
 		void Cal_correlationfunction();
-		void Fit_Correlationfunction3D(double *** Correl_3D, int ipt, int ipphi);
+		void Fit_Correlationfunction3D(double *** Correl_3D, int ipt, int ipphi, bool fleshing_out_CF = true);
 		int print_fit_state_3D (size_t iteration, gsl_multifit_fdfsolver * solver_ptr);
-		void Fit_Correlationfunction3D_withlambda(double *** Correl_3D, int ipt, int ipphi);
+		void Fit_Correlationfunction3D_withlambda(double *** Correl_3D, int ipt, int ipphi, bool fleshing_out_CF = true);
 		int print_fit_state_3D_withlambda (size_t iteration, gsl_multifit_fdfsolver * solver_ptr);
 		//int Read_correlationfunction(int iKT, int iKphi);
 		inline double get_fit_results(int i, gsl_multifit_fdfsolver * solver_ptr);

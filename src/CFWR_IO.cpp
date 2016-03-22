@@ -8,6 +8,7 @@
 #include<stdio.h>
 
 #include "CFWR.h"
+#include "CFWR_lib.h"
 #include "Arsenal.h"
 #include "gauss_quadrature.h"
 
@@ -502,9 +503,22 @@ void CorrelationFunction::Output_total_target_eiqx_dN_dypTdpTdphi(int folderinde
 		double cos_transf_spectra = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
 		double sin_transf_spectra = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
 
+		//output_target_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12)
+		//	<< qt_PTdep_pts[ipt][iqt] << "   " << qx_PTdep_pts[ipt][iqx] << "   " << qy_PTdep_pts[ipt][iqy] << "   " << qz_PTdep_pts[ipt][iqz] << "   "
+		//	<< SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   " << nonFTd_spectra << "   " << cos_transf_spectra << "   " << sin_transf_spectra << "   "
+		//	<< CF << "   " << projected_CF << endl;
 		output_target_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12)
 			<< qt_PTdep_pts[ipt][iqt] << "   " << qx_PTdep_pts[ipt][iqx] << "   " << qy_PTdep_pts[ipt][iqy] << "   " << qz_PTdep_pts[ipt][iqz] << "   "
-			<< SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   " << nonFTd_spectra << "   " << cos_transf_spectra << "   " << sin_transf_spectra << "   "
+			<< SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   "
+			<< nonFTd_spectra << "   "																								//resonances + thermal
+			<< cos_transf_spectra << "   "																							//resonances + thermal (cos)
+			<< sin_transf_spectra << "   "																							//resonances + thermal (sin)
+			<< thermal_spectra[target_particle_id][ipt][ipphi] << "   "																//thermal only
+			<< thermal_target_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0] << "   "									//thermal only (cos)
+			<< thermal_target_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1] << "   "									//thermal only (sin)
+			<< nonFTd_spectra - thermal_spectra[target_particle_id][ipt][ipphi] << "   "											//resonances only
+			<< cos_transf_spectra - thermal_target_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0] << "   "				//resonances only (cos)
+			<< sin_transf_spectra - thermal_target_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1] << "   "				//resonances only (sin)
 			<< CF << "   " << projected_CF << endl;
 	}
 

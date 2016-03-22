@@ -9,6 +9,7 @@
 #include<time.h>
 
 #include "CFWR.h"
+#include "CFWR_lib.h"
 #include "Arsenal.h"
 #include "gauss_quadrature.h"
 
@@ -318,14 +319,7 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 	// clean up
 	Delete_resonance_running_sum_vectors();
 
-//if (1) exit(1);
-
 	return;
-}
-
-inline void CorrelationFunction::set_to_zero(double * array, size_t arraylength)
-{
-	for (size_t arrayidx=0; arrayidx<arraylength; ++arrayidx) array[arrayidx] = 0.0;
 }
 
 void CorrelationFunction::Flatten_dN_dypTdpTdphi_moments()

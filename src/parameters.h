@@ -28,8 +28,8 @@ using namespace std;
 #define PC_MARKER_SPACING		1		// 0 - automatic
 							// 1 - use usr_def_pc_markers
 							// 2 - use usr_def_pc_markers_thinned
-#define COMPUTE_RESONANCE_ARRAYS	true		// alternative is to read them in from a file
-#define COMPUTE_RESONANCE_DECAYS	true		// alternative is to read them in from a file
+#define COMPUTE_RESONANCE_ARRAYS	false		// alternative is to read them in from a file
+#define COMPUTE_RESONANCE_DECAYS	false		// alternative is to read them in from a file
 #define IGNORE_LONG_LIVED_RESONANCES	true		// particularly, whether to include eta or eta' in spectra calculations
 							// true means C(q=0) ~ 1 + \lambda
 #define QT_POINTS_SPACING		1		// 0 - uniform from -qmax to +qmax
@@ -40,7 +40,8 @@ using namespace std;
 #define VARY_ALPHA			false		// (not yet implemented) feature to treat power in exponential as a fit variable (alpha == 2 <==> traditional Gaussian)
 #define Q_AXES_AND_RAYS_ONLY		false		// true - only do points along q-axes (only works for odd points right now)
 							// false - do full grid
-#define FIT_WITH_PROJECTED_CFVALS	true		// as opposed to unprojected CFvals...
+#define FIT_WITH_PROJECTED_CFVALS	false		// as opposed to unprojected CFvals...
+#define FLESH_OUT_CF			true		// refines grid via interpolation before fitting
 
 #ifndef H5_NO_NAMESPACE
     using namespace H5;
@@ -86,11 +87,13 @@ const int qnpts = 1;
 const double delta_q = 0.005;
 const double init_q = 0.0;
 
+const int new_nqpts = 101;
+
 //all direction-specific q points information here
-const int qtnpts = 1;
-const int qxnpts = 1;
-const int qynpts = 1;
-const int qznpts = 101;
+const int qtnpts = 9;
+const int qxnpts = 7;
+const int qynpts = 7;
+const int qznpts = 7;
 const double delta_qt = 0.02;
 const double delta_qx = 0.0016;
 const double delta_qy = 0.02;

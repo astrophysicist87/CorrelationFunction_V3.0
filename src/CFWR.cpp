@@ -15,6 +15,7 @@
 #include<numeric>
 
 #include "CFWR.h"
+#include "CFWR_lib.h"
 #include "Arsenal.h"
 #include "Stopwatch.h"
 #include "CPStopwatch.h"
@@ -777,16 +778,6 @@ void CorrelationFunction::Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int lo
 
 //if (1) exit(1);
 
-	return;
-}
-
-inline void CorrelationFunction::addElementToQueue(priority_queue<pair<double, size_t> >& p, pair<double, size_t> elem, size_t max_size)
-{
-	if ( ( max_size <= p.size() ) && ( elem >= p.top() ) )
-		return; // nothing to do.
-	p.push(elem);
-	if( max_size < p.size() )
-		p.pop();
 	return;
 }
 

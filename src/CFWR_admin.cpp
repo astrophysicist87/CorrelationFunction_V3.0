@@ -11,6 +11,7 @@
 #include <set>
 
 #include "CFWR.h"
+#include "CFWR_lib.h"
 #include "Arsenal.h"
 #include "gauss_quadrature.h"
 
@@ -609,7 +610,7 @@ void CorrelationFunction::Set_q_pTdep_pts(int ipt, double qxw, double qyw, doubl
 	qz_PTdep_pts[ipt] = new double [qznpts];
 
 	double mpion = all_particles[target_particle_id].mass;
-	double eps = 1.e-2;									//specifies approximate CF value at which to truncate calculation
+	double eps = 0.5;									//specifies approximate CF value at which to truncate calculation
 														// (used for computing q(i)max)
 	double ln_one_by_eps = hbarC*sqrt(log(1./eps));
 
@@ -1359,19 +1360,6 @@ bool CorrelationFunction::is_on_axis_or_ray(int iqt, int iqx, int iqy, int iqz)
 
 	//otherwise, check if it's on a q-ray (e.g., iqx==iqy)
 }*/
-
-inline double CorrelationFunction::lin_int(double x_m_x1, double one_by_x2_m_x1, double f1, double f2)
-{
-	return ( f1 + (f2 - f1) * x_m_x1 * one_by_x2_m_x1 );
-}
-
-//dots 4-vectors together
-inline double CorrelationFunction::dot_four_vectors(double * a, double * b)
-{
-	double sum = a[0]*b[0];
-	for (size_t i=1; i<4; ++i) sum -= a[i]*b[i];
-	return (sum);
-}
 
 void CorrelationFunction::Edndp3(double ptr, double phir, double * result, int loc_verb /*==0*/)
 {
