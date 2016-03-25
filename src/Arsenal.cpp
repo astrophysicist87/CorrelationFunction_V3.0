@@ -174,32 +174,32 @@ long binarySearch(double * A, int length, double value, bool skip_out_of_range /
 
    if(value > A[idx_f])
    {
+      if (verbose) cerr << "binarySearch: desired value is too large, exceeding the end of the table: value = " << value << " and A[idx_f] = " << A[idx_f] << endl;
       if (skip_out_of_range) return -1;
-      cerr << "binarySearch: desired value is too large, exceeding the end of the table: value = " << value << " and A[idx_f] = " << A[idx_f] << endl;
       exit(1);
    }
    if(value < A[idx_i])
    {
+      if (verbose) cerr << "binarySearch: desired value is too small, exceeding the beginning of table: value = " << value << " and A[idx_i] = " << A[idx_i] << endl;
       if (skip_out_of_range) return -1;
-      cerr << "binarySearch: desired value is too small, exceeding the beginning of table: value = " << value << " and A[idx_i] = " << A[idx_i] << endl;
       exit(1);
    }
    idx = (int) floor((idx_f+idx_i)/2.);
-   if (verbose) cerr << "Start: idx = " << idx << endl;
+   //if (verbose) cerr << "Start: idx = " << idx << endl;
    while((idx_f-idx_i) > 1)
    {
      if(A[idx] < value)
      {
         idx_i = idx;
-		if (verbose) cerr << "idx_i = " << idx_i << endl;
+		//if (verbose) cerr << "idx_i = " << idx_i << endl;
      }
      else
      {
         idx_f = idx;
-		if (verbose) cerr << "idx_f = " << idx_f << endl;
+		//if (verbose) cerr << "idx_f = " << idx_f << endl;
      }
      idx = (int) floor((idx_f+idx_i)/2.);
-	if (verbose) cerr << "End: idx = " << idx << endl;
+	//if (verbose) cerr << "End: idx = " << idx << endl;
    }
    return(idx_i);
 }

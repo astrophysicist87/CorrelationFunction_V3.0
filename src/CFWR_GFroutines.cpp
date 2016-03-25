@@ -53,6 +53,10 @@ void CorrelationFunction::Get_GF_HBTradii(int folderindex)
 			//	Fit_Correlationfunction3D( CF_for_fitting, ipt, ipphi, FLESH_OUT_CF );
 			cerr << "Varying alpha not yet supported!" << endl;
 		}
+
+		if (FLESH_OUT_CF && ipt==0 && ipphi==0)
+			Output_fleshed_out_correlationfunction(ipt, ipphi);
+//if (1) exit(1);
 	}
 
 	if (FLESH_OUT_CF)
@@ -138,6 +142,110 @@ double CorrelationFunction::Compute_correlationfunction(int ipt, int ipphi, int 
 	return (interpolated_result);
 }
 
+void CorrelationFunction::Compute_correlationfunction(double * totalresult, double * thermalresult, double * nonthermalresult,
+										int ipt, int ipphi, int iqx, int iqy, int iqz, double qt_interp, int interp_flag /*==0*/)
+{
+	// try using linear-logarithmic interpolation if q-point is within grid
+	// otherwise, just use linear interpolation/extrapolation, or throw an exception and do return 0
+
+	int qidx = binarySearch(qt_PTdep_pts[ipt], qtnpts, qt_interp);
+	double q_min = qt_PTdep_pts[ipt][0] / cos(M_PI / (2.*qtnpts)), q_max = qt_PTdep_pts[ipt][qtnpts-1]/ cos(M_PI / (2.*qtnpts));
+
+	bool q_point_is_outside_grid = ( qidx == -1 && ( qt_interp < q_min || qt_interp > q_max ) );
+	bool use_linear_logarithmic_interpolation = false;
+
+	if (!q_point_is_outside_grid)
+	{
+		if (use_linear_logarithmic_interpolation)
+		{
+			q_min = qt_PTdep_pts[ipt][qidx];
+			q_max = qt_PTdep_pts[ipt][qidx+1];
+
+			double ln_C_at_q[2], ln_Ct_at_q[2], ln_Cnt_at_q[2];
+			double tmpC = 0.0, tmpCt = 0.0, tmpCnt = 0.0;
+	
+			// set values at all vertices of 4D-hypercube used for interpolation
+			for (int iqtidx = 0; iqtidx < 1; ++iqtidx)
+			{
+				//ln_C_at_q[iqtidx] = log( get_CF(ipt, ipphi, qidx+iqtidx, iqx, iqy, iqz, FIT_WITH_PROJECTED_CFVALS && !thermal_pions_only) + 1.e-100 );
+				//return C - 1!!!
+				get_CF(&tmpC, &tmpCt, &tmpCnt, ipt, ipphi, qidx+iqtidx, iqx, iqy, iqz);
+				ln_C_at_q[iqtidx] = log( abs(tmpC) + 1.e-100 );
+				ln_Ct_at_q[iqtidx] = log( abs(tmpCt) + 1.e-100 );
+				ln_Cnt_at_q[iqtidx] = log( abs(tmpCnt) + 1.e-100 );
+			}
+	
+			// interpolating w.r.t. q^2, not q
+			double sgnd_qt2_interp = sgn(qt_interp) * qt_interp * qt_interp;
+			double * sgnd_qt2_limits = new double [2];
+			sgnd_qt2_limits[0] = sgn(q_min) * q_min * q_min;
+			sgnd_qt2_limits[1] = sgn(q_max) * q_max * q_max;
+	
+			double interpolated_ln_result = interpolate1D(sgnd_qt2_limits, ln_C_at_q, sgnd_qt2_interp, 2, 0, true);
+			*totalresult = exp(interpolated_ln_result);
+			interpolated_ln_result = interpolate1D(sgnd_qt2_limits, ln_Ct_at_q, sgnd_qt2_interp, 2, 0, true);
+			*thermalresult = exp(interpolated_ln_result);
+			interpolated_ln_result = interpolate1D(sgnd_qt2_limits, ln_Cnt_at_q, sgnd_qt2_interp, 2, 0, true);
+			*nonthermalresult = exp(interpolated_ln_result);
+	
+			// Clean up
+			delete [] sgnd_qt2_limits;
+		}
+		else
+		{
+			double C_at_q[qtnpts], Ct_at_q[qtnpts], Cnt_at_q[qtnpts];	//C - 1
+			double tmpC = 0.0, tmpCt = 0.0, tmpCnt = 0.0;
+	
+			// set CF values along qt-slice for interpolation
+			for (int iqtidx = 0; iqtidx < qtnpts; ++iqtidx)
+			{
+				//C_at_q[iqtidx] = get_CF(ipt, ipphi, iqtidx, iqx, iqy, iqz, FIT_WITH_PROJECTED_CFVALS && !thermal_pions_only);
+				//return C - 1!!!
+				get_CF(&tmpC, &tmpCt, &tmpCnt, ipt, ipphi, iqtidx, iqx, iqy, iqz);
+				C_at_q[iqtidx] = tmpC;
+				Ct_at_q[iqtidx] = tmpCt;
+				//Cnt_at_q[iqtidx] = tmpCnt;
+				Cnt_at_q[iqtidx] = tmpC - tmpCt;
+			}
+
+			//assumes qt-grid has already been computed at (adjusted) Chebyshev nodes!!!
+			if (QT_POINTS_SPACING == 1 && interp_flag == 0)
+			{
+				//set up Chebyshev calculation
+				int npts_loc[1] = { qtnpts };
+				int os[1] = { qtnpts - 1 };
+				double lls[1] = { q_min };
+				double uls[1] = { q_max };
+				double point[1] = { qt_interp };
+				int dim_loc = 1;
+
+				Chebyshev cf(C_at_q, npts_loc, os, lls, uls, dim_loc);
+				Chebyshev cft(Ct_at_q, npts_loc, os, lls, uls, dim_loc);
+				Chebyshev cfnt(Cnt_at_q, npts_loc, os, lls, uls, dim_loc);
+	
+				*totalresult = cf.eval(point);
+				*thermalresult = cft.eval(point);
+				*nonthermalresult = cfnt.eval(point);
+			}
+			else	//if not using Chebyshev nodes in qt-direction, just use straight-up linear(0) or cubic(1) interpolation
+			{
+				*global_out_stream_ptr << "Using cubic interpolation" << endl;
+				//interpolated_result = interpolate1D(qt_PTdep_pts[ipt], C_at_q, qt_interp, qtnpts, 0, true);
+				*totalresult = interpolate1D(qt_PTdep_pts[ipt], C_at_q, qt_interp, qtnpts, 1, false);
+				*thermalresult = interpolate1D(qt_PTdep_pts[ipt], Ct_at_q, qt_interp, qtnpts, 1, false);
+				*nonthermalresult = interpolate1D(qt_PTdep_pts[ipt], Cnt_at_q, qt_interp, qtnpts, 1, false);
+			}
+		}
+	}
+	else
+	{
+		*global_out_stream_ptr << "Warning: qt_interp point was outside of computed grid!" << endl
+								<< "\t qt_interp = " << qt_interp << " out of {q_min, q_max} = {" << q_min << ", " << q_max << "}" << endl;
+		*totalresult = 0.0;
+	}
+	return;
+}
+
 //to save time, don't bother making grid large enough to interpolate to OSL
 //this function leaves open the option of just interpolating over the qt-direction
 void CorrelationFunction::Cal_correlationfunction()
@@ -175,13 +283,17 @@ void CorrelationFunction::Cal_correlationfunction()
 
 		double tmp_spectra = spectra[target_particle_id][ipt][ipphi];
 
-		//CFvals[ipt][ipphi][iqx][iqy][iqz] = Compute_correlationfunction(ipt, ipphi, iqx, iqy, iqz, q_interp[0]);
-		double interpcheck = Compute_correlationfunction(ipt, ipphi, iqx, iqy, iqz, q_interp[0], 0);
+		//double interpcheck = Compute_correlationfunction(ipt, ipphi, iqx, iqy, iqz, q_interp[0], 0);
 		//cout << "INTERPOLATION CHECK: " << scientific << setprecision(8) << setw(12) << interpcheck << "   " << SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   "
 		//		<< q_interp[0] << "   " << qx_PTdep_pts[ipt][iqx] << "   " << qy_PTdep_pts[ipt][iqy] << "   " << qz_PTdep_pts[ipt][iqz] << "   "
 		//		<< Cal_dN_dypTdpTdphi_with_weights_function(current_FOsurf_ptr, target_particle_id, SPinterp_pT[ipt], SPinterp_pphi[ipphi],
 		//														q_interp[0], qx_PTdep_pts[ipt][iqx], qy_PTdep_pts[ipt][iqy], qz_PTdep_pts[ipt][iqz]) / (tmp_spectra*tmp_spectra) << endl;
-		CFvals[ipt][ipphi][iqx][iqy][iqz] = interpcheck;
+		//CFvals[ipt][ipphi][iqx][iqy][iqz] = interpcheck;
+		double tmp1 = 0.0, tmp2 = 0.0, tmp3 = 0.0;
+		Compute_correlationfunction(&tmp1, &tmp2, &tmp3, ipt, ipphi, iqx, iqy, iqz, q_interp[0], 0);
+		CFvals[ipt][ipphi][iqx][iqy][iqz] = 1.0 + tmp1;			//C
+		thermalCFvals[ipt][ipphi][iqx][iqy][iqz] = tmp2;	//Ct-1
+		resonancesCFvals[ipt][ipphi][iqx][iqy][iqz] = tmp3;	//Cnt-1
 	}
 	sw.Stop();
 	*global_out_stream_ptr << "Finished computing correlator in " << sw.printTime() << " seconds." << endl;
@@ -363,11 +475,25 @@ void CorrelationFunction::test_interpolator()
 void CorrelationFunction::Allocate_fleshed_out_CF()
 {
 	fleshed_out_CF = new double ** [new_nqpts];
+	fleshed_out_thermal = new double ** [new_nqpts];
+	fleshed_out_resonances = new double ** [new_nqpts];
 	for (int iqx = 0; iqx < new_nqpts; ++iqx)
 	{
 		fleshed_out_CF[iqx] = new double * [new_nqpts];
+		fleshed_out_thermal[iqx] = new double * [new_nqpts];
+		fleshed_out_resonances[iqx] = new double * [new_nqpts];
 		for (int iqy = 0; iqy < new_nqpts; ++iqy)
+		{
 			fleshed_out_CF[iqx][iqy] = new double [new_nqpts];
+			fleshed_out_thermal[iqx][iqy] = new double [new_nqpts];
+			fleshed_out_resonances[iqx][iqy] = new double [new_nqpts];
+			for (int iqz = 0; iqz < new_nqpts; ++iqz)
+			{
+				fleshed_out_CF[iqx][iqy][iqz] = 0.0;
+				fleshed_out_thermal[iqx][iqy][iqz] = 0.0;
+				fleshed_out_resonances[iqx][iqy][iqz] = 0.0;
+			}
+		}
 	}
 
 	qx_fleshed_out_pts = new double [new_nqpts];
@@ -382,10 +508,18 @@ void CorrelationFunction::Delete_fleshed_out_CF()
 	for (int iqx = 0; iqx < new_nqpts; ++iqx)
 	{
 		for (int iqy = 0; iqy < new_nqpts; ++iqy)
+		{
 			delete [] fleshed_out_CF[iqx][iqy];
+			delete [] fleshed_out_thermal[iqx][iqy];
+			delete [] fleshed_out_resonances[iqx][iqy];
+		}
 		delete [] fleshed_out_CF[iqx];
+		delete [] fleshed_out_thermal[iqx];
+		delete [] fleshed_out_resonances[iqx];
 	}
 	delete [] fleshed_out_CF;
+	delete [] fleshed_out_thermal;
+	delete [] fleshed_out_resonances;
 
 	delete [] qx_fleshed_out_pts;
 	delete [] qy_fleshed_out_pts;
@@ -397,16 +531,17 @@ void CorrelationFunction::Delete_fleshed_out_CF()
 void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 {
 	//declare needed quantities here
-	//declare in CFWR.h...
-	current_C_slice = CFvals[ipt][ipphi];
-
-	double qxmin = qx_PTdep_pts[ipt][0], qxmax = qx_PTdep_pts[ipt][qxnpts-1];
-	double qymin = qy_PTdep_pts[ipt][0], qymax = qy_PTdep_pts[ipt][qynpts-1];
-	double qzmin = qz_PTdep_pts[ipt][0], qzmax = qz_PTdep_pts[ipt][qznpts-1];
+	double qxmin = 0.9999*qx_PTdep_pts[ipt][0], qxmax = 0.9999*qx_PTdep_pts[ipt][qxnpts-1];
+	double qymin = 0.9999*qy_PTdep_pts[ipt][0], qymax = 0.9999*qy_PTdep_pts[ipt][qynpts-1];
+	double qzmin = 0.9999*qz_PTdep_pts[ipt][0], qzmax = 0.9999*qz_PTdep_pts[ipt][qznpts-1];
 
 	double new_Del_qx = (qxmax - qxmin)/double(new_nqpts-1);
 	double new_Del_qy = (qymax - qymin)/double(new_nqpts-1);
 	double new_Del_qz = (qzmax - qzmin)/double(new_nqpts-1);
+
+	//cout << "(qxmin, qxmax, new_Del_qx) = (" << qxmin << ", " << qxmax << ", " << new_Del_qx << ")" << endl;
+	//cout << "(qymin, qymax, new_Del_qy) = (" << qymin << ", " << qymax << ", " << new_Del_qy << ")" << endl;
+	//cout << "(qzmin, qzmax, new_Del_qz) = (" << qzmin << ", " << qzmax << ", " << new_Del_qz << ")" << endl;
 
 	for (int iqx = 0; iqx < new_nqpts; ++iqx)
 	for (int iqy = 0; iqy < new_nqpts; ++iqy)
@@ -418,30 +553,29 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 		qx_fleshed_out_pts[iqx] = qx0;
 		qy_fleshed_out_pts[iqy] = qy0;
 		qz_fleshed_out_pts[iqz] = qz0;
-		fleshed_out_CF[iqx][iqy][iqz] = interpolate_CF(qx0, qy0, qz0, ipt);
+		//fleshed_out_CF[iqx][iqy][iqz] = interpolate_CF(CFvals[ipt][ipphi], qx0, qy0, qz0, ipt);
+		fleshed_out_thermal[iqx][iqy][iqz] = interpolate_CF(thermalCFvals[ipt][ipphi], qx0, qy0, qz0, ipt, 0);
+		fleshed_out_resonances[iqx][iqy][iqz] = interpolate_CF(resonancesCFvals[ipt][ipphi], qx0, qy0, qz0, ipt, 1);
+		fleshed_out_CF[iqx][iqy][iqz] = 1.0 + fleshed_out_thermal[iqx][iqy][iqz] + fleshed_out_resonances[iqx][iqy][iqz];
 	}
 
 	return;
 }
 
-double CorrelationFunction::interpolate_CF(double qx0, double qy0, double qz0, int ipt)
+double CorrelationFunction::interpolate_CF(double *** current_C_slice, double qx0, double qy0, double qz0, int ipt, int thermal_or_resonances)
 {
-	int cqx = (qxnpts - 1)/2;           //central qx index
-	int cqy = (qynpts - 1)/2;
-	int cqz = (qznpts - 1)/2;
-	int iqxh0 = (qxnpts - cqx - 1)/2;   //halfway between cqx and nqpts-1
-	int iqyh0 = (qynpts - cqy - 1)/2;
-	int iqzh0 = (qznpts - cqz - 1)/2;
+	//int thermal_or_resonances - 	0: interpolate thermal CF (assuming basically Gaussian)
+	//								1: interpolate resonance contributions (linear near origin, exponential further out)
 
-	int iqx0_loc = binarySearch(qx_PTdep_pts[ipt], qxnpts, qx0);
-	int iqy0_loc = binarySearch(qy_PTdep_pts[ipt], qynpts, qy0);
-	int iqz0_loc = binarySearch(qz_PTdep_pts[ipt], qznpts, qz0);
+	int iqx0_loc = binarySearch(qx_PTdep_pts[ipt], qxnpts, qx0, true, true);
+	int iqy0_loc = binarySearch(qy_PTdep_pts[ipt], qynpts, qy0, true, true);
+	int iqz0_loc = binarySearch(qz_PTdep_pts[ipt], qznpts, qz0, true, true);
 
-	//if any of these are false, use logarithmic interpolation in that direction
-	//(assuming approximately expontential fall-off)
-	bool use_linear_qx = (iqx0_loc <= cqx + iqxh0) && (iqx0_loc >= cqx - iqxh0);
-	bool use_linear_qy = (iqy0_loc <= cqy + iqyh0) && (iqy0_loc >= cqy - iqyh0);
-	bool use_linear_qz = (iqz0_loc <= cqz + iqzh0) && (iqz0_loc >= cqz - iqzh0);
+	if (iqx0_loc == -1 || iqy0_loc == -1 || iqz0_loc == -1)
+	{
+		cerr << "Interpolation failed: exiting!" << endl;
+		exit(1);
+	}
 
 	//interpolate here...
 	double qx_0 = qx_PTdep_pts[ipt][iqx0_loc];
@@ -451,50 +585,110 @@ double CorrelationFunction::interpolate_CF(double qx0, double qy0, double qz0, i
 	double qz_0 = qz_PTdep_pts[ipt][iqz0_loc];
 	double qz_1 = qz_PTdep_pts[ipt][iqz0_loc+1];
 
-	//interpolate over qz-points first
-	///////////////////////
-	//interpolate over first pair of qz-points
-	double fx0y0z0 = current_C_slice[iqx0_loc][iqy0_loc][iqz0_loc] - 1.0;
-	double fx0y0z1 = current_C_slice[iqx0_loc][iqy0_loc][iqz0_loc+1] - 1.0;
-	double fx0y0zi = interpolate_qi(qz0, qz_0, qz_1, fx0y0z0, fx0y0z1, use_linear_qz);
+	double fxiyizi = 0.0;
+	if (thermal_or_resonances == 0)
+	{
+		double sqx02 = sgn(qx0)*qx0*qx0;
+		double sqy02 = sgn(qy0)*qy0*qy0;
+		double sqz02 = sgn(qz0)*qz0*qz0;
+		double sqx_02 = sgn(qx_0)*qx_0*qx_0;
+		double sqy_02 = sgn(qy_0)*qy_0*qy_0;
+		double sqz_02 = sgn(qz_0)*qz_0*qz_0;
+		double sqx_12 = sgn(qx_1)*qx_1*qx_1;
+		double sqy_12 = sgn(qy_1)*qy_1*qy_1;
+		double sqz_12 = sgn(qz_1)*qz_1*qz_1;
 
-	//interpolate over second pair of qz-points
-	double fx0y1z0 = current_C_slice[iqx0_loc][iqy0_loc+1][iqz0_loc] - 1.0;
-	double fx0y1z1 = current_C_slice[iqx0_loc][iqy0_loc+1][iqz0_loc+1] - 1.0;
-	double fx0y1zi = interpolate_qi(qz0, qz_0, qz_1, fx0y1z0, fx0y1z1, use_linear_qz);    
+		//interpolate over qz-points first
+		///////////////////////
+		//interpolate over first pair of qz-points
+		double fx0y0z0 = current_C_slice[iqx0_loc][iqy0_loc][iqz0_loc];
+		double fx0y0z1 = current_C_slice[iqx0_loc][iqy0_loc][iqz0_loc+1];
+		double fx0y0zi = interpolate_qi(sqz02, sqz_02, sqz_12, fx0y0z0, fx0y0z1, false);
+	
+		//interpolate over second pair of qz-points
+		double fx0y1z0 = current_C_slice[iqx0_loc][iqy0_loc+1][iqz0_loc];
+		double fx0y1z1 = current_C_slice[iqx0_loc][iqy0_loc+1][iqz0_loc+1];
+		double fx0y1zi = interpolate_qi(sqz02, sqz_02, sqz_12, fx0y1z0, fx0y1z1, false);    
+	
+		//interpolate over third pair of qz-points
+		double fx1y0z0 = current_C_slice[iqx0_loc+1][iqy0_loc][iqz0_loc];
+		double fx1y0z1 = current_C_slice[iqx0_loc+1][iqy0_loc][iqz0_loc+1];
+		double fx1y0zi = interpolate_qi(sqz02, sqz_02, sqz_12, fx1y0z0, fx1y0z1, false);
+	
+		//interpolate over fourth pair of qz-points
+		double fx1y1z0 = current_C_slice[iqx0_loc+1][iqy0_loc+1][iqz0_loc];
+		double fx1y1z1 = current_C_slice[iqx0_loc+1][iqy0_loc+1][iqz0_loc+1];
+		double fx1y1zi = interpolate_qi(sqz02, sqz_02, sqz_12, fx1y1z0, fx1y1z1, false);
+		///////////////////////
+	
+		//interpolate over qy-points next
+		double fx0yizi = interpolate_qi(sqy02, sqy_02, sqy_12, fx0y0zi, fx0y1zi, false);
+		double fx1yizi = interpolate_qi(sqy02, sqy_02, sqy_12, fx1y0zi, fx1y1zi, false);
+	
+		//finally, interpolate over qx-points
+		fxiyizi = interpolate_qi(sqx02, sqx_02, sqx_12, fx0yizi, fx1yizi, false);
+	}
+	else if (thermal_or_resonances == 1)
+	{
+		int cqx = (qxnpts - 1)/2;           //central qx index
+		int cqy = (qynpts - 1)/2;
+		int cqz = (qznpts - 1)/2;
+		int iqxh0 = (qxnpts - cqx - 1)/2;   //halfway between cqx and nqpts-1
+		int iqyh0 = (qynpts - cqy - 1)/2;
+		int iqzh0 = (qznpts - cqz - 1)/2;
 
-	//interpolate over third pair of qz-points
-	double fx1y0z0 = current_C_slice[iqx0_loc+1][iqy0_loc][iqz0_loc] - 1.0;
-	double fx1y0z1 = current_C_slice[iqx0_loc+1][iqy0_loc][iqz0_loc+1] - 1.0;
-	double fx1y0zi = interpolate_qi(qz0, qz_0, qz_1, fx1y0z0, fx1y0z1, use_linear_qz);
+		//if any of these are false, use logarithmic interpolation in that direction
+		//(assuming approximately exponential fall-off)
+		bool use_linear_qx = (iqx0_loc <= cqx + iqxh0) && (iqx0_loc >= cqx - iqxh0);
+		bool use_linear_qy = (iqy0_loc <= cqy + iqyh0) && (iqy0_loc >= cqy - iqyh0);
+		bool use_linear_qz = (iqz0_loc <= cqz + iqzh0) && (iqz0_loc >= cqz - iqzh0);
 
-	//interpolate over fourth pair of qz-points
-	double fx1y1z0 = current_C_slice[iqx0_loc+1][iqy0_loc+1][iqz0_loc] - 1.0;
-	double fx1y1z1 = current_C_slice[iqx0_loc+1][iqy0_loc+1][iqz0_loc+1] - 1.0;
-	double fx1y1zi = interpolate_qi(qz0, qz_0, qz_1, fx1y1z0, fx1y1z1, use_linear_qz);
-	///////////////////////
+		//interpolate over qz-points first
+		///////////////////////
+		//interpolate over first pair of qz-points
+		double fx0y0z0 = current_C_slice[iqx0_loc][iqy0_loc][iqz0_loc];
+		double fx0y0z1 = current_C_slice[iqx0_loc][iqy0_loc][iqz0_loc+1];
+		double fx0y0zi = interpolate_qi(qz0, qz_0, qz_1, fx0y0z0, fx0y0z1, use_linear_qz);
+	
+		//interpolate over second pair of qz-points
+		double fx0y1z0 = current_C_slice[iqx0_loc][iqy0_loc+1][iqz0_loc];
+		double fx0y1z1 = current_C_slice[iqx0_loc][iqy0_loc+1][iqz0_loc+1];
+		double fx0y1zi = interpolate_qi(qz0, qz_0, qz_1, fx0y1z0, fx0y1z1, use_linear_qz);    
+	
+		//interpolate over third pair of qz-points
+		double fx1y0z0 = current_C_slice[iqx0_loc+1][iqy0_loc][iqz0_loc];
+		double fx1y0z1 = current_C_slice[iqx0_loc+1][iqy0_loc][iqz0_loc+1];
+		double fx1y0zi = interpolate_qi(qz0, qz_0, qz_1, fx1y0z0, fx1y0z1, use_linear_qz);
+	
+		//interpolate over fourth pair of qz-points
+		double fx1y1z0 = current_C_slice[iqx0_loc+1][iqy0_loc+1][iqz0_loc];
+		double fx1y1z1 = current_C_slice[iqx0_loc+1][iqy0_loc+1][iqz0_loc+1];
+		double fx1y1zi = interpolate_qi(qz0, qz_0, qz_1, fx1y1z0, fx1y1z1, use_linear_qz);
+		///////////////////////
+	
+		//interpolate over qy-points next
+		double fx0yizi = interpolate_qi(qy0, qy_0, qy_1, fx0y0zi, fx0y1zi, use_linear_qy);
+		double fx1yizi = interpolate_qi(qy0, qy_0, qy_1, fx1y0zi, fx1y1zi, use_linear_qy);
+	
+		//finally, interpolate over qx-points
+		fxiyizi = interpolate_qi(qx0, qx_0, qx_1, fx0yizi, fx1yizi, use_linear_qx);
+	}
 
-	//interpolate over qy-points next
-	double fx0yizi = interpolate_qi(qy0, qy_0, qy_1, fx0y0zi, fx0y1zi, use_linear_qy);
-	double fx1yizi = interpolate_qi(qy0, qy_0, qy_1, fx1y0zi, fx1y1zi, use_linear_qy);
-
-	//finally, interpolate over qx-points
-	double fxiyizi = interpolate_qi(qx0, qx_0, qx_1, fx0yizi, fx1yizi, use_linear_qx);
-
-	return (fxiyizi + 1.0);
+	return (fxiyizi);
 }
 
 double CorrelationFunction::interpolate_qi(double q0, double qi0, double qi1, double f1, double f2, bool use_linear)
 {
 	double if1 = f1;
 	double if2 = f2;
-	if (!use_linear)
+	bool use_log = (!use_linear) && (f1 > 0.0) && (f2 > 0.0);
+	if (use_log)
 	{
-		if1 = log(abs(f1)+1.e-100);
-		if2 = log(abs(f2)+1.e-100);
+		if1 = log(f1+1.e-100);
+		if2 = log(f2+1.e-100);
 	}
-	double tmp_result = lin_int(q0 - qi0, 1./(qi0-qi1), if1, if2);
-	if (!use_linear)
+	double tmp_result = lin_int(q0 - qi0, 1./(qi1-qi0), if1, if2);
+	if (use_log)
 		tmp_result = exp(tmp_result);
 
 	return (tmp_result);
@@ -609,7 +803,7 @@ void CorrelationFunction::Fit_Correlationfunction3D(double *** Correl_3D, int ip
 	cout.precision (5);		                // # of digits in doubles
 
 	int width = 7;		// setw width for output
-	cout << endl << "Best fit results:" << endl;
+	/*cout << endl << "Best fit results:" << endl;
 	cout << "R2o = " << setw (width) << get_fit_results (0, solver_ptr)
 		<< " +/- " << setw (width) << get_fit_err (0, covariance_ptr) << endl;
 
@@ -623,7 +817,7 @@ void CorrelationFunction::Fit_Correlationfunction3D(double *** Correl_3D, int ip
 		<< " +/- " << setw (width) << get_fit_err (3, covariance_ptr) << endl;
     
 	cout << "status = " << gsl_strerror (status) << endl;
-	cout << "--------------------------------------------------------------------" << endl;
+	cout << "--------------------------------------------------------------------" << endl;*/
 
 	double chi = gsl_blas_dnrm2(solver_ptr->f);
 	double dof = data_length - n_para;
@@ -634,7 +828,7 @@ void CorrelationFunction::Fit_Correlationfunction3D(double *** Correl_3D, int ip
 	R2_out[ipt][ipphi] = fabs(get_fit_results(0, solver_ptr))*hbarC*hbarC;
 	R2_side[ipt][ipphi] = fabs(get_fit_results(1, solver_ptr))*hbarC*hbarC;
 	R2_long[ipt][ipphi] = fabs(get_fit_results(2, solver_ptr))*hbarC*hbarC;
-	R2_outside[ipt][ipphi] = fabs(get_fit_results(3, solver_ptr))*hbarC*hbarC;
+	R2_outside[ipt][ipphi] = get_fit_results(3, solver_ptr)*hbarC*hbarC;
 	R2_out_err[ipt][ipphi] = c*get_fit_err(0, covariance_ptr)*hbarC*hbarC;
 	R2_side_err[ipt][ipphi] = c*get_fit_err(1, covariance_ptr)*hbarC*hbarC;
 	R2_long_err[ipt][ipphi] = c*get_fit_err(2, covariance_ptr)*hbarC*hbarC;
@@ -644,11 +838,11 @@ void CorrelationFunction::Fit_Correlationfunction3D(double *** Correl_3D, int ip
 	cout << scientific << setw(10) << setprecision(5) 
 		<< "chisq/dof = " << chi*chi/dof << endl;
 	cout << scientific << setw(10) << setprecision(5) 
-		<< " lambda[ipt][ipphi] = " << lambda_Correl[ipt][ipphi] << " +/- " << lambda_Correl_err[ipt][ipphi] << endl;
-	cout << " R2_out[ipt][ipphi] = " << R2_out[ipt][ipphi] << " +/- " << R2_out_err[ipt][ipphi] << endl;
-	cout << " R2_side[ipt][ipphi] = " << R2_side[ipt][ipphi] << " +/- " << R2_side_err[ipt][ipphi] << endl;
-	cout << " R2_long[ipt][ipphi] = " << R2_long[ipt][ipphi] << " +/- " << R2_long_err[ipt][ipphi] << endl;
-	cout << " R2_outside[ipt][ipphi] = " << R2_outside[ipt][ipphi] << " +/- " << R2_outside_err[ipt][ipphi] << endl;
+		<< " lambda[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << lambda_Correl[ipt][ipphi] << " +/- " << lambda_Correl_err[ipt][ipphi] << endl;
+	cout << " R2_out[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_out[ipt][ipphi] << " +/- " << R2_out_err[ipt][ipphi] << endl;
+	cout << " R2_side[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_side[ipt][ipphi] << " +/- " << R2_side_err[ipt][ipphi] << endl;
+	cout << " R2_long[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_long[ipt][ipphi] << " +/- " << R2_long_err[ipt][ipphi] << endl;
+	cout << " R2_outside[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_outside[ipt][ipphi] << " +/- " << R2_outside_err[ipt][ipphi] << endl;
 
 	//clean up
 	gsl_matrix_free (covariance_ptr);
@@ -710,7 +904,7 @@ void CorrelationFunction::Fit_Correlationfunction3D_withlambda(double *** Correl
 		Correlfun3D_data.q_l[idx] = q3pts[k];
 		Correlfun3D_data.y[idx] = Correl_3D[i][j][k];
 		//Correlfun3D_data.sigma[idx] = Correl_3D_err[i][j][k];
-		Correlfun3D_data.sigma[idx] = 1.e-2;
+		Correlfun3D_data.sigma[idx] = 1.e-3;
 		idx++;
 	}
 	double para_init[n_para] = { 1.0, 1.0, 1.0, 1.0, 1.0 };  // initial guesses of parameters
@@ -767,7 +961,7 @@ void CorrelationFunction::Fit_Correlationfunction3D_withlambda(double *** Correl
 	cout.precision (5);		                // # of digits in doubles
 
 	int width = 7;		// setw width for output
-	cout << endl << "Best fit results:" << endl;
+	/*cout << endl << "Best fit results:" << endl;
 	cout << "lambda      = " << setw (width) << get_fit_results (0, solver_ptr)
 		<< " +/- " << setw (width) << get_fit_err (0, covariance_ptr) << endl;
 
@@ -784,7 +978,7 @@ void CorrelationFunction::Fit_Correlationfunction3D_withlambda(double *** Correl
 		<< " +/- " << setw (width) << get_fit_err (4, covariance_ptr) << endl;
     
 	cout << "status = " << gsl_strerror (status) << endl;
-	cout << "--------------------------------------------------------------------" << endl;
+	cout << "--------------------------------------------------------------------" << endl;*/
 
 	double chi = gsl_blas_dnrm2(solver_ptr->f);
 	double dof = data_length - n_para;
@@ -795,7 +989,7 @@ void CorrelationFunction::Fit_Correlationfunction3D_withlambda(double *** Correl
 	R2_out[ipt][ipphi] = fabs(get_fit_results(1, solver_ptr))*hbarC*hbarC;
 	R2_side[ipt][ipphi] = fabs(get_fit_results(2, solver_ptr))*hbarC*hbarC;
 	R2_long[ipt][ipphi] = fabs(get_fit_results(3, solver_ptr))*hbarC*hbarC;
-	R2_outside[ipt][ipphi] = fabs(get_fit_results(4, solver_ptr))*hbarC*hbarC;
+	R2_outside[ipt][ipphi] = get_fit_results(4, solver_ptr)*hbarC*hbarC;
 	R2_out_err[ipt][ipphi] = c*get_fit_err(1, covariance_ptr)*hbarC*hbarC;
 	R2_side_err[ipt][ipphi] = c*get_fit_err(2, covariance_ptr)*hbarC*hbarC;
 	R2_long_err[ipt][ipphi] = c*get_fit_err(3, covariance_ptr)*hbarC*hbarC;
@@ -806,10 +1000,10 @@ void CorrelationFunction::Fit_Correlationfunction3D_withlambda(double *** Correl
 		<< "chisq/dof = " << chi*chi/dof << endl;
 	cout << scientific << setw(10) << setprecision(5) 
 		<< " lambda = " << lambda_Correl[ipt][ipphi] << " +/- " << lambda_Correl_err[ipt][ipphi] << endl;
-	cout << " R2_out[ipt][ipphi] = " << R2_out[ipt][ipphi] << " +/- " << R2_out_err[ipt][ipphi] << endl;
-	cout << " R2_side[ipt][ipphi] = " << R2_side[ipt][ipphi] << " +/- " << R2_side_err[ipt][ipphi] << endl;
-	cout << " R2_long[ipt][ipphi] = " << R2_long[ipt][ipphi] << " +/- " << R2_long_err[ipt][ipphi] << endl;
-	cout << " R2_outside[ipt][ipphi] = " << R2_outside[ipt][ipphi] << " +/- " << R2_outside_err[ipt][ipphi] << endl;
+	cout << " R2_out[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_out[ipt][ipphi] << " +/- " << R2_out_err[ipt][ipphi] << endl;
+	cout << " R2_side[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_side[ipt][ipphi] << " +/- " << R2_side_err[ipt][ipphi] << endl;
+	cout << " R2_long[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_long[ipt][ipphi] << " +/- " << R2_long_err[ipt][ipphi] << endl;
+	cout << " R2_outside[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_outside[ipt][ipphi] << " +/- " << R2_outside_err[ipt][ipphi] << endl;
 
 	//clean up
 	gsl_matrix_free (covariance_ptr);
@@ -891,6 +1085,8 @@ int Fittarget_correlfun3D_f (const gsl_vector *xvec_ptr, void *params_ptr, gsl_v
 	{
 		double Yi = 1.0 + exp(- q_l[i]*q_l[i]*R2_l - q_s[i]*q_s[i]*R2_s - q_o[i]*q_o[i]*R2_o - 2.*q_o[i]*q_s[i]*R2_os);
 		gsl_vector_set (f_ptr, i, (Yi - y[i]) / sigma[i]);
+cout << "i = " << i << ": " << y[i] << "   " << Yi << "   " << (Yi - y[i]) / sigma[i]
+		<< "   " << q_o[i] << "   " << q_s[i] << "   " << q_l[i] << "   " << R2_o << "   " << R2_s << "   " << R2_l << "   " << R2_os << endl;
 	}
 
 	return GSL_SUCCESS;
@@ -920,6 +1116,8 @@ int Fittarget_correlfun3D_f_withlambda (const gsl_vector *xvec_ptr, void *params
 		//             - q_o[i]*q_o[i]*R_o*R_o - q_o[i]*q_s[i]*R_os*R_os);
 		double Yi = 1.0 + lambda*exp(- q_l[i]*q_l[i]*R2_l - q_s[i]*q_s[i]*R2_s - q_o[i]*q_o[i]*R2_o - 2.*q_o[i]*q_s[i]*R2_os);
 		gsl_vector_set (f_ptr, i, (Yi - y[i]) / sigma[i]);
+cout << "i = " << i << ": " << y[i] << "   " << Yi << "   " << (Yi - y[i]) / sigma[i] << "   " << lambda
+		<< "   " << q_o[i] << "   " << q_s[i] << "   " << q_l[i] << "   " << R2_o << "   " << R2_s << "   " << R2_l << "   " << R2_os << endl;
 	}
 
 	return GSL_SUCCESS;
@@ -945,10 +1143,6 @@ int Fittarget_correlfun3D_df (const gsl_vector *xvec_ptr, void *params_ptr,  gsl
 
 	for (i = 0; i < n; i++)
 	{
-		// Jacobian matrix J(i,j) = dfi / dxj, 
-		// where fi = (Yi - yi)/sigma[i],      
-		//       Yi = A * exp(-lambda * i) + b 
-		// and the xj are the parameters (A,lambda,b) 
 		double sig = sigma[i];
 
 		// derivatives
@@ -983,10 +1177,6 @@ int Fittarget_correlfun3D_df_withlambda (const gsl_vector *xvec_ptr, void *param
 
 	for (i = 0; i < n; i++)
 	{
-		// Jacobian matrix J(i,j) = dfi / dxj, 
-		// where fi = (Yi - yi)/sigma[i],      
-		//       Yi = A * exp(-lambda * i) + b 
-		// and the xj are the parameters (A,lambda,b) 
 		double sig = sigma[i];
 
 		//derivatives

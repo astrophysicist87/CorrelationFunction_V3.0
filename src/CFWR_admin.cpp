@@ -610,7 +610,7 @@ void CorrelationFunction::Set_q_pTdep_pts(int ipt, double qxw, double qyw, doubl
 	qz_PTdep_pts[ipt] = new double [qznpts];
 
 	double mpion = all_particles[target_particle_id].mass;
-	double eps = 0.5;									//specifies approximate CF value at which to truncate calculation
+	double eps = 0.1;									//specifies approximate CF value at which to truncate calculation
 														// (used for computing q(i)max)
 	double ln_one_by_eps = hbarC*sqrt(log(1./eps));
 
@@ -763,20 +763,34 @@ CorrelationFunction::~CorrelationFunction()
 void CorrelationFunction::Allocate_CFvals()
 {
 	CFvals = new double **** [n_interp_pT_pts];
+	thermalCFvals = new double **** [n_interp_pT_pts];
+	resonancesCFvals = new double **** [n_interp_pT_pts];
 	for (int ipT = 0; ipT < n_interp_pT_pts; ++ipT)
 	{
 		CFvals[ipT] = new double *** [n_interp_pphi_pts];
+		thermalCFvals[ipT] = new double *** [n_interp_pphi_pts];
+		resonancesCFvals[ipT] = new double *** [n_interp_pphi_pts];
 		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 		{
 			CFvals[ipT][ipphi] = new double ** [qxnpts];
+			thermalCFvals[ipT][ipphi] = new double ** [qxnpts];
+			resonancesCFvals[ipT][ipphi] = new double ** [qxnpts];
 			for (int iqx = 0; iqx < qxnpts; ++iqx)
 			{
 				CFvals[ipT][ipphi][iqx] = new double * [qynpts];
+				thermalCFvals[ipT][ipphi][iqx] = new double * [qynpts];
+				resonancesCFvals[ipT][ipphi][iqx] = new double * [qynpts];
 				for (int iqy = 0; iqy < qynpts; ++iqy)
 				{
 					CFvals[ipT][ipphi][iqx][iqy] = new double [qznpts];
+					thermalCFvals[ipT][ipphi][iqx][iqy] = new double [qznpts];
+					resonancesCFvals[ipT][ipphi][iqx][iqy] = new double [qznpts];
 					for (int iqz = 0; iqz < qznpts; ++iqz)
+					{
 						CFvals[ipT][ipphi][iqx][iqy][iqz] = 0.0;
+						thermalCFvals[ipT][ipphi][iqx][iqy][iqz] = 0.0;
+						resonancesCFvals[ipT][ipphi][iqx][iqy][iqz] = 0.0;
+					}
 				}
 			}
 		}

@@ -295,13 +295,45 @@ void CorrelationFunction::Output_correlationfunction(int folderindex)
 			<< qx_PTdep_pts[ipt][iqx] * ckp + qy_PTdep_pts[ipt][iqy] * skp << "   "
 			<< -qx_PTdep_pts[ipt][iqx] * skp + qy_PTdep_pts[ipt][iqy] * ckp << "   "
 			<< qz_PTdep_pts[ipt][iqz] << "   "
-			<< CFvals[ipt][ipphi][iqx][iqy][iqz] << endl;
+			<< thermalCFvals[ipt][ipphi][iqx][iqy][iqz] << "   " << resonancesCFvals[ipt][ipphi][iqx][iqy][iqz] << "   " << CFvals[ipt][ipphi][iqx][iqy][iqz] << endl;
 	}
 
 	oCorrFunc.close();
 				
 	return;
 }
+
+void CorrelationFunction::Output_fleshed_out_correlationfunction(int ipt, int ipphi)
+{
+	ostringstream oCorrFunc_stream;
+	string temp_particle_name = particle_name;
+	replace_parentheses(temp_particle_name);
+	oCorrFunc_stream << global_path << "/correlfunct3D" << "_" << temp_particle_name << "_fleshed_out.dat";
+	ofstream oCorrFunc;
+	if (ipt==0 && ipphi==0)
+		oCorrFunc.open(oCorrFunc_stream.str().c_str());
+	else
+		oCorrFunc.open(oCorrFunc_stream.str().c_str(), ios::app);
+
+	for (int iqx = 0; iqx < new_nqpts; ++iqx)
+	for (int iqy = 0; iqy < new_nqpts; ++iqy)
+	for (int iqz = 0; iqz < new_nqpts; ++iqz)
+	{
+		double ckp = cos_SPinterp_pphi[ipphi], skp = sin_SPinterp_pphi[ipphi];
+		oCorrFunc << scientific << setprecision(7) << setw(15)
+			<< SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   " << qx_fleshed_out_pts[iqx] << "   "
+			<< qy_fleshed_out_pts[iqy] << "   " << qz_fleshed_out_pts[iqz] << "   "
+			<< qx_fleshed_out_pts[iqx] * ckp + qy_fleshed_out_pts[iqy] * skp << "   "
+			<< -qx_fleshed_out_pts[iqx] * skp + qy_fleshed_out_pts[iqy] * ckp << "   "
+			<< qz_fleshed_out_pts[iqz] << "   "
+			<< fleshed_out_thermal[iqx][iqy][iqz] << "   " << fleshed_out_resonances[iqx][iqy][iqz] << "   " << fleshed_out_CF[iqx][iqy][iqz] << endl;
+	}
+
+	oCorrFunc.close();
+				
+	return;
+}
+
 
 /*void CorrelationFunction::Readin_correlationfunction(int folderindex)
 {
@@ -454,6 +486,40 @@ double CorrelationFunction::get_CF(int ipt, int ipphi, int iqt, int iqx, int iqy
 		double den = nonFTd_spectra*nonFTd_spectra;
 		return (1. + num / den);
 	}
+}
+
+void CorrelationFunction::get_CF(double * totalresult, double * thermalresult, double * nonthermalresult,
+									int ipt, int ipphi, int iqt, int iqx, int iqy, int iqz)
+{
+	//total
+	double nonFTd_spectra = spectra[target_particle_id][ipt][ipphi];
+	double cos_transf_spectra = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
+	double sin_transf_spectra = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
+
+	//thermal
+	double nonFTd_tspectra = thermal_spectra[target_particle_id][ipt][ipphi];
+	double cos_transf_tspectra = thermal_target_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
+	double sin_transf_tspectra = thermal_target_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
+
+	//non-thermal
+	double NT_spectra = nonFTd_spectra - nonFTd_tspectra;
+	double cosNT_spectra = cos_transf_spectra - cos_transf_tspectra;
+	double sinNT_spectra = sin_transf_spectra - sin_transf_tspectra;
+
+	double num = cos_transf_tspectra*cos_transf_tspectra + sin_transf_tspectra*sin_transf_tspectra;
+	double den = nonFTd_spectra*nonFTd_spectra;
+	*thermalresult = num / den;
+
+	num = cosNT_spectra*cosNT_spectra+sinNT_spectra*sinNT_spectra								//resonances only
+			+ 2.0 * (cosNT_spectra*cos_transf_tspectra+sinNT_spectra*sin_transf_tspectra);		//cross term
+	//den = nonFTd_tspectra*nonFTd_tspectra;
+	*nonthermalresult = num / den;
+
+	num = cos_transf_spectra*cos_transf_spectra + sin_transf_spectra*sin_transf_spectra;
+	//den = nonFTd_spectra*nonFTd_spectra;
+	*totalresult = num / den;
+
+	return;
 }
 
 void CorrelationFunction::Output_total_target_eiqx_dN_dypTdpTdphi(int folderindex, double current_fraction /*==-1.0*/)

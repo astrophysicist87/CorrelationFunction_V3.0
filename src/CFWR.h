@@ -191,8 +191,8 @@ class CorrelationFunction
 		
 		//store correlation functions
 		//double *** Correl_3D;
-		double ***** CFvals;
-		double *** current_C_slice, *** fleshed_out_CF;
+		double ***** CFvals, ***** thermalCFvals, ***** resonancesCFvals;
+		double *** fleshed_out_CF, *** fleshed_out_thermal, *** fleshed_out_resonances;
 		double *** Correl_3D_err;
 		double ** lambda_Correl, ** lambda_Correl_err;
 		int *** correlator_minus_one_cutoff_norms;
@@ -319,11 +319,15 @@ class CorrelationFunction
 		void Allocate_fleshed_out_CF();
 		void Delete_fleshed_out_CF();
 		void Flesh_out_CF(int ipt, int ipphi);
-		double interpolate_CF(double qx0, double qy0, double qz0, int ipt);
+		double interpolate_CF(double *** current_C_slice, double qx0, double qy0, double qz0, int ipt, int thermal_or_resonances);
 		double interpolate_qi(double q0, double qi0, double qi1, double f1, double f2, bool use_linear);
 		void Get_GF_HBTradii(int folderindex);
 		double get_CF(int ipt, int ipphi, int iqt, int iqx, int iqy, int iqz, bool return_projected_value);
+		void get_CF(double * totalresult, double * thermalresult, double * nonthermalresult,
+									int ipt, int ipphi, int iqt, int iqx, int iqy, int iqz);
 		double Compute_correlationfunction(int ipt, int ipphi, int iqx, int iqy, int iqz, double qt_interp, int interp_flag = 0);
+		void Compute_correlationfunction(double * totalresult, double * thermalresult, double * nonthermalresult,
+										int ipt, int ipphi, int iqx, int iqy, int iqz, double qt_interp, int interp_flag = 0);
 		void Cal_correlationfunction();
 		void Fit_Correlationfunction3D(double *** Correl_3D, int ipt, int ipphi, bool fleshing_out_CF = true);
 		int print_fit_state_3D (size_t iteration, gsl_multifit_fdfsolver * solver_ptr);
@@ -348,6 +352,7 @@ class CorrelationFunction
 		void Output_chosen_resonances();
 		void Output_resonance_fraction();
 		void Output_correlationfunction(int folderindex);
+		void Output_fleshed_out_correlationfunction(int ipt, int ipphi);
 		void Dump_spectra_array(string output_filename, double *** array_to_dump);
 		void Load_spectra_array(string output_filename, double *** array_to_read);
 
