@@ -1053,64 +1053,86 @@ double interpBiCubicDirectALT(double * x, double * y, double ** z, double x0, do
 
 /////////////////////////////////////////////////////////////////////////////////////////
 //**********************************************************************
-double interpBiCubicNonDirectALT(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size, bool returnflag /*= false*/, double default_return_value /* = 0*/)
+double interpBiCubicNonDirectALT(double * x, double * y, double ** f, double x0, double y0, long x_size, long y_size, bool returnflag /*= false*/, double default_return_value /* = 0*/)
 {
-	//long size = x->size();
-	if (x_size==1 && y_size) {cout<<"interpBiCubicNonDirectALT warning: table size = 1"<<endl; return z[0][0];}
-	double dx = x[1]-x[0]; // increment in x
-	double dy = y[1]-y[0]; // increment in y
-	// find x's integer index
-	long xidx = floor((x0-x[0])/dx);
-	long yidx = floor((y0-y[0])/dy);
-	
-	// check for out-of-bounds points
-	if (xidx<0 || xidx>=x_size-1 || yidx<0 || yidx>=y_size-1)
+  //long size = x->size();
+  if (x_size==1 && y_size==1) {cout<<"interpBiCubicNonDirectALT warning: table size = 1"<<endl; return f[0][0];}
+
+  // if close to left end:
+  if (abs(x0-x[0])<(x[1]-x[0])*1e-30) return interpCubicNonDirect(y, f[0], y0, y_size, returnflag, default_return_value);
+
+  // find x's integer index
+  long idx = binarySearch(x, x_size, x0, true);
+
+	if (idx < 0 || idx >= x_size-1)
 	{
 		if (!returnflag)	//i.e., if returnflag is false, exit
 		{
-			cout << "interpBiCubicNonDirectALT: point out of bounds." << endl
-				<< "x ranges from " << x[0] << " to " << x[x_size-1] << ", "
-				<< "x0=" << x0 << ", " << "dx=" << dx << ", " << "xidx=" << xidx << endl
-				<< "y ranges from " << y[0] << " to " << y[y_size-1] << ", "
-				<< "y0=" << y0 << ", " << "dy=" << dy << ", " << "yidx=" << yidx << endl;
-    			exit(1);
+			cerr << "interpBiCubicNonDirectALT(): index out of range!  Aborting!" << endl
+				<< "interpBiCubicNonDirectALT(): x_size = " << x_size << ", x0 = " << x0 << ", " << "idx=" << idx << endl;
+			exit(1);
 		}
 		else return (default_return_value);
 	}
 
-  if (xidx==0)
+  if (idx==0)
   {
-    // use quadratic interpolation at left end
-    double A0 = interpCubicNonDirect(y, z[0], y0, y_size);
-	double A1 = interpCubicNonDirect(y, z[1], y0, y_size);
-	double A2 = interpCubicNonDirect(y, z[2], y0, y_size);
-	double deltaX = x0 - x[0]; // deltaX is the increment of x0 compared to the closest lattice point
-    return (A0-2.0*A1+A2)/(2.0*dx*dx)*deltaX*deltaX - (3.0*A0-4.0*A1+A2)/(2.0*dx)*deltaX + A0;
+    // use linear interpolation at the left end
+	double f0 = interpCubicNonDirect(y, f[0], y0, y_size, returnflag, default_return_value);
+	double f1 = interpCubicNonDirect(y, f[1], y0, y_size, returnflag, default_return_value);
+    return f0 + (f1-f0)/(x[1]-x[0])*(x0-x[0]);
   }
-  else if (xidx==x_size-2)
+  else if (idx==x_size-2)
   {
-    // use quadratic interpolation at right end
-    double A0 = interpCubicNonDirect(y, z[x_size-3], y0, y_size);
-	double A1 = interpCubicNonDirect(y, z[x_size-2], y0, y_size);
-	double A2 = interpCubicNonDirect(y, z[x_size-1], y0, y_size);
-	double deltaX = x0 - (x[0] + (xidx-1)*dx);
-    return (A0-2.0*A1+A2)/(2.0*dx*dx)*deltaX*deltaX - (3.0*A0-4.0*A1+A2)/(2.0*dx)*deltaX + A0;
+    // use linear interpolation at the right end
+	double fnm2 = interpCubicNonDirect(y, f[x_size-2], y0, y_size, returnflag, default_return_value);
+	double fnm1 = interpCubicNonDirect(y, f[x_size-1], y0, y_size, returnflag, default_return_value);
+    return fnm2 + (fnm1-fnm2 )/(x[x_size-1]-x[x_size-2] )*(x0-x[x_size-2]);
   }
   else
   {
     // use cubic interpolation
-    double A0 = interpCubicNonDirect(y, z[xidx-1], y0, y_size);
-	double A1 = interpCubicNonDirect(y, z[xidx], y0, y_size);
-	double A2 = interpCubicNonDirect(y, z[xidx+1], y0, y_size);
-	double A3 = interpCubicNonDirect(y, z[xidx+2], y0, y_size);
-	double deltaX = x0 - (x[0] + xidx*dx);
-    //cout << A0 << "  " << A1 << "  " << A2 << "  " << A3 << endl;
-    return (-A0+3.0*A1-3.0*A2+A3)/(6.0*dx*dx*dx)*deltaX*deltaX*deltaX
-            + (A0-2.0*A1+A2)/(2.0*dx*dx)*deltaX*deltaX
-            - (2.0*A0+3.0*A1-6.0*A2+A3)/(6.0*dx)*deltaX
-            + A1;
+    //long double f0 = f[idx-1];
+	//long double f1 = f[idx];
+	//long double f2 = f[idx+1];
+	//long double f3 = f[idx+2];
+    long double f0 = interpCubicNonDirect(y, f[idx-1], y0, y_size, returnflag, default_return_value);
+    long double f1 = interpCubicNonDirect(y, f[idx], y0, y_size, returnflag, default_return_value);
+    long double f2 = interpCubicNonDirect(y, f[idx+1], y0, y_size, returnflag, default_return_value);
+    long double f3 = interpCubicNonDirect(y, f[idx+2], y0, y_size, returnflag, default_return_value);
+    long double f01=f0-f1, f02=f0-f2, f03=f0-f3, f12=f1-f2, f13=f1-f3, f23=f2-f3;
+    long double x0 = x[idx-1], x1 = x[idx], x2 = x[idx+1], x3 = x[idx+2];
+    long double x01=x0-x1, x02=x0-x2, x03=x0-x3, x12=x1-x2, x13=x1-x3, x23=x2-x3;
+    long double x0s=x0*x0, x1s=x1*x1, x2s=x2*x2, x3s=x3*x3;
+    long double denominator = x01*x02*x12*x03*x13*x23;
+    long double C0, C1, C2, C3;
+    C0 = (x0*x02*x2*x03*x23*x3*f1
+          + x1*x1s*(x0*x03*x3*f2+x2s*(-x3*f0+x0*f3)+x2*(x3s*f0-x0s*f3))
+          + x1*(x0s*x03*x3s*f2+x2*x2s*(-x3s*f0+x0s*f3)+x2s*(x3*x3s*f0-x0*x0s*f3))
+          + x1s*(x0*x3*(-x0s+x3s)*f2+x2*x2s*(x3*f0-x0*f3)+x2*(-x3*x3s*f0+x0*x0s*f3))
+          )/denominator;
+    C1 = (x0s*x03*x3s*f12
+          + x2*x2s*(x3s*f01+x0s*f13)
+          + x1s*(x3*x3s*f02+x0*x0s*f23-x2*x2s*f03)
+          + x2s*(-x3*x3s*f01-x0*x0s*f13)
+          + x1*x1s*(-x3s*f02+x2s*f03-x0s*f23)
+          )/denominator;
+    C2 = (-x0*x3*(x0s-x3s)*f12
+          + x2*(x3*x3s*f01+x0*x0s*f13)
+          + x1*x1s*(x3*f02+x0*f23-x2*f03)
+          + x2*x2s*(-x3*f01-x0*f13)
+          + x1*(-x3*x3s*f02+x2*x2s*f03-x0*x0s*f23)
+          )/denominator;
+    C3 = (x0*x03*x3*f12
+          + x2s*(x3*f01+x0*f13)
+          + x1*(x3s*f02+x0s*f23-x2s*f03)
+          + x2*(-x3s*f01-x0s*f13)
+          + x1s*(-x3*f02+x2*f03-x0*f23)
+          )/denominator;
+    return C0 + C1*x0 + C2*x0*x0 + C3*x0*x0*x0;
   }
 }
+
 
 
 /////////////////////////////////////////////////////////////////////////////////////////

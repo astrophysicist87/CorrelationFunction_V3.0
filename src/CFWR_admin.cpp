@@ -613,11 +613,12 @@ void CorrelationFunction::Set_q_pTdep_pts(int ipt, double qxw, double qyw, doubl
 	double eps = 0.1;									//specifies approximate CF value at which to truncate calculation
 														// (used for computing q(i)max)
 	double ln_one_by_eps = hbarC*sqrt(log(1./eps));
+	double rescale = 0.4;
 
 ////////////////////////////////////////////////////////////////////////
-	double qxmax = ln_one_by_eps / sqrt(qxw*qxw+qyw*qyw);
-	double qymax = ln_one_by_eps / sqrt(qxw*qxw+qyw*qyw);
-	double qzmax = ln_one_by_eps / qzw;
+	double qxmax = rescale * ln_one_by_eps / sqrt(qxw*qxw+qyw*qyw);
+	double qymax = rescale * ln_one_by_eps / sqrt(qxw*qxw+qyw*qyw);
+	double qzmax = rescale * ln_one_by_eps / qzw;
 //double qzmax = qxmax;
 	double xi2 = mpion*mpion + pT_local*pT_local + 2.0*0.25*qxmax*qxmax;	//pretend that Kphi == 0, qx == qo and qs == ql == 0, to maximize qtmax
 	double qtmax = sqrt(xi2 + sqrt(2.0)*pT_local*qxmax) - sqrt(xi2 - sqrt(2.0)*pT_local*qxmax) + 1.e-10;
@@ -764,31 +765,37 @@ void CorrelationFunction::Allocate_CFvals()
 {
 	CFvals = new double **** [n_interp_pT_pts];
 	thermalCFvals = new double **** [n_interp_pT_pts];
+	crosstermCFvals = new double **** [n_interp_pT_pts];
 	resonancesCFvals = new double **** [n_interp_pT_pts];
 	for (int ipT = 0; ipT < n_interp_pT_pts; ++ipT)
 	{
 		CFvals[ipT] = new double *** [n_interp_pphi_pts];
 		thermalCFvals[ipT] = new double *** [n_interp_pphi_pts];
+		crosstermCFvals[ipT] = new double *** [n_interp_pphi_pts];
 		resonancesCFvals[ipT] = new double *** [n_interp_pphi_pts];
 		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 		{
 			CFvals[ipT][ipphi] = new double ** [qxnpts];
 			thermalCFvals[ipT][ipphi] = new double ** [qxnpts];
+			crosstermCFvals[ipT][ipphi] = new double ** [qxnpts];
 			resonancesCFvals[ipT][ipphi] = new double ** [qxnpts];
 			for (int iqx = 0; iqx < qxnpts; ++iqx)
 			{
 				CFvals[ipT][ipphi][iqx] = new double * [qynpts];
 				thermalCFvals[ipT][ipphi][iqx] = new double * [qynpts];
+				crosstermCFvals[ipT][ipphi][iqx] = new double * [qynpts];
 				resonancesCFvals[ipT][ipphi][iqx] = new double * [qynpts];
 				for (int iqy = 0; iqy < qynpts; ++iqy)
 				{
 					CFvals[ipT][ipphi][iqx][iqy] = new double [qznpts];
 					thermalCFvals[ipT][ipphi][iqx][iqy] = new double [qznpts];
+					crosstermCFvals[ipT][ipphi][iqx][iqy] = new double [qznpts];
 					resonancesCFvals[ipT][ipphi][iqx][iqy] = new double [qznpts];
 					for (int iqz = 0; iqz < qznpts; ++iqz)
 					{
 						CFvals[ipT][ipphi][iqx][iqy][iqz] = 0.0;
 						thermalCFvals[ipT][ipphi][iqx][iqy][iqz] = 0.0;
+						crosstermCFvals[ipT][ipphi][iqx][iqy][iqz] = 0.0;
 						resonancesCFvals[ipT][ipphi][iqx][iqy][iqz] = 0.0;
 					}
 				}

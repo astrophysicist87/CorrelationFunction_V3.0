@@ -191,8 +191,8 @@ class CorrelationFunction
 		
 		//store correlation functions
 		//double *** Correl_3D;
-		double ***** CFvals, ***** thermalCFvals, ***** resonancesCFvals;
-		double *** fleshed_out_CF, *** fleshed_out_thermal, *** fleshed_out_resonances;
+		double ***** CFvals, ***** thermalCFvals, ***** crosstermCFvals, ***** resonancesCFvals;
+		double *** fleshed_out_CF, *** fleshed_out_thermal, *** fleshed_out_crossterm, *** fleshed_out_resonances;
 		double *** Correl_3D_err;
 		double ** lambda_Correl, ** lambda_Correl_err;
 		int *** correlator_minus_one_cutoff_norms;
@@ -323,10 +323,10 @@ class CorrelationFunction
 		double interpolate_qi(double q0, double qi0, double qi1, double f1, double f2, bool use_linear);
 		void Get_GF_HBTradii(int folderindex);
 		double get_CF(int ipt, int ipphi, int iqt, int iqx, int iqy, int iqz, bool return_projected_value);
-		void get_CF(double * totalresult, double * thermalresult, double * nonthermalresult,
+		void get_CF(double * totalresult, double * thermalresult, double * crosstermresult, double * resonanceresult,
 									int ipt, int ipphi, int iqt, int iqx, int iqy, int iqz);
 		double Compute_correlationfunction(int ipt, int ipphi, int iqx, int iqy, int iqz, double qt_interp, int interp_flag = 0);
-		void Compute_correlationfunction(double * totalresult, double * thermalresult, double * nonthermalresult,
+		void Compute_correlationfunction(double * totalresult, double * thermalresult, double * crosstermresult, double * resonanceresult,
 										int ipt, int ipphi, int iqx, int iqy, int iqz, double qt_interp, int interp_flag = 0);
 		void Cal_correlationfunction();
 		void Fit_Correlationfunction3D(double *** Correl_3D, int ipt, int ipphi, bool fleshing_out_CF = true);

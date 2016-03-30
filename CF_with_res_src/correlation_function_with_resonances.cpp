@@ -184,6 +184,18 @@ int main(int argc, char *argv[])
 	correlation_function.Output_chosen_resonances();
 	correlation_function.Output_resonance_fraction();
 	correlation_function.Output_correlationfunction(folderindex);
+	if (FLESH_OUT_CF)
+	{
+		output << "Allocating fleshed out CFvals..." << endl;
+		correlation_function.Allocate_fleshed_out_CF();
+		for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		{
+			output << "Fleshing out ipt = " << ipt << ", ipphi = " << ipphi << "..." << endl;
+			correlation_function.Flesh_out_CF(ipt, ipphi);
+			correlation_function.Output_fleshed_out_correlationfunction(ipt, ipphi);
+		}
+	}
 
 	output << "Finished calculating correlation function with all resonance decays..." << endl;
 

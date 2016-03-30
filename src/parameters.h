@@ -34,14 +34,14 @@ using namespace std;
 							// true means C(q=0) ~ 1 + \lambda
 #define QT_POINTS_SPACING		1		// 0 - uniform from -qmax to +qmax
 							// 1 - Chebyshev nodes from -qmax to +qmax
-#define QX_POINTS_SPACING		0
+#define QX_POINTS_SPACING		1
 #define QY_POINTS_SPACING		0
 #define QZ_POINTS_SPACING		0
 #define VARY_ALPHA			false		// (not yet implemented) feature to treat power in exponential as a fit variable (alpha == 2 <==> traditional Gaussian)
 #define Q_AXES_AND_RAYS_ONLY		false		// true - only do points along q-axes (only works for odd points right now)
 							// false - do full grid
 #define FIT_WITH_PROJECTED_CFVALS	false		// as opposed to unprojected CFvals...
-#define FLESH_OUT_CF			false		// refines grid via interpolation before fitting
+#define FLESH_OUT_CF			true		// refines grid via interpolation before fitting
 
 #ifndef H5_NO_NAMESPACE
     using namespace H5;
@@ -51,9 +51,9 @@ using namespace std;
 const int RANK = 1;
 const int ntrig = 2;			// for cos or sin
 
-const double hbarC=0.197327053;		//GeV*fm
-const double hbarC3=0.00768351405;
-const double hbarCm1=5.067728853;
+const double hbarC = 0.197327053;		//GeV*fm
+const double hbarC3 = 0.00768351405;
+const double hbarCm1 = 5.067728853;
 const double twopi = 2.*M_PI;
 const double MeVToGeV = 0.001;
 
@@ -91,9 +91,9 @@ const int new_nqpts = 11;
 
 //all direction-specific q points information here
 const int qtnpts = 9;
-const int qxnpts = 1;
+const int qxnpts = 5;
 const int qynpts = 1;
-const int qznpts = 101;
+const int qznpts = 1;
 const double delta_qt = 0.02;
 const double delta_qx = 0.0016;
 const double delta_qy = 0.02;

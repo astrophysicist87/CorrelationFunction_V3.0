@@ -295,7 +295,7 @@ void CorrelationFunction::Output_correlationfunction(int folderindex)
 			<< qx_PTdep_pts[ipt][iqx] * ckp + qy_PTdep_pts[ipt][iqy] * skp << "   "
 			<< -qx_PTdep_pts[ipt][iqx] * skp + qy_PTdep_pts[ipt][iqy] * ckp << "   "
 			<< qz_PTdep_pts[ipt][iqz] << "   "
-			<< thermalCFvals[ipt][ipphi][iqx][iqy][iqz] << "   " << resonancesCFvals[ipt][ipphi][iqx][iqy][iqz] << "   " << CFvals[ipt][ipphi][iqx][iqy][iqz] << endl;
+			<< thermalCFvals[ipt][ipphi][iqx][iqy][iqz] << "   " << crosstermCFvals[ipt][ipphi][iqx][iqy][iqz] << "   " << resonancesCFvals[ipt][ipphi][iqx][iqy][iqz] << "   " << CFvals[ipt][ipphi][iqx][iqy][iqz] << endl;
 	}
 
 	oCorrFunc.close();
@@ -316,8 +316,8 @@ void CorrelationFunction::Output_fleshed_out_correlationfunction(int ipt, int ip
 		oCorrFunc.open(oCorrFunc_stream.str().c_str(), ios::app);
 
 	for (int iqx = 0; iqx < new_nqpts; ++iqx)
-	for (int iqy = 0; iqy < new_nqpts; ++iqy)
-	for (int iqz = 0; iqz < new_nqpts; ++iqz)
+	for (int iqy = 0; iqy < 1; ++iqy)
+	for (int iqz = 0; iqz < 1; ++iqz)
 	{
 		double ckp = cos_SPinterp_pphi[ipphi], skp = sin_SPinterp_pphi[ipphi];
 		oCorrFunc << scientific << setprecision(7) << setw(15)
@@ -326,7 +326,7 @@ void CorrelationFunction::Output_fleshed_out_correlationfunction(int ipt, int ip
 			<< qx_fleshed_out_pts[iqx] * ckp + qy_fleshed_out_pts[iqy] * skp << "   "
 			<< -qx_fleshed_out_pts[iqx] * skp + qy_fleshed_out_pts[iqy] * ckp << "   "
 			<< qz_fleshed_out_pts[iqz] << "   "
-			<< fleshed_out_thermal[iqx][iqy][iqz] << "   " << fleshed_out_resonances[iqx][iqy][iqz] << "   " << fleshed_out_CF[iqx][iqy][iqz] << endl;
+			<< fleshed_out_thermal[iqx][iqy][iqz] << "   " << fleshed_out_crossterm[iqx][iqy][iqz] << "   " << fleshed_out_resonances[iqx][iqy][iqz] << "   " << fleshed_out_CF[iqx][iqy][iqz] << endl;
 	}
 
 	oCorrFunc.close();
@@ -488,7 +488,7 @@ double CorrelationFunction::get_CF(int ipt, int ipphi, int iqt, int iqx, int iqy
 	}
 }
 
-void CorrelationFunction::get_CF(double * totalresult, double * thermalresult, double * nonthermalresult,
+void CorrelationFunction::get_CF(double * totalresult, double * thermalresult, double * crosstermresult, double * resonanceresult,
 									int ipt, int ipphi, int iqt, int iqx, int iqy, int iqz)
 {
 	//total
@@ -510,10 +510,13 @@ void CorrelationFunction::get_CF(double * totalresult, double * thermalresult, d
 	double den = nonFTd_spectra*nonFTd_spectra;
 	*thermalresult = num / den;
 
-	num = cosNT_spectra*cosNT_spectra+sinNT_spectra*sinNT_spectra								//resonances only
-			+ 2.0 * (cosNT_spectra*cos_transf_tspectra+sinNT_spectra*sin_transf_tspectra);		//cross term
+	num = 2.0 * (cosNT_spectra*cos_transf_tspectra+sinNT_spectra*sin_transf_tspectra);			//cross term
 	//den = nonFTd_tspectra*nonFTd_tspectra;
-	*nonthermalresult = num / den;
+	*crosstermresult = num / den;
+
+	num = cosNT_spectra*cosNT_spectra+sinNT_spectra*sinNT_spectra;								//resonances only
+	//den = nonFTd_tspectra*nonFTd_tspectra;
+	*resonanceresult = num / den;
 
 	num = cos_transf_spectra*cos_transf_spectra + sin_transf_spectra*sin_transf_spectra;
 	//den = nonFTd_spectra*nonFTd_spectra;
@@ -576,15 +579,15 @@ void CorrelationFunction::Output_total_target_eiqx_dN_dypTdpTdphi(int folderinde
 		output_target_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12)
 			<< qt_PTdep_pts[ipt][iqt] << "   " << qx_PTdep_pts[ipt][iqx] << "   " << qy_PTdep_pts[ipt][iqy] << "   " << qz_PTdep_pts[ipt][iqz] << "   "
 			<< SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   "
-			<< nonFTd_spectra << "   "																								//resonances + thermal
-			<< cos_transf_spectra << "   "																							//resonances + thermal (cos)
-			<< sin_transf_spectra << "   "																							//resonances + thermal (sin)
+			<< nonFTd_spectra << "   "																								//non-thermal + thermal
+			<< cos_transf_spectra << "   "																							//non-thermal + thermal (cos)
+			<< sin_transf_spectra << "   "																							//non-thermal + thermal (sin)
 			<< thermal_spectra[target_particle_id][ipt][ipphi] << "   "																//thermal only
 			<< thermal_target_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0] << "   "									//thermal only (cos)
 			<< thermal_target_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1] << "   "									//thermal only (sin)
-			<< nonFTd_spectra - thermal_spectra[target_particle_id][ipt][ipphi] << "   "											//resonances only
-			<< cos_transf_spectra - thermal_target_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0] << "   "				//resonances only (cos)
-			<< sin_transf_spectra - thermal_target_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1] << "   "				//resonances only (sin)
+			<< nonFTd_spectra - thermal_spectra[target_particle_id][ipt][ipphi] << "   "											//non-thermal only
+			<< cos_transf_spectra - thermal_target_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0] << "   "				//non-thermal only (cos)
+			<< sin_transf_spectra - thermal_target_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1] << "   "				//non-thermal only (sin)
 			<< CF << "   " << projected_CF << endl;
 	}
 
