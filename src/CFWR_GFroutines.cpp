@@ -546,9 +546,9 @@ void CorrelationFunction::Delete_fleshed_out_CF()
 void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 {
 	//declare needed quantities here
-	double qxmin = 0.9999*qx_PTdep_pts[ipt][0] / cos(M_PI / (2.*qxnpts)), qxmax = 0.9999*qx_PTdep_pts[ipt][qxnpts-1] / cos(M_PI / (2.*qxnpts));
-	double qymin = 0.9999*qy_PTdep_pts[ipt][0] / cos(M_PI / (2.*qynpts)), qymax = 0.9999*qy_PTdep_pts[ipt][qynpts-1] / cos(M_PI / (2.*qynpts));
-	double qzmin = 0.9999*qz_PTdep_pts[ipt][0] / cos(M_PI / (2.*qznpts)), qzmax = 0.9999*qz_PTdep_pts[ipt][qznpts-1] / cos(M_PI / (2.*qznpts));
+	double qxmin = 0.9999*qx_PTdep_pts[ipt][0], qxmax = 0.9999*qx_PTdep_pts[ipt][qxnpts-1];
+	double qymin = 0.9999*qy_PTdep_pts[ipt][0], qymax = 0.9999*qy_PTdep_pts[ipt][qynpts-1];
+	double qzmin = 0.9999*qz_PTdep_pts[ipt][0], qzmax = 0.9999*qz_PTdep_pts[ipt][qznpts-1];
 
 	double new_Del_qx = (qxmax - qxmin)/(double(new_nqpts-1)+1.e-100);
 	double new_Del_qy = (qymax - qymin)/(double(new_nqpts-1)+1.e-100);
@@ -681,7 +681,7 @@ double CorrelationFunction::interpolate_CF(double *** current_C_slice, double qx
 		for (int iqx = 0; iqx < qxnpts; ++iqx)
 		for (int iqy = 0; iqy < qynpts; ++iqy)
 		for (int iqz = 0; iqz < qznpts; ++iqz)
-			C_at_q[iq] = log(current_C_slice[iqx][iqy][iqz]+offset);
+			C_at_q[iq++] = log(current_C_slice[iqx][iqy][iqz]+offset);
 
 		//double point[dim_loc] = { qx0, qy0, qz0 };
 		double point[dim_loc] = { qx0 };
