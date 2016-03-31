@@ -57,7 +57,8 @@ INC		= 	correlation_function_with_resonances.h \
 			$(SRCDIR)/plumberglib.h \
 			$(SRCDIR)/sorter.h \
 			$(SRCDIR)/chebyshev.h \
-			$(SRCDIR)/chebyshev_library.h
+			$(SRCDIR)/chebyshev_library.h \
+			$(SRCDIR)/stats.h
 
 # -------------------------------------------------
 

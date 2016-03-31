@@ -587,11 +587,11 @@ double CorrelationFunction::interpolate_CF(double *** current_C_slice, double qx
 	int iqy0_loc = binarySearch(qy_PTdep_pts[ipt], qynpts, qy0, true, true);
 	int iqz0_loc = binarySearch(qz_PTdep_pts[ipt], qznpts, qz0, true, true);
 
-	/*if (iqx0_loc == -1 || iqy0_loc == -1 || iqz0_loc == -1)
+	if (iqx0_loc == -1 || iqy0_loc == -1 || iqz0_loc == -1)
 	{
 		cerr << "Interpolation failed: exiting!" << endl;
 		exit(1);
-	}*/
+	}
 
 	double fx0y0z0 = current_C_slice[iqx0_loc][iqy0_loc][iqz0_loc];
 	double fx0y0z1 = current_C_slice[iqx0_loc][iqy0_loc][iqz0_loc+1];
@@ -645,6 +645,75 @@ double CorrelationFunction::interpolate_CF(double *** current_C_slice, double qx
 	}
 	else
 	{
+		int cqx = (qxnpts - 1)/2;           //central qx index
+		int cqy = (qynpts - 1)/2;
+		int cqz = (qznpts - 1)/2;
+		int iqxh0 = (qxnpts - cqx - 1)/2;   //halfway between cqx and nqpts-1
+		int iqyh0 = (qynpts - cqy - 1)/2;
+		int iqzh0 = (qznpts - cqz - 1)/2;
+
+		//if any of these are false, use logarithmic interpolation in that direction
+		//(assuming approximately exponential fall-off)
+		bool use_linear_qx = (iqx0_loc < cqx + iqxh0) && (iqx0_loc >= cqx - iqxh0);
+		bool use_linear_qy = (iqy0_loc < cqy + iqyh0) && (iqy0_loc >= cqy - iqyh0);
+		bool use_linear_qz = (iqz0_loc < cqz + iqzh0) && (iqz0_loc >= cqz - iqzh0);
+
+		//compute minimum element of current_C_slice...
+		double min = current_C_slice[0][0][0];
+		for (int iqx = 0; iqx < qxnpts; ++iqx)
+		for (int iqy = 0; iqy < qynpts; ++iqy)
+		for (int iqz = 0; iqz < qznpts; ++iqz)
+			if (current_C_slice[iqx][iqy][iqz] < min) min = current_C_slice[iqx][iqy][iqz];
+
+		//use minimum value to define offset...
+		double offset = 1e-100;
+		if (min <= offset)
+			offset = abs(min) + 0.001;
+
+		fx0 += offset;
+		fx1 += offset;
+
+		//interpolate over qz-points first
+		///////////////////////
+		//interpolate over first pair of qz-points
+		fx0y0z0 += offset;
+		fx0y0z1 += offset;
+		/*double fx0y0zi = interpolate_qi(qz0, qz_0, qz_1, fx0y0z0, fx0y0z1, use_linear_qz);
+	
+		//interpolate over second pair of qz-points
+		fx0y1z0 += offset;
+		fx0y1z1 += offset;
+		double fx0y1zi = interpolate_qi(qz0, qz_0, qz_1, fx0y1z0, fx0y1z1, use_linear_qz);    
+	
+		//interpolate over third pair of qz-points
+		fx1y0z0 += offset;
+		fx1y0z1 += offset;
+		double fx1y0zi = interpolate_qi(qz0, qz_0, qz_1, fx1y0z0, fx1y0z1, use_linear_qz);
+	
+		//interpolate over fourth pair of qz-points
+		fx1y1z0 += offset;
+		fx1y1z1 += offset;
+		double fx1y1zi = interpolate_qi(qz0, qz_0, qz_1, fx1y1z0, fx1y1z1, use_linear_qz);
+		///////////////////////
+	
+		//interpolate over qy-points next
+		double fx0yizi = interpolate_qi(qy0, qy_0, qy_1, fx0y0zi, fx0y1zi, use_linear_qy);
+		double fx1yizi = interpolate_qi(qy0, qy_0, qy_1, fx1y0zi, fx1y1zi, use_linear_qy);
+	
+		//finally, interpolate over qx-points
+		fxiyizi = interpolate_qi(qx0, qx_0, qx_1, fx0yizi, fx1yizi, use_linear_qx) - offset;*/
+
+//cout << "offset = " << offset << "   " << qx0 << "   " << qy0 << "   " << qz0 << "   " << ipt << "   " << thermal_or_resonances 
+//		<< "   " << fx0y0z0 << "   " << fx0y0z1 << "   " << fx0y1z0 << "   " << fx0y1z1 << "   " << fx1y0z0 << "   " << fx1y0z1 << "   " << fx1y1z0 << "   " << fx1y1z1
+//		<< "   " << fx0y0zi << "   " << fx0y1zi << "   " << fx1y0zi << "   " << fx1y1zi << "   " << fx0yizi << "   " << fx1yizi << "   " << fxiyizi 
+//		<< "   " << use_linear_qx << "   " << use_linear_qy << "   " << use_linear_qz << endl;
+cout << "Here: " << use_linear_qx << "   " << iqx0_loc << "   " << cqx << "   " << iqxh0 << "   " << thermal_or_resonances << "   ";
+		if (thermal_or_resonances == 1)
+			use_linear_qx = true;
+		fxiyizi = interpolate_qi(qx0, qx_0, qx_1, fx0, fx1, use_linear_qx) - offset;
+	}
+	/*else
+	{
 		double qxmin = qx_PTdep_pts[ipt][0] / cos(M_PI / (2.*qxnpts));
 		double qxmax = qx_PTdep_pts[ipt][qxnpts-1] / cos(M_PI / (2.*qxnpts));
 		double qymin = qy_PTdep_pts[ipt][0] / cos(M_PI / (2.*qynpts));
@@ -652,11 +721,6 @@ double CorrelationFunction::interpolate_CF(double *** current_C_slice, double qx
 		double qzmin = qz_PTdep_pts[ipt][0] / cos(M_PI / (2.*qznpts));
 		double qzmax = qz_PTdep_pts[ipt][qznpts-1] / cos(M_PI / (2.*qznpts));
 
-		/*const int dim_loc = 3;
-		int npts_loc[dim_loc] = { qxnpts, qynpts, qznpts };
-		int os[dim_loc] = { qxnpts-1, qynpts-1, qznpts-1 };
-		double lls[dim_loc] = { qxmin, qymin, qzmin };
-		double uls[dim_loc] = { qxmax, qymax, qzmax };*/
 		const int dim_loc = 1;
 		int npts_loc[dim_loc] = { qxnpts };
 		int os[dim_loc] = { qxnpts-1 };
@@ -693,7 +757,7 @@ double CorrelationFunction::interpolate_CF(double *** current_C_slice, double qx
 
 		//try cubic interpolation?
 		fxiyizi = exp(interpolate1D(qx_PTdep_pts[ipt], C_at_q, qx0, qxnpts, 1, false)) - offset;
-	}
+	}*/
 
 	return (fxiyizi);
 }
@@ -705,12 +769,15 @@ double CorrelationFunction::interpolate_qi(double q0, double qi0, double qi1, do
 	bool use_log = (!use_linear) && (f1 > 0.0) && (f2 > 0.0);
 	if (use_log)
 	{
-		if1 = log(f1+1.e-100);
-		if2 = log(f2+1.e-100);
+		if1 = log(f1);
+		if2 = log(f2);
 	}
 	double tmp_result = lin_int(q0 - qi0, 1./(qi1-qi0), if1, if2);
+cout << q0 << "   " << qi0 << "   " << qi1 << "   " << if1 << "   " << if2 << "   " << f1 << "   " << f2 << "   " << tmp_result << "   " << exp(tmp_result) << endl;
 	if (use_log)
 		tmp_result = exp(tmp_result);
+
+//if (1) exit(1);
 
 	return (tmp_result);
 }

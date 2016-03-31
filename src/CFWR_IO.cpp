@@ -458,6 +458,37 @@ void CorrelationFunction::Regulate_CF(int ipt, int iqt, int iqx, int iqy, int iq
 	return;
 }
 
+/*void CorrelationFunction::Regulate_CF_Hampel(int ipt, int iqt, int iqx, int iqy, int iqz, double * CF, double * projCF)
+{
+	bool * is_outlier = new bool [n_interp_pphi_pts];
+	double * pphi_CF_slice = new double [n_interp_pphi_pts];
+
+	double pphi_median = 0.0;
+
+	for (ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		pphi_CF_slice[ipphi] = ...
+
+	find_outliers_Hampel(pphi_CF_slice, n_interp_pphi_pts, is_outlier, &pphi_median);
+
+	for (ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+	if (is_outlier[ipphi] || abs(*CF-1.5) > 0.500001)
+	{
+		//if (SPinterp_pT[ipt] < pTcutoff)
+			*global_out_stream_ptr << "WARNING: regulated CF point at pT = " << SPinterp_pT[ipt]
+				<< ": (" << *CF << "," << *projCF << ") --> (";
+		*CF = pphi_median;	//if it's an outlier, replace with pphi-averaged value
+		*projCF = pphi_median;
+		//if (SPinterp_pT[ipt] < pTcutoff)
+			*global_out_stream_ptr << *CF << "," << *projCF << ")" << endl;
+	}
+
+	delete [] is_outlier;
+	delete [] pphi_CF_slice;
+
+	return;
+}*/
+
+
 double CorrelationFunction::get_CF(int ipt, int ipphi, int iqt, int iqx, int iqy, int iqz, bool return_projected_value)
 {
 	double nonFTd_spectra = spectra[target_particle_id][ipt][ipphi];
@@ -563,10 +594,13 @@ void CorrelationFunction::Output_total_target_eiqx_dN_dypTdpTdphi(int folderinde
 	{
 		//first, get CF and projected CF
 		double CF = get_CF(ipt, ipphi, iqt, iqx, iqy, iqz, false);				//false means don't return projected value
-		double projected_CF = get_CF(ipt, ipphi, iqt, iqx, iqy, iqz, true && !thermal_pions_only);	//true means do return projected value
+		//double projected_CF = get_CF(ipt, ipphi, iqt, iqx, iqy, iqz, true && !thermal_pions_only);	//true means do return projected value
 
 		//now, regulate results
 		//Regulate_CF(ipt, iqt, iqx, iqy, iqz, &CF, &projected_CF);
+
+		//!!!!!!!!!!!!should get projected_CF AFTER regulating CF...!!!!!!!!!!!!
+		double projected_CF = get_CF(ipt, ipphi, iqt, iqx, iqy, iqz, true && !thermal_pions_only);	//true means do return projected value
 
 		double nonFTd_spectra = spectra[target_particle_id][ipt][ipphi];
 		double cos_transf_spectra = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];

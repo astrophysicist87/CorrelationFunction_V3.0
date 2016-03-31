@@ -34,7 +34,7 @@ using namespace std;
 							// true means C(q=0) ~ 1 + \lambda
 #define QT_POINTS_SPACING		1		// 0 - uniform from -qmax to +qmax
 							// 1 - Chebyshev nodes from -qmax to +qmax
-#define QX_POINTS_SPACING		1
+#define QX_POINTS_SPACING		0
 #define QY_POINTS_SPACING		0
 #define QZ_POINTS_SPACING		0
 #define VARY_ALPHA			false		// (not yet implemented) feature to treat power in exponential as a fit variable (alpha == 2 <==> traditional Gaussian)
@@ -87,7 +87,7 @@ const int qnpts = 1;
 const double delta_q = 0.005;
 const double init_q = 0.0;
 
-const int new_nqpts = 11;
+const int new_nqpts = 51;
 
 //all direction-specific q points information here
 const int qtnpts = 9;
