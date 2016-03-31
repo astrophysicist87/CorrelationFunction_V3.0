@@ -275,6 +275,8 @@ class CorrelationFunction
 		void Delete_decay_channel_info();
 		int Set_daughter_list(int parent_resonance_index);
 		void Regulate_CF(int ipt, int iqt, int iqx, int iqy, int iqz, double * CF, double * projCF);
+		void Regulate_CF_Hampel(int ipt, int iqt, int iqx, int iqy, int iqz,
+												double * pphi_CF_slice, double * pphi_CF_slice_term1, double * pphi_CF_slice_term2, double * pphi_CF_slice_term3)
 
 		void Fill_out_pts(double * pointsarray, int numpoints, double max_val, int spacing_type);
 		void Set_q_pTdep_pts(int ipt, double qxw, double qyw, double qzw);
@@ -324,8 +326,7 @@ class CorrelationFunction
 		void Get_GF_HBTradii(int folderindex);
 		double get_CF(int ipt, int ipphi, int iqt, int iqx, int iqy, int iqz, bool return_projected_value);
 		void get_CF(double * totalresult, double * thermalresult, double * crosstermresult, double * resonanceresult,
-									int ipt, int ipphi, int iqt, int iqx, int iqy, int iqz);
-		double Compute_correlationfunction(int ipt, int ipphi, int iqx, int iqy, int iqz, double qt_interp, int interp_flag = 0);
+									int ipt, int ipphi, int iqt, int iqx, int iqy, int iqz, bool return_projected_value);
 		void Compute_correlationfunction(double * totalresult, double * thermalresult, double * crosstermresult, double * resonanceresult,
 										int ipt, int ipphi, int iqx, int iqy, int iqz, double qt_interp, int interp_flag = 0);
 		void Cal_correlationfunction();

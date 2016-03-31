@@ -31,225 +31,27 @@ void CorrelationFunction::Get_GF_HBTradii(int folderindex)
 	{
 		*global_out_stream_ptr << "   --> Doing pT = " << SPinterp_pT[ipt] << ", pphi = " << SPinterp_pphi[ipphi] << "..." << endl;
 		
+		//determine whether to use fleshed out / projected CFvals
 		double *** CF_for_fitting = CFvals[ipt][ipphi];
 		if (FLESH_OUT_CF)
 		{
 			Flesh_out_CF(ipt, ipphi);
-			CF_for_fitting = fleshed_out_CF;
+			CF_for_fitting = fleshed_out_CFvals[ipt][ipphi];
 		}
 
-		if (!VARY_ALPHA)
-		{
-			if (USE_LAMBDA)
-				Fit_Correlationfunction3D_withlambda( CF_for_fitting, ipt, ipphi, FLESH_OUT_CF );
-			else
-				Fit_Correlationfunction3D( CF_for_fitting, ipt, ipphi, FLESH_OUT_CF );
-		}
-		else	//varying alpha not yet supported!
-		{
-			//if (USE_LAMBDA)
-			//	Fit_Correlationfunction3D_withlambda( CF_for_fitting, ipt, ipphi, FLESH_OUT_CF );
-			//else
-			//	Fit_Correlationfunction3D( CF_for_fitting, ipt, ipphi, FLESH_OUT_CF );
-			cerr << "Varying alpha not yet supported!" << endl;
-		}
+		//finally, do fits, depending on what kind you want to do
+		if (USE_LAMBDA)
+			Fit_Correlationfunction3D_withlambda( CF_for_fitting, ipt, ipphi, FLESH_OUT_CF );
+		else
+			Fit_Correlationfunction3D( CF_for_fitting, ipt, ipphi, FLESH_OUT_CF );
 
-		if (FLESH_OUT_CF && ipt==0 && ipphi==0)
+		if (FLESH_OUT_CF)
 			Output_fleshed_out_correlationfunction(ipt, ipphi);
-//if (1) exit(1);
 	}
 
 	if (FLESH_OUT_CF)
 		Delete_fleshed_out_CF();
 
-	return;
-}
-
-double CorrelationFunction::Compute_correlationfunction(int ipt, int ipphi, int iqx, int iqy, int iqz, double qt_interp, int interp_flag /*==0*/)
-{
-	// try using linear-logarithmic interpolation if q-point is within grid
-	// otherwise, just use linear interpolation/extrapolation, or throw an exception and do return 0
-	double interpolated_result = 0.0;
-
-	int qidx = binarySearch(qt_PTdep_pts[ipt], qtnpts, qt_interp);
-	double q_min = qt_PTdep_pts[ipt][0] / cos(M_PI / (2.*qtnpts)), q_max = qt_PTdep_pts[ipt][qtnpts-1]/ cos(M_PI / (2.*qtnpts));
-
-	bool q_point_is_outside_grid = ( qidx == -1 && ( qt_interp < q_min || qt_interp > q_max ) );
-	bool use_linear_logarithmic_interpolation = false;
-
-	if (!q_point_is_outside_grid)
-	{
-		if (use_linear_logarithmic_interpolation)
-		{
-			q_min = qt_PTdep_pts[ipt][qidx];
-			q_max = qt_PTdep_pts[ipt][qidx+1];
-
-			double ln_C_at_q[2];
-	
-			// set values at all vertices of 4D-hypercube used for interpolation
-			for (int iqtidx = 0; iqtidx < 1; ++iqtidx)
-				ln_C_at_q[iqtidx] = log( get_CF(ipt, ipphi, qidx+iqtidx, iqx, iqy, iqz, FIT_WITH_PROJECTED_CFVALS && !thermal_pions_only) + 1.e-100 );
-	
-			// interpolating w.r.t. q^2, not q
-			double sgnd_qt2_interp = sgn(qt_interp) * qt_interp * qt_interp;
-			double * sgnd_qt2_limits = new double [2];
-			sgnd_qt2_limits[0] = sgn(q_min) * q_min * q_min;
-			sgnd_qt2_limits[1] = sgn(q_max) * q_max * q_max;
-	
-			double interpolated_ln_result = interpolate1D(sgnd_qt2_limits, ln_C_at_q, sgnd_qt2_interp, 2, 0, true);
-			interpolated_result = exp(interpolated_ln_result);
-	
-			// Clean up
-			delete [] sgnd_qt2_limits;
-		}
-		else
-		{
-			double C_at_q[qtnpts];	//C - 1
-	
-			// set CF values along qt-slice for interpolation
-			for (int iqtidx = 0; iqtidx < qtnpts; ++iqtidx)
-				C_at_q[iqtidx] = get_CF(ipt, ipphi, iqtidx, iqx, iqy, iqz, FIT_WITH_PROJECTED_CFVALS && !thermal_pions_only);
-
-			//assumes qt-grid has already been computed at (adjusted) Chebyshev nodes!!!
-			if (QT_POINTS_SPACING == 1 && interp_flag == 0)
-			{
-				//set up Chebyshev calculation
-				int npts_loc[1] = { qtnpts };
-				int os[1] = { qtnpts - 1 };
-				double lls[1] = { q_min };
-				double uls[1] = { q_max };
-				double point[1] = { qt_interp };
-				int dim_loc = 1;
-
-				Chebyshev cf(C_at_q, npts_loc, os, lls, uls, dim_loc);
-	
-				interpolated_result = cf.eval(point);
-			}
-			else	//if not using Chebyshev nodes in qt-direction, just use straight-up linear(0) or cubic(1) interpolation
-			{
-				*global_out_stream_ptr << "Using cubic interpolation" << endl;
-				//interpolated_result = interpolate1D(qt_PTdep_pts[ipt], C_at_q, qt_interp, qtnpts, 0, true);
-				interpolated_result = interpolate1D(qt_PTdep_pts[ipt], C_at_q, qt_interp, qtnpts, 1, false);
-			}
-		}
-	}
-	else
-	{
-		*global_out_stream_ptr << "Warning: qt_interp point was outside of computed grid!" << endl
-								<< "\t qt_interp = " << qt_interp << " out of {q_min, q_max} = {" << q_min << ", " << q_max << "}" << endl;
-		interpolated_result = 0.0;
-	}
-	return (interpolated_result);
-}
-
-void CorrelationFunction::Compute_correlationfunction(double * totalresult, double * thermalresult, double * CTresult, double * resonanceresult,
-										int ipt, int ipphi, int iqx, int iqy, int iqz, double qt_interp, int interp_flag /*==0*/)
-{
-	// try using linear-logarithmic interpolation if q-point is within grid
-	// otherwise, just use linear interpolation/extrapolation, or throw an exception and do return 0
-
-	int qidx = binarySearch(qt_PTdep_pts[ipt], qtnpts, qt_interp);
-	double q_min = qt_PTdep_pts[ipt][0] / cos(M_PI / (2.*qtnpts)), q_max = qt_PTdep_pts[ipt][qtnpts-1]/ cos(M_PI / (2.*qtnpts));
-
-	bool q_point_is_outside_grid = ( qidx == -1 && ( qt_interp < q_min || qt_interp > q_max ) );
-	bool use_linear_logarithmic_interpolation = false;
-
-	if (!q_point_is_outside_grid)
-	{
-		if (use_linear_logarithmic_interpolation)
-		{
-			q_min = qt_PTdep_pts[ipt][qidx];
-			q_max = qt_PTdep_pts[ipt][qidx+1];
-
-			double ln_C_at_q[2], ln_Ct_at_q[2], ln_Cct_at_q[2], ln_Cr_at_q[2];
-			double tmpC = 0.0, tmpCt = 0.0, tmpCct = 0.0, tmpCr = 0.0;
-	
-			// set values at all vertices of 4D-hypercube used for interpolation
-			for (int iqtidx = 0; iqtidx < 1; ++iqtidx)
-			{
-				//ln_C_at_q[iqtidx] = log( get_CF(ipt, ipphi, qidx+iqtidx, iqx, iqy, iqz, FIT_WITH_PROJECTED_CFVALS && !thermal_pions_only) + 1.e-100 );
-				//return C - 1!!!
-				get_CF(&tmpC, &tmpCt, &tmpCct, &tmpCr, ipt, ipphi, qidx+iqtidx, iqx, iqy, iqz);
-				ln_C_at_q[iqtidx] = log( abs(tmpC) + 1.e-100 );
-				ln_Ct_at_q[iqtidx] = log( abs(tmpCt) + 1.e-100 );
-				ln_Cct_at_q[iqtidx] = log( abs(tmpCct) + 1.e-100 );
-				ln_Cr_at_q[iqtidx] = log( abs(tmpCr) + 1.e-100 );
-			}
-	
-			// interpolating w.r.t. q^2, not q
-			double sgnd_qt2_interp = sgn(qt_interp) * qt_interp * qt_interp;
-			double * sgnd_qt2_limits = new double [2];
-			sgnd_qt2_limits[0] = sgn(q_min) * q_min * q_min;
-			sgnd_qt2_limits[1] = sgn(q_max) * q_max * q_max;
-	
-			double interpolated_ln_result = interpolate1D(sgnd_qt2_limits, ln_C_at_q, sgnd_qt2_interp, 2, 0, true);
-			*totalresult = exp(interpolated_ln_result);
-			interpolated_ln_result = interpolate1D(sgnd_qt2_limits, ln_Ct_at_q, sgnd_qt2_interp, 2, 0, true);
-			*thermalresult = exp(interpolated_ln_result);
-			interpolated_ln_result = interpolate1D(sgnd_qt2_limits, ln_Cct_at_q, sgnd_qt2_interp, 2, 0, true);
-			*CTresult = exp(interpolated_ln_result);
-			interpolated_ln_result = interpolate1D(sgnd_qt2_limits, ln_Cr_at_q, sgnd_qt2_interp, 2, 0, true);
-			*resonanceresult = exp(interpolated_ln_result);
-
-	
-			// Clean up
-			delete [] sgnd_qt2_limits;
-		}
-		else
-		{
-			double C_at_q[qtnpts], Ct_at_q[qtnpts], Cct_at_q[qtnpts], Cr_at_q[qtnpts];	//C - 1
-			double tmpC = 0.0, tmpCt = 0.0, tmpCct = 0.0, tmpCr = 0.0;
-	
-			// set CF values along qt-slice for interpolation
-			for (int iqtidx = 0; iqtidx < qtnpts; ++iqtidx)
-			{
-				//C_at_q[iqtidx] = get_CF(ipt, ipphi, iqtidx, iqx, iqy, iqz, FIT_WITH_PROJECTED_CFVALS && !thermal_pions_only);
-				//return C - 1!!!
-				get_CF(&tmpC, &tmpCt, &tmpCct, &tmpCr, ipt, ipphi, iqtidx, iqx, iqy, iqz);
-				C_at_q[iqtidx] = tmpC;
-				Ct_at_q[iqtidx] = tmpCt;
-				Cct_at_q[iqtidx] = tmpCct;
-				Cr_at_q[iqtidx] = tmpCr;
-			}
-
-			//assumes qt-grid has already been computed at (adjusted) Chebyshev nodes!!!
-			if (QT_POINTS_SPACING == 1 && interp_flag == 0)
-			{
-				//set up Chebyshev calculation
-				int npts_loc[1] = { qtnpts };
-				int os[1] = { qtnpts - 1 };
-				double lls[1] = { q_min };
-				double uls[1] = { q_max };
-				double point[1] = { qt_interp };
-				int dim_loc = 1;
-
-				Chebyshev cf(C_at_q, npts_loc, os, lls, uls, dim_loc);
-				Chebyshev cft(Ct_at_q, npts_loc, os, lls, uls, dim_loc);
-				Chebyshev cfct(Cct_at_q, npts_loc, os, lls, uls, dim_loc);
-				Chebyshev cfr(Cr_at_q, npts_loc, os, lls, uls, dim_loc);
-	
-				*totalresult = cf.eval(point);
-				*thermalresult = cft.eval(point);
-				*CTresult = cfct.eval(point);
-				*resonanceresult = cfr.eval(point);
-			}
-			else	//if not using Chebyshev nodes in qt-direction, just use straight-up linear(0) or cubic(1) interpolation
-			{
-				*global_out_stream_ptr << "Using cubic interpolation" << endl;
-				//interpolated_result = interpolate1D(qt_PTdep_pts[ipt], C_at_q, qt_interp, qtnpts, 0, true);
-				*totalresult = interpolate1D(qt_PTdep_pts[ipt], C_at_q, qt_interp, qtnpts, 1, false);
-				*thermalresult = interpolate1D(qt_PTdep_pts[ipt], Ct_at_q, qt_interp, qtnpts, 1, false);
-				*CTresult = interpolate1D(qt_PTdep_pts[ipt], Cct_at_q, qt_interp, qtnpts, 1, false);
-				*resonanceresult = interpolate1D(qt_PTdep_pts[ipt], Cr_at_q, qt_interp, qtnpts, 1, false);
-			}
-		}
-	}
-	else
-	{
-		*global_out_stream_ptr << "Warning: qt_interp point was outside of computed grid!" << endl
-								<< "\t qt_interp = " << qt_interp << " out of {q_min, q_max} = {" << q_min << ", " << q_max << "}" << endl;
-		*totalresult = 0.0;
-	}
 	return;
 }
 
@@ -288,17 +90,10 @@ void CorrelationFunction::Cal_correlationfunction()
 	{
 		Get_q_points(qx_PTdep_pts[ipt][iqx], qy_PTdep_pts[ipt][iqy], qz_PTdep_pts[ipt][iqz], SPinterp_pT[ipt], SPinterp_pphi[ipphi], q_interp);
 
-		double tmp_spectra = spectra[target_particle_id][ipt][ipphi];
-
-		//double interpcheck = Compute_correlationfunction(ipt, ipphi, iqx, iqy, iqz, q_interp[0], 0);
-		//cout << "INTERPOLATION CHECK: " << scientific << setprecision(8) << setw(12) << interpcheck << "   " << SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   "
-		//		<< q_interp[0] << "   " << qx_PTdep_pts[ipt][iqx] << "   " << qy_PTdep_pts[ipt][iqy] << "   " << qz_PTdep_pts[ipt][iqz] << "   "
-		//		<< Cal_dN_dypTdpTdphi_with_weights_function(current_FOsurf_ptr, target_particle_id, SPinterp_pT[ipt], SPinterp_pphi[ipphi],
-		//														q_interp[0], qx_PTdep_pts[ipt][iqx], qy_PTdep_pts[ipt][iqy], qz_PTdep_pts[ipt][iqz]) / (tmp_spectra*tmp_spectra) << endl;
-		//CFvals[ipt][ipphi][iqx][iqy][iqz] = interpcheck;
+		//returns only projected value automatically if appropriate options are specified!
 		double tmp1 = 0.0, tmp2 = 0.0, tmp2a = 0.0, tmp3 = 0.0;
 		Compute_correlationfunction(&tmp1, &tmp2, &tmp2a, &tmp3, ipt, ipphi, iqx, iqy, iqz, q_interp[0], 0);
-		CFvals[ipt][ipphi][iqx][iqy][iqz] = 1.0 + tmp1;			//C == Ct + Cct + Cr + 1
+		CFvals[ipt][ipphi][iqx][iqy][iqz] = 1.0 + tmp1;		//C == Ct + Cct + Cr + 1
 		thermalCFvals[ipt][ipphi][iqx][iqy][iqz] = tmp2;	//Ct
 		crosstermCFvals[ipt][ipphi][iqx][iqy][iqz] = tmp2a;	//Cct
 		resonancesCFvals[ipt][ipphi][iqx][iqy][iqz] = tmp3;	//Cr
@@ -306,242 +101,110 @@ void CorrelationFunction::Cal_correlationfunction()
 	sw.Stop();
 	*global_out_stream_ptr << "Finished computing correlator in " << sw.printTime() << " seconds." << endl;
 
-	//put test_interpolator() here...
-	//*global_out_stream_ptr << "Testing interpolator..." << endl;
-	//sw.Start();
-	//test_interpolator();
-	//sw.Stop();
-	//*global_out_stream_ptr << "Finished testing interpolator in " << sw.printTime() << " seconds." << endl;
+	sw.Reset();
+	sw.Start();
+	*global_out_stream_ptr << "Regulating computed correlator values using Hampel criterion for outlier detection..." << endl;
+
+	if (REGULATE_CF)
+	{
+		double * pphi_CF_slice = new double [n_interp_pphi_pts];
+		double * pphi_CF_slice_term1 = new double [n_interp_pphi_pts];
+		double * pphi_CF_slice_term2 = new double [n_interp_pphi_pts];
+		double * pphi_CF_slice_term3 = new double [n_interp_pphi_pts];
+	
+		for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+		for (int iqx = 0; iqx < qxnpts; ++iqx)
+		for (int iqy = 0; iqy < qynpts; ++iqy)
+		for (int iqz = 0; iqz < qznpts; ++iqz)
+		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		{
+			pphi_CF_slice[ipphi] = CFvals[ipt][ipphi][iqx][iqy][iqz];
+			pphi_CF_slice_term1[ipphi] = thermalCFvals[ipt][ipphi][iqx][iqy][iqz];
+			pphi_CF_slice_term2[ipphi] = crosstermCFvals[ipt][ipphi][iqx][iqy][iqz];
+			pphi_CF_slice_term3[ipphi] = resonancesCFvals[ipt][ipphi][iqx][iqy][iqz];
+			Regulate_CF_Hampel(ipt, iqt, iqx, iqy, iqz, pphi_CF_slice, pphi_CF_slice_term1, pphi_CF_slice_term2, pphi_CF_slice_term3);
+		}
+		sw.Stop();
+		*global_out_stream_ptr << "Finished regulating computed correlator values in " << sw.printTime() << " seconds." << endl;
+	
+		delete [] pphi_CF_slice;
+		delete [] pphi_CF_slice_term1;
+		delete [] pphi_CF_slice_term2;
+		delete [] pphi_CF_slice_term3;
+	}
 
 	delete [] q_interp;
 
-	//exit(1);
-
 	return;
 }
 
-void CorrelationFunction::test_interpolator()
+void CorrelationFunction::Compute_correlationfunction(double * totalresult, double * thermalresult, double * CTresult, double * resonanceresult,
+										int ipt, int ipphi, int iqx, int iqy, int iqz, double qt_interp, int interp_flag /*==0*/)
 {
-	//need grid_points to be Chebyshev-spaced...
-	if (QX_POINTS_SPACING != 1 or QY_POINTS_SPACING != 1 or QZ_POINTS_SPACING != 1)
-		return;
+	int qidx = binarySearch(qt_PTdep_pts[ipt], qtnpts, qt_interp);
+	double q_min = qt_PTdep_pts[ipt][0] / cos(M_PI / (2.*qtnpts)), q_max = qt_PTdep_pts[ipt][qtnpts-1]/ cos(M_PI / (2.*qtnpts));
 
-	int local_qnpts = 25;
-	double mtarget = all_particles[target_particle_id].mass;
-	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+	bool q_point_is_outside_grid = ( qidx == -1 && ( qt_interp < q_min || qt_interp > q_max ) );
+
+	if (!q_point_is_outside_grid)
 	{
-		double qxmin = qx_PTdep_pts[ipt][0];
-		double qxmax = qx_PTdep_pts[ipt][qxnpts-1];
-		double qymin = qy_PTdep_pts[ipt][0];
-		double qymax = qy_PTdep_pts[ipt][qynpts-1];
-		double qzmin = qz_PTdep_pts[ipt][0];
-		double qzmax = qz_PTdep_pts[ipt][qznpts-1];
-		double del_qx = (qxmax - qxmin) / double(local_qnpts - 1 + 1.e-100);
-		double del_qy = (qymax - qymin) / double(local_qnpts - 1 + 1.e-100);
-		double del_qz = (qzmax - qzmin) / double(local_qnpts - 1 + 1.e-100);
-
-		//assumes q(i)-grids has already been computed at (adjusted) Chebyshev nodes!!!
-		//set up Chebyshev calculation
-		const int dim_loc = 3;
-		int npts_loc[dim_loc] = { qxnpts, qynpts, qznpts };
-		int os[dim_loc] = { qxnpts-1, qynpts-1, qznpts-1 };
-		double lls[dim_loc] = { qxmin, qymin, qzmin };
-		double uls[dim_loc] = { qxmax, qymax, qzmax };
-		
-		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-		{
-			//set up local grid for interpolation
-			int iq = 0;
-			double C_at_q[qxnpts*qynpts*qznpts];
-			double *** current_C_slice = CFvals[ipt][ipphi];
-			for (int iqx = 0; iqx < qxnpts; ++iqx)
-			for (int iqy = 0; iqy < qynpts; ++iqy)
-			for (int iqz = 0; iqz < qznpts; ++iqz)
-				C_at_q[iq++] = current_C_slice[iqx][iqy][iqz];
+		double C_at_q[qtnpts], Ct_at_q[qtnpts], Cct_at_q[qtnpts], Cr_at_q[qtnpts];	//C - 1
+		double tmpC = 0.0, tmpCt = 0.0, tmpCct = 0.0, tmpCr = 0.0;
 	
-			//generate Chebyshev approximation to use below
+		// set CF values along qt-slice for interpolation
+		for (int iqtidx = 0; iqtidx < qtnpts; ++iqtidx)
+		{
+			//return C - 1!!!
+			get_CF(&tmpC, &tmpCt, &tmpCct, &tmpCr, ipt, ipphi, iqtidx, iqx, iqy, iqz, FIT_WITH_PROJECTED_CFVALS && !thermal_pions_only);
+			C_at_q[iqtidx] = tmpC;
+			Ct_at_q[iqtidx] = tmpCt;
+			Cct_at_q[iqtidx] = tmpCct;
+			Cr_at_q[iqtidx] = tmpCr;
+		}
+
+		//assumes qt-grid has already been computed at (adjusted) Chebyshev nodes!!!
+		if (QT_POINTS_SPACING == 1 && interp_flag == 0)
+		{
+			//set up Chebyshev calculation
+			int npts_loc[1] = { qtnpts };
+			int os[1] = { qtnpts - 1 };
+			double lls[1] = { q_min };
+			double uls[1] = { q_max };
+			double point[1] = { qt_interp };
+			int dim_loc = 1;
+
 			Chebyshev cf(C_at_q, npts_loc, os, lls, uls, dim_loc);
-
-			double local_pT = SPinterp_pT[ipt];
-			double local_pphi = SPinterp_pphi[ipphi];
-			double ckp = cos_SPinterp_pphi[ipphi], skp = sin_SPinterp_pphi[ipphi];
-			double local_spectra = spectra[target_particle_id][ipt][ipphi];
-			//now use Chebyshev approximator to do interpolation
-			for (int iqx = 0; iqx < local_qnpts; ++iqx)
-			for (int iqy = 0; iqy < local_qnpts; ++iqy)
-			for (int iqz = 0; iqz < local_qnpts; ++iqz)
-			{
-				//set interpolation point
-				double qx_interp = qxmin + (double)iqx * del_qx;
-				double qy_interp = qymin + (double)iqy * del_qy;
-				double qz_interp = qzmin + (double)iqz * del_qz;
-				double xi2 = mtarget*mtarget + local_pT*local_pT + 0.25*(qx_interp*qx_interp+qy_interp*qy_interp+qz_interp*qz_interp);
-				double qo = ckp * qx_interp + skp * qy_interp;
-				double qt_interp = sqrt(xi2 + qo*local_pT) - sqrt(xi2 - qo*local_pT);	//set qt component
+			Chebyshev cft(Ct_at_q, npts_loc, os, lls, uls, dim_loc);
+			Chebyshev cfct(Cct_at_q, npts_loc, os, lls, uls, dim_loc);
+			Chebyshev cfr(Cr_at_q, npts_loc, os, lls, uls, dim_loc);
 	
-				double point[dim_loc] = { qx_interp, qy_interp, qz_interp };
-		
-				double interpolated_result = cf.eval(point);
-				double exact_result = Cal_dN_dypTdpTdphi_with_weights_function(current_FOsurf_ptr, target_particle_id, local_pT, local_pphi,
-																				qt_interp, qx_interp, qy_interp, qz_interp) / (local_spectra*local_spectra);
-
-				cout << "test_interpolator(): " << ipt << "   " << ipphi << "   " << iqx << "   " << iqy << "   " << iqz
-						<< setprecision(12) << setw(16)
-						<< "   " << local_pT << "   " << local_pphi << "   " << qx_interp << "   " << qy_interp << "   " << qz_interp
-						<< "   " << interpolated_result << "   " << exact_result << endl;
-			}
+			*totalresult = cf.eval(point);
+			*thermalresult = cft.eval(point);
+			*CTresult = cfct.eval(point);
+			*resonanceresult = cfr.eval(point);
 		}
+		else	//if not using Chebyshev nodes in qt-direction, just use straight-up linear(0) or cubic(1) interpolation
+		{
+			*global_out_stream_ptr << "Using cubic interpolation" << endl;
+			//interpolated_result = interpolate1D(qt_PTdep_pts[ipt], C_at_q, qt_interp, qtnpts, 0, true);
+			*totalresult = interpolate1D(qt_PTdep_pts[ipt], C_at_q, qt_interp, qtnpts, 1, false);
+			*thermalresult = interpolate1D(qt_PTdep_pts[ipt], Ct_at_q, qt_interp, qtnpts, 1, false);
+			*CTresult = interpolate1D(qt_PTdep_pts[ipt], Cct_at_q, qt_interp, qtnpts, 1, false);
+			*resonanceresult = interpolate1D(qt_PTdep_pts[ipt], Cr_at_q, qt_interp, qtnpts, 1, false);
+		}
+	}
+	else
+	{
+		*global_out_stream_ptr << "Warning: qt_interp point was outside of computed grid!" << endl
+								<< "\t qt_interp = " << qt_interp << " out of {q_min, q_max} = {" << q_min << ", " << q_max << "}" << endl;
+		*totalresult = 0.0;
 	}
 	return;
 }
-
-/*void CorrelationFunction::test_interpolator_1Dslices()
-{
-	//need grid_points to be Chebyshev-spaced...
-	if (QX_POINTS_SPACING != 1 or QY_POINTS_SPACING != 1 or QZ_POINTS_SPACING != 1)
-		return;
-
-	int local_qnpts = 25;
-	double mtarget = all_particles[target_particle_id].mass;
-	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-	{
-		double qxmin = qx_PTdep_pts[ipt][0];
-		double qxmax = qx_PTdep_pts[ipt][qxnpts-1];
-		double qymin = qy_PTdep_pts[ipt][0];
-		double qymax = qy_PTdep_pts[ipt][qynpts-1];
-		double qzmin = qz_PTdep_pts[ipt][0];
-		double qzmax = qz_PTdep_pts[ipt][qznpts-1];
-		double del_qx = (qxmax - qxmin) / double(local_qnpts - 1 + 1.e-100);
-		double del_qy = (qymax - qymin) / double(local_qnpts - 1 + 1.e-100);
-		double del_qz = (qzmax - qzmin) / double(local_qnpts - 1 + 1.e-100);
-
-		//assumes q(i)-grids has already been computed at (adjusted) Chebyshev nodes!!!
-		//set up Chebyshev calculation
-		const int dim_loc = 1;
-		int npts_loc_x[dim_loc] = { qxnpts };
-		int npts_loc_y[dim_loc] = { qynpts };
-		int npts_loc_z[dim_loc] = { qznpts };
-		int osx[dim_loc] = { qxnpts-1 };
-		int osy[dim_loc] = { qynpts-1 };
-		int osz[dim_loc] = { qznpts-1 };
-		double llsx[dim_loc] = { qxmin };
-		double ulsx[dim_loc] = { qxmax };
-		double llsy[dim_loc] = { qymin };
-		double ulsy[dim_loc] = { qymax };
-		double llsz[dim_loc] = { qzmin };
-		double ulsz[dim_loc] = { qzmax };
-		
-		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-		{
-			//set up local q grids for interpolation
-			int iq = 0;
-			double C_at_qx[qxnpts];
-			double *** current_C_slice = CFvals[ipt][ipphi];
-			for (int iqx = 0; iqx < qxnpts; ++iqx)
-				C_at_qx[iq++] = current_C_slice[iqx][iqy0][iqz0];
-	
-			//generate Chebyshev approximation to use below
-			Chebyshev cfx(C_at_qx, npts_loc_x, osx, llsx, ulsx, dim_loc);
-
-			double local_pT = SPinterp_pT[ipt];
-			double local_pphi = SPinterp_pphi[ipphi];
-			double ckp = cos_SPinterp_pphi[ipphi], skp = sin_SPinterp_pphi[ipphi];
-			double local_spectra = spectra[target_particle_id][ipt][ipphi];
-			//now use Chebyshev approximator to do interpolation
-			for (int iqx = 0; iqx < local_qnpts; ++iqx)
-			for (int iqy = 0; iqy < local_qnpts; ++iqy)
-			for (int iqz = 0; iqz < local_qnpts; ++iqz)
-			{
-				//set interpolation point
-				double qx_interp = qxmin + (double)iqx * del_qx;
-				double qy_interp = qymin + (double)iqy * del_qy;
-				double qz_interp = qzmin + (double)iqz * del_qz;
-				double xi2 = mtarget*mtarget + local_pT*local_pT + 0.25*(qx_interp*qx_interp+qy_interp*qy_interp+qz_interp*qz_interp);
-				double qo = ckp * qx_interp + skp * qy_interp;
-				double qt_interp = sqrt(xi2 + qo*local_pT) - sqrt(xi2 - qo*local_pT);	//set qt component
-	
-				double point[dim_loc] = { qx_interp, qy_interp, qz_interp };
-		
-				double interpolated_result = cf.eval(point);
-				double exact_result = Cal_dN_dypTdpTdphi_with_weights_function(current_FOsurf_ptr, target_particle_id, local_pT, local_pphi,
-																				qt_interp, qx_interp, qy_interp, qz_interp) / (local_spectra*local_spectra);
-
-				cout << "test_interpolator(): " << ipt << "   " << ipphi << "   " << iqx << "   " << iqy << "   " << iqz
-						<< setprecision(12) << setw(16)
-						<< "   " << local_pT << "   " << local_pphi << "   " << qx_interp << "   " << qy_interp << "   " << qz_interp
-						<< "   " << interpolated_result << "   " << exact_result << endl;
-			}
-		}
-	}
-	return;
-}*/
 
 //******************************************************************
 // Routines for refining correlation function grid via interpolation
 //******************************************************************
-
-void CorrelationFunction::Allocate_fleshed_out_CF()
-{
-	fleshed_out_CF = new double ** [new_nqpts];
-	fleshed_out_thermal = new double ** [new_nqpts];
-	fleshed_out_crossterm = new double ** [new_nqpts];
-	fleshed_out_resonances = new double ** [new_nqpts];
-	for (int iqx = 0; iqx < new_nqpts; ++iqx)
-	{
-		fleshed_out_CF[iqx] = new double * [new_nqpts];
-		fleshed_out_thermal[iqx] = new double * [new_nqpts];
-		fleshed_out_crossterm[iqx] = new double * [new_nqpts];
-		fleshed_out_resonances[iqx] = new double * [new_nqpts];
-		for (int iqy = 0; iqy < new_nqpts; ++iqy)
-		{
-			fleshed_out_CF[iqx][iqy] = new double [new_nqpts];
-			fleshed_out_thermal[iqx][iqy] = new double [new_nqpts];
-			fleshed_out_crossterm[iqx][iqy] = new double [new_nqpts];
-			fleshed_out_resonances[iqx][iqy] = new double [new_nqpts];
-			for (int iqz = 0; iqz < new_nqpts; ++iqz)
-			{
-				fleshed_out_CF[iqx][iqy][iqz] = 0.0;
-				fleshed_out_thermal[iqx][iqy][iqz] = 0.0;
-				fleshed_out_crossterm[iqx][iqy][iqz] = 0.0;
-				fleshed_out_resonances[iqx][iqy][iqz] = 0.0;
-			}
-		}
-	}
-
-	qx_fleshed_out_pts = new double [new_nqpts];
-	qy_fleshed_out_pts = new double [new_nqpts];
-	qz_fleshed_out_pts = new double [new_nqpts];
-
-	return;
-}
-
-void CorrelationFunction::Delete_fleshed_out_CF()
-{
-	for (int iqx = 0; iqx < new_nqpts; ++iqx)
-	{
-		for (int iqy = 0; iqy < new_nqpts; ++iqy)
-		{
-			delete [] fleshed_out_CF[iqx][iqy];
-			delete [] fleshed_out_thermal[iqx][iqy];
-			delete [] fleshed_out_crossterm[iqx][iqy];
-			delete [] fleshed_out_resonances[iqx][iqy];
-		}
-		delete [] fleshed_out_CF[iqx];
-		delete [] fleshed_out_thermal[iqx];
-		delete [] fleshed_out_crossterm[iqx];
-		delete [] fleshed_out_resonances[iqx];
-	}
-	delete [] fleshed_out_CF;
-	delete [] fleshed_out_thermal;
-	delete [] fleshed_out_crossterm;
-	delete [] fleshed_out_resonances;
-
-	delete [] qx_fleshed_out_pts;
-	delete [] qy_fleshed_out_pts;
-	delete [] qz_fleshed_out_pts;
-
-	return;
-}
 
 void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 {
@@ -559,8 +222,8 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 	//cout << "(qzmin, qzmax, new_Del_qz) = (" << qzmin << ", " << qzmax << ", " << new_Del_qz << ")" << endl;
 
 	for (int iqx = 0; iqx < new_nqpts; ++iqx)
-	for (int iqy = 0; iqy < 1; ++iqy)
-	for (int iqz = 0; iqz < 1; ++iqz)
+	for (int iqy = 0; iqy < new_nqpts; ++iqy)
+	for (int iqz = 0; iqz < new_nqpts; ++iqz)
 	{
 		double qx0 = qxmin + double(iqx) * new_Del_qx;
 		double qy0 = qymin + double(iqy) * new_Del_qy;
@@ -640,8 +303,8 @@ double CorrelationFunction::interpolate_CF(double *** current_C_slice, double qx
 		double fx1yizi = interpolate_qi(sqy02, sqy_02, sqy_12, fx1y0zi, fx1y1zi, false);
 	
 		//finally, interpolate over qx-points
-		//fxiyizi = interpolate_qi(sqx02, sqx_02, sqx_12, fx0yizi, fx1yizi, false);
-		fxiyizi = interpolate_qi(sqx02, sqx_02, sqx_12, fx0, fx1, false);
+		fxiyizi = interpolate_qi(sqx02, sqx_02, sqx_12, fx0yizi, fx1yizi, false);
+		//fxiyizi = interpolate_qi(sqx02, sqx_02, sqx_12, fx0, fx1, false);
 	}
 	else
 	{
@@ -657,6 +320,13 @@ double CorrelationFunction::interpolate_CF(double *** current_C_slice, double qx
 		bool use_linear_qx = (iqx0_loc < cqx + iqxh0) && (iqx0_loc >= cqx - iqxh0);
 		bool use_linear_qy = (iqy0_loc < cqy + iqyh0) && (iqy0_loc >= cqy - iqyh0);
 		bool use_linear_qz = (iqz0_loc < cqz + iqzh0) && (iqz0_loc >= cqz - iqzh0);
+
+		if (thermal_or_resonances == 1)	//if you're doing the crossterm, use linear, no matter what
+		{
+			use_linear_qx = true;
+			use_linear_qy = true;
+			use_linear_qz = true;
+		}
 
 		//compute minimum element of current_C_slice...
 		double min = current_C_slice[0][0][0];
@@ -678,7 +348,7 @@ double CorrelationFunction::interpolate_CF(double *** current_C_slice, double qx
 		//interpolate over first pair of qz-points
 		fx0y0z0 += offset;
 		fx0y0z1 += offset;
-		/*double fx0y0zi = interpolate_qi(qz0, qz_0, qz_1, fx0y0z0, fx0y0z1, use_linear_qz);
+		double fx0y0zi = interpolate_qi(qz0, qz_0, qz_1, fx0y0z0, fx0y0z1, use_linear_qz);
 	
 		//interpolate over second pair of qz-points
 		fx0y1z0 += offset;
@@ -701,63 +371,17 @@ double CorrelationFunction::interpolate_CF(double *** current_C_slice, double qx
 		double fx1yizi = interpolate_qi(qy0, qy_0, qy_1, fx1y0zi, fx1y1zi, use_linear_qy);
 	
 		//finally, interpolate over qx-points
-		fxiyizi = interpolate_qi(qx0, qx_0, qx_1, fx0yizi, fx1yizi, use_linear_qx) - offset;*/
+		fxiyizi = interpolate_qi(qx0, qx_0, qx_1, fx0yizi, fx1yizi, use_linear_qx) - offset;
 
 //cout << "offset = " << offset << "   " << qx0 << "   " << qy0 << "   " << qz0 << "   " << ipt << "   " << thermal_or_resonances 
 //		<< "   " << fx0y0z0 << "   " << fx0y0z1 << "   " << fx0y1z0 << "   " << fx0y1z1 << "   " << fx1y0z0 << "   " << fx1y0z1 << "   " << fx1y1z0 << "   " << fx1y1z1
 //		<< "   " << fx0y0zi << "   " << fx0y1zi << "   " << fx1y0zi << "   " << fx1y1zi << "   " << fx0yizi << "   " << fx1yizi << "   " << fxiyizi 
 //		<< "   " << use_linear_qx << "   " << use_linear_qy << "   " << use_linear_qz << endl;
-cout << "Here: " << use_linear_qx << "   " << iqx0_loc << "   " << cqx << "   " << iqxh0 << "   " << thermal_or_resonances << "   ";
-		if (thermal_or_resonances == 1)
-			use_linear_qx = true;
-		fxiyizi = interpolate_qi(qx0, qx_0, qx_1, fx0, fx1, use_linear_qx) - offset;
+//cout << "Here: " << use_linear_qx << "   " << iqx0_loc << "   " << cqx << "   " << iqxh0 << "   " << thermal_or_resonances << "   ";
+//		if (thermal_or_resonances == 1)
+//			use_linear_qx = true;
+//		fxiyizi = interpolate_qi(qx0, qx_0, qx_1, fx0, fx1, use_linear_qx) - offset;
 	}
-	/*else
-	{
-		double qxmin = qx_PTdep_pts[ipt][0] / cos(M_PI / (2.*qxnpts));
-		double qxmax = qx_PTdep_pts[ipt][qxnpts-1] / cos(M_PI / (2.*qxnpts));
-		double qymin = qy_PTdep_pts[ipt][0] / cos(M_PI / (2.*qynpts));
-		double qymax = qy_PTdep_pts[ipt][qynpts-1] / cos(M_PI / (2.*qynpts));
-		double qzmin = qz_PTdep_pts[ipt][0] / cos(M_PI / (2.*qznpts));
-		double qzmax = qz_PTdep_pts[ipt][qznpts-1] / cos(M_PI / (2.*qznpts));
-
-		const int dim_loc = 1;
-		int npts_loc[dim_loc] = { qxnpts };
-		int os[dim_loc] = { qxnpts-1 };
-		double lls[dim_loc] = { qxmin };
-		double uls[dim_loc] = { qxmax };
-
-		//compute minimum element of current_C_slice...
-		double min = current_C_slice[0][0][0];
-		for (int iqx = 0; iqx < qxnpts; ++iqx)
-		for (int iqy = 0; iqy < qynpts; ++iqy)
-		for (int iqz = 0; iqz < qznpts; ++iqz)
-			if (current_C_slice[iqx][iqy][iqz] < min) min = current_C_slice[iqx][iqy][iqz];
-
-		//use minimum value to define offset...
-		double offset = 1e-100;
-		if (min <= offset)
-			offset = abs(min) + 0.001;
-
-		//fill (off-set) array which is guaranteed to be positive
-		int iq = 0;
-		double C_at_q[qxnpts*qynpts*qznpts];
-		for (int iqx = 0; iqx < qxnpts; ++iqx)
-		for (int iqy = 0; iqy < qynpts; ++iqy)
-		for (int iqz = 0; iqz < qznpts; ++iqz)
-			C_at_q[iq++] = log(current_C_slice[iqx][iqy][iqz]+offset);
-
-		//double point[dim_loc] = { qx0, qy0, qz0 };
-		double point[dim_loc] = { qx0 };
-	
-		//generate Chebyshev approximation to use below
-		Chebyshev cf(C_at_q, npts_loc, os, lls, uls, dim_loc);
-
-		//fxiyizi = cf.eval(point);
-
-		//try cubic interpolation?
-		fxiyizi = exp(interpolate1D(qx_PTdep_pts[ipt], C_at_q, qx0, qxnpts, 1, false)) - offset;
-	}*/
 
 	return (fxiyizi);
 }
@@ -773,7 +397,7 @@ double CorrelationFunction::interpolate_qi(double q0, double qi0, double qi1, do
 		if2 = log(f2);
 	}
 	double tmp_result = lin_int(q0 - qi0, 1./(qi1-qi0), if1, if2);
-cout << q0 << "   " << qi0 << "   " << qi1 << "   " << if1 << "   " << if2 << "   " << f1 << "   " << f2 << "   " << tmp_result << "   " << exp(tmp_result) << endl;
+//cout << q0 << "   " << qi0 << "   " << qi1 << "   " << if1 << "   " << if2 << "   " << f1 << "   " << f2 << "   " << tmp_result << "   " << exp(tmp_result) << endl;
 	if (use_log)
 		tmp_result = exp(tmp_result);
 

@@ -1,5 +1,5 @@
-#ifndef SORTER_H
-#define SORTER_H
+#ifndef STATS_H
+#define STATS_H
 
 #include <vector>
 #include <algorithm>

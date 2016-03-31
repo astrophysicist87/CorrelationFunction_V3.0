@@ -1342,6 +1342,69 @@ void CorrelationFunction::Set_target_pphiavgd_CFs()
 	return;
 }
 
+void CorrelationFunction::Allocate_fleshed_out_CF()
+{
+	fleshed_out_CF = new double ** [new_nqpts];
+	fleshed_out_thermal = new double ** [new_nqpts];
+	fleshed_out_crossterm = new double ** [new_nqpts];
+	fleshed_out_resonances = new double ** [new_nqpts];
+	for (int iqx = 0; iqx < new_nqpts; ++iqx)
+	{
+		fleshed_out_CF[iqx] = new double * [new_nqpts];
+		fleshed_out_thermal[iqx] = new double * [new_nqpts];
+		fleshed_out_crossterm[iqx] = new double * [new_nqpts];
+		fleshed_out_resonances[iqx] = new double * [new_nqpts];
+		for (int iqy = 0; iqy < new_nqpts; ++iqy)
+		{
+			fleshed_out_CF[iqx][iqy] = new double [new_nqpts];
+			fleshed_out_thermal[iqx][iqy] = new double [new_nqpts];
+			fleshed_out_crossterm[iqx][iqy] = new double [new_nqpts];
+			fleshed_out_resonances[iqx][iqy] = new double [new_nqpts];
+			for (int iqz = 0; iqz < new_nqpts; ++iqz)
+			{
+				fleshed_out_CF[iqx][iqy][iqz] = 0.0;
+				fleshed_out_thermal[iqx][iqy][iqz] = 0.0;
+				fleshed_out_crossterm[iqx][iqy][iqz] = 0.0;
+				fleshed_out_resonances[iqx][iqy][iqz] = 0.0;
+			}
+		}
+	}
+
+	qx_fleshed_out_pts = new double [new_nqpts];
+	qy_fleshed_out_pts = new double [new_nqpts];
+	qz_fleshed_out_pts = new double [new_nqpts];
+
+	return;
+}
+
+void CorrelationFunction::Delete_fleshed_out_CF()
+{
+	for (int iqx = 0; iqx < new_nqpts; ++iqx)
+	{
+		for (int iqy = 0; iqy < new_nqpts; ++iqy)
+		{
+			delete [] fleshed_out_CF[iqx][iqy];
+			delete [] fleshed_out_thermal[iqx][iqy];
+			delete [] fleshed_out_crossterm[iqx][iqy];
+			delete [] fleshed_out_resonances[iqx][iqy];
+		}
+		delete [] fleshed_out_CF[iqx];
+		delete [] fleshed_out_thermal[iqx];
+		delete [] fleshed_out_crossterm[iqx];
+		delete [] fleshed_out_resonances[iqx];
+	}
+	delete [] fleshed_out_CF;
+	delete [] fleshed_out_thermal;
+	delete [] fleshed_out_crossterm;
+	delete [] fleshed_out_resonances;
+
+	delete [] qx_fleshed_out_pts;
+	delete [] qy_fleshed_out_pts;
+	delete [] qz_fleshed_out_pts;
+
+	return;
+}
+
 /*void CorrelationFunction::set_axes_and_rays()
 {
 	vector<int> tmpvec (4, 0);

@@ -19,7 +19,7 @@ using namespace std;
 #define SPACETIME_MOMENTS_ONLY		false		// duh
 #define DO_ALL_DECAY_CHANNELS		false		// duh
 #define UNZIP_HDF5			false		// utilizes HDF5 software to store large arrays
-#define USE_LAMBDA			false		// fit correlation function with adjustable intercept parameter
+#define USE_LAMBDA			true		// fit correlation function with adjustable intercept parameter
 #define USE_EXTRAPOLATION		true		// extrapolates results of CF integrals instead of competing them, false just calculates full integrals (slower)
 #define EXTRAPOLATION_METHOD		0		// 0 - GSL polynomial fit
 							// 1 - direct calculation of rational function fit using ratint in Arsenal.* files (numerator and denominator
@@ -37,11 +37,13 @@ using namespace std;
 #define QX_POINTS_SPACING		0
 #define QY_POINTS_SPACING		0
 #define QZ_POINTS_SPACING		0
-#define VARY_ALPHA			false		// (not yet implemented) feature to treat power in exponential as a fit variable (alpha == 2 <==> traditional Gaussian)
+//#define VARY_ALPHA			false		// (not yet implemented) feature to treat power in exponential as a fit variable (alpha == 2 <==> traditional Gaussian)
 #define Q_AXES_AND_RAYS_ONLY		false		// true - only do points along q-axes (only works for odd points right now)
 							// false - do full grid
-#define FIT_WITH_PROJECTED_CFVALS	false		// as opposed to unprojected CFvals...
+#define FIT_WITH_PROJECTED_CFVALS	true		// as opposed to unprojected CFvals...
 #define FLESH_OUT_CF			true		// refines grid via interpolation before fitting
+#define REGULATE_CF			true		// true (false) means (don't) try to catch spurious values of projected
+							// or regular CF and replace them with median value in that window
 
 #ifndef H5_NO_NAMESPACE
     using namespace H5;
@@ -92,8 +94,8 @@ const int new_nqpts = 51;
 //all direction-specific q points information here
 const int qtnpts = 9;
 const int qxnpts = 5;
-const int qynpts = 1;
-const int qznpts = 1;
+const int qynpts = 5;
+const int qznpts = 5;
 const double delta_qt = 0.02;
 const double delta_qx = 0.0016;
 const double delta_qy = 0.02;

@@ -184,7 +184,18 @@ int main(int argc, char *argv[])
 	correlation_function.Output_chosen_resonances();
 	correlation_function.Output_resonance_fraction();
 	correlation_function.Output_correlationfunction(folderindex);
-	if (FLESH_OUT_CF)
+
+	output << "Finished calculating correlation function with all resonance decays..." << endl;
+
+	//if there's a full 3D grid to fit over, do the Gaussian fit and get the HBT radii too
+	if (qxnpts > 1 && qynpts > 1 && qznpts > 1)
+	{
+		output << "Calculating HBT radii via Gaussian fit method..." << endl;
+		correlation_function.Get_GF_HBTradii(folderindex);	//does outputting of results too
+		correlation_function.Output_results(folderindex);
+		output << "Finished calculating HBT radii via Gaussian fit method" << endl;
+	}
+	else if (FLESH_OUT_CF)
 	{
 		output << "Allocating fleshed out CFvals..." << endl;
 		correlation_function.Allocate_fleshed_out_CF();
@@ -195,18 +206,6 @@ int main(int argc, char *argv[])
 			correlation_function.Flesh_out_CF(ipt, ipphi);
 			correlation_function.Output_fleshed_out_correlationfunction(ipt, ipphi);
 		}
-	}
-
-	output << "Finished calculating correlation function with all resonance decays..." << endl;
-
-	//if there's a full 3D grid to fit over, do the Gaussian fit and get the HBT radii too
-	if (qxnpts > 1 && qynpts > 1 && qznpts > 1)
-	{
-		output << "Calculating HBT radii via Gaussian fit method..." << endl;
-		correlation_function.Get_GF_HBTradii(folderindex);	//does outputting of results too
-		//correlation_function.Output_correlationfunction(folderindex);
-		correlation_function.Output_results(folderindex);
-		output << "Finished calculating HBT radii via Gaussian fit method" << endl;
 	}
 
 	sw.toc();
