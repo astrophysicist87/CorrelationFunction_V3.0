@@ -275,8 +275,8 @@ class CorrelationFunction
 		void Delete_decay_channel_info();
 		int Set_daughter_list(int parent_resonance_index);
 		void Regulate_CF(int ipt, int iqt, int iqx, int iqy, int iqz, double * CF, double * projCF);
-		void Regulate_CF_Hampel(int ipt, int iqt, int iqx, int iqy, int iqz,
-												double * pphi_CF_slice, double * pphi_CF_slice_term1, double * pphi_CF_slice_term2, double * pphi_CF_slice_term3)
+		void Regulate_CF_Hampel(int ipt, int iqx, int iqy, int iqz,
+												double * pphi_CF_slice, double * pphi_CF_slice_term1, double * pphi_CF_slice_term2, double * pphi_CF_slice_term3);
 
 		void Fill_out_pts(double * pointsarray, int numpoints, double max_val, int spacing_type);
 		void Set_q_pTdep_pts(int ipt, double qxw, double qyw, double qzw);

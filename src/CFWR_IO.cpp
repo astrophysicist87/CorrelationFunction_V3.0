@@ -11,6 +11,7 @@
 #include "CFWR_lib.h"
 #include "Arsenal.h"
 #include "gauss_quadrature.h"
+#include "stats.h"
 
 using namespace std;
 
@@ -458,7 +459,7 @@ void CorrelationFunction::Regulate_CF(int ipt, int iqt, int iqx, int iqy, int iq
 	return;
 }
 
-void CorrelationFunction::Regulate_CF_Hampel(int ipt, int iqt, int iqx, int iqy, int iqz,
+void CorrelationFunction::Regulate_CF_Hampel(int ipt, int iqx, int iqy, int iqz,
 												double * pphi_CF_slice, double * pphi_CF_slice_term1, double * pphi_CF_slice_term2, double * pphi_CF_slice_term3)
 {
 	bool * is_outlier = new bool [n_interp_pphi_pts];
@@ -467,8 +468,8 @@ void CorrelationFunction::Regulate_CF_Hampel(int ipt, int iqt, int iqx, int iqy,
 
 	find_outliers_Hampel(pphi_CF_slice, n_interp_pphi_pts, is_outlier, &pphi_median);
 
-	for (ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-	if (is_outlier[ipphi] || abs(*pphi_CF_slice[ipphi]-1.5) > 0.500001)
+	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+	if (is_outlier[ipphi] || abs(pphi_CF_slice[ipphi]-1.5) > 0.500001)
 	{
 		//if (SPinterp_pT[ipt] < pTcutoff)
 			*global_out_stream_ptr << "\t WARNING: regulated CF point at pT = " << SPinterp_pT[ipt]

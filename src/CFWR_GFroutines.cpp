@@ -13,15 +13,16 @@
 #include "Arsenal.h"
 #include "gauss_quadrature.h"
 #include "chebyshev.h"
+#include "stats.h"
 
 using namespace std;
 
 void CorrelationFunction::Get_GF_HBTradii(int folderindex)
 {
-	if (!VARY_ALPHA)
+	//if (!VARY_ALPHA)
 		*global_out_stream_ptr << "--> Getting HBT radii by Gaussian fit method" << endl;
-	else
-		*global_out_stream_ptr << "--> Getting HBT radii by Levy-stable fit method" << endl;
+	//else
+	//	*global_out_stream_ptr << "--> Getting HBT radii by Levy-stable fit method" << endl;
 
 	if (FLESH_OUT_CF)
 		Allocate_fleshed_out_CF();
@@ -36,7 +37,7 @@ void CorrelationFunction::Get_GF_HBTradii(int folderindex)
 		if (FLESH_OUT_CF)
 		{
 			Flesh_out_CF(ipt, ipphi);
-			CF_for_fitting = fleshed_out_CFvals[ipt][ipphi];
+			CF_for_fitting = fleshed_out_CF;
 		}
 
 		//finally, do fits, depending on what kind you want to do
@@ -122,7 +123,7 @@ void CorrelationFunction::Cal_correlationfunction()
 			pphi_CF_slice_term1[ipphi] = thermalCFvals[ipt][ipphi][iqx][iqy][iqz];
 			pphi_CF_slice_term2[ipphi] = crosstermCFvals[ipt][ipphi][iqx][iqy][iqz];
 			pphi_CF_slice_term3[ipphi] = resonancesCFvals[ipt][ipphi][iqx][iqy][iqz];
-			Regulate_CF_Hampel(ipt, iqt, iqx, iqy, iqz, pphi_CF_slice, pphi_CF_slice_term1, pphi_CF_slice_term2, pphi_CF_slice_term3);
+			Regulate_CF_Hampel(ipt, iqx, iqy, iqz, pphi_CF_slice, pphi_CF_slice_term1, pphi_CF_slice_term2, pphi_CF_slice_term3);
 		}
 		sw.Stop();
 		*global_out_stream_ptr << "Finished regulating computed correlator values in " << sw.printTime() << " seconds." << endl;
