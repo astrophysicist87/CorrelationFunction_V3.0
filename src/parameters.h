@@ -41,7 +41,7 @@ using namespace std;
 #define Q_AXES_AND_RAYS_ONLY		false		// true - only do points along q-axes (only works for odd points right now)
 							// false - do full grid
 #define FIT_WITH_PROJECTED_CFVALS	true		// as opposed to unprojected CFvals...
-#define FLESH_OUT_CF			true		// refines grid via interpolation before fitting
+#define FLESH_OUT_CF			false		// refines grid via interpolation before fitting
 #define REGULATE_CF			true		// true (false) means (don't) try to catch spurious values of projected
 							// or regular CF and replace them with median value in that window
 
@@ -94,8 +94,8 @@ const int new_nqpts = 51;
 //all direction-specific q points information here
 const int qtnpts = 9;
 const int qxnpts = 5;
-const int qynpts = 5;
-const int qznpts = 5;
+const int qynpts = 1;
+const int qznpts = 1;
 const double delta_qt = 0.02;
 const double delta_qx = 0.0016;
 const double delta_qy = 0.02;

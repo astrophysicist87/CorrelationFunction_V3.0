@@ -49,16 +49,16 @@ void CorrelationFunction::Dump_q_pTdep_pts()
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 	{
 		for (int iqt = 0; iqt < qtnpts; ++iqt)
-			outt << qt_PTdep_pts[ipt][iqt] << "   ";
+			outt << scientific << setprecision(8) << setw(12) << qt_PTdep_pts[ipt][iqt] << "   ";
 		outt << endl;
 		for (int iqx = 0; iqx < qxnpts; ++iqx)
-			outx << qx_PTdep_pts[ipt][iqx] << "   ";
+			outx << scientific << setprecision(8) << setw(12) << qx_PTdep_pts[ipt][iqx] << "   ";
 		outx << endl;
 		for (int iqy = 0; iqy < qynpts; ++iqy)
-			outy << qy_PTdep_pts[ipt][iqy] << "   ";
+			outy << scientific << setprecision(8) << setw(12) << qy_PTdep_pts[ipt][iqy] << "   ";
 		outy << endl;
 		for (int iqz = 0; iqz < qznpts; ++iqz)
-			outz << qz_PTdep_pts[ipt][iqz] << "   ";
+			outz << scientific << setprecision(8) << setw(12) << qz_PTdep_pts[ipt][iqz] << "   ";
 		outz << endl;
 	}
 
@@ -100,6 +100,19 @@ void CorrelationFunction::Load_q_pTdep_pts()
 			in_y >> qy_PTdep_pts[ipt][iqy];
 		for (int iqz = 0; iqz < qznpts; ++iqz)
 			in_z >> qz_PTdep_pts[ipt][iqz];
+
+		int qidx = 0;
+		for (int iqt = 0; iqt < qtnpts; ++iqt)
+		for (int iqx = 0; iqx < qxnpts; ++iqx)
+		for (int iqy = 0; iqy < qynpts; ++iqy)
+		for (int iqz = 0; iqz < qznpts; ++iqz)
+		{
+			qlist[ipt][qidx][0] = qt_PTdep_pts[ipt][iqt];
+			qlist[ipt][qidx][1] = qx_PTdep_pts[ipt][iqx];
+			qlist[ipt][qidx][2] = qy_PTdep_pts[ipt][iqy];
+			qlist[ipt][qidx][3] = qz_PTdep_pts[ipt][iqz];
+			qidx++;
+		}
 	}
 
 	in_t.close();

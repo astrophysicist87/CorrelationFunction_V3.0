@@ -147,7 +147,6 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 	{
 		if (COMPUTE_RESONANCE_DECAYS)	//if we're going to do compute the resonance feeddown, we need to copy the thermal moments back over to resonance_spectra.h5...
 		{
-			//save thermal moments (without resonance decay feeddown) separately
 			ostringstream local_cmd;
 			local_cmd << "\\cp " << global_path << "/resonance_thermal_moments.h5 " << global_path << "/resonance_spectra.h5";
 			int cmd_result = system(local_cmd.str().c_str());
@@ -585,6 +584,11 @@ void CorrelationFunction::Load_resonance_and_daughter_spectra(int local_pid)
 		{
 			int daughter_pid = *it;		//daughter pid is pointed to by iterator
 			getHDFresonanceSpectra = Get_resonance_from_HDF_array(daughter_pid, current_daughters_dN_dypTdpTdphi_moments[d_idx]);
+	for (int iqy = 0; iqy < qynpts; ++iqy)
+	for (int iqz = 0; iqz < qznpts; ++iqz)
+	/*cout << "local_pid(2) = " << daughter_pid << "   "
+			<< current_daughters_dN_dypTdpTdphi_moments[d_idx][0][0][0][0][iqy][iqz][0] << "   "
+			<< current_daughters_dN_dypTdpTdphi_moments[d_idx][0][0][0][0][iqy][iqz][1] << endl;*/
 			++d_idx;
 		}
 	
@@ -1229,6 +1233,9 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 				//finally, store projected results
 				current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0] = proj_tmla_C;
 				current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1] = proj_tmla_S;
+/*if (ipt==0 && ipphi==0 && iqt==0 && iqx==0) cout << "local_pid(1) = " << local_pid << "   "
+							<< current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0] << "   "
+							<< current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1] << endl;*/
 
 			}	//end of pphi-loop	
 		}	//end of q-loops

@@ -71,7 +71,7 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 	int tmp_daughter_monval = all_particles[daughter_particle_id].monval;
 	n_body = current_reso_nbody;
 
-	//local_verbose = 0;
+	local_verbose = 0;
 
 	int iqt0 = (qtnpts-1)/2;
 	int iqx0 = (qxnpts-1)/2;
@@ -113,11 +113,20 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 					double PKphi = VEC_n2_PPhi_tilde[iv][izeta];
 					for (int tempidx = 0; tempidx <= 1; ++tempidx)
 					{
+/*if (ipt==0 && ipphi==0)
+	local_verbose = 1;
+else
+	local_verbose = 0;*/
 						if (tempidx != 0)
 							PKphi = VEC_n2_PPhi_tildeFLIP[iv][izeta];		//also takes Pp --> Pm
 						currentPpm = VEC_n2_Ppm[iv][izeta][tempidx];
 						Edndp3(PKT, PKphi, &Csum);							//set spectra
-						eiqxEdndp3(PKT, PKphi, Csum_vec);					//set weights
+						eiqxEdndp3(PKT, PKphi, Csum_vec, local_verbose);					//set weights
+/*if (ipt==0 && ipphi==0)
+{
+	cout << "(" << iv << "," << izeta << "," << tempidx << "): Csum_vec[0] = " << Csum_vec[0] << endl;
+	exit(1);
+}*/
 					}												// end of tempidx sum
 					for (int qpt_cs_idx = 0; qpt_cs_idx < qspace_cs_slice_length; ++qpt_cs_idx)
 						zetasum_vec[qpt_cs_idx] += VEC_n2_zeta_factor[iv][izeta]*Csum_vec[qpt_cs_idx];
@@ -140,6 +149,11 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 			for (int itrig = 0; itrig < 2; ++itrig)
 			{
 				current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt][iqx][iqy][iqz][itrig] += ssum_vec[qpt_cs_idx];
+/*if (ipt==0 && ipphi==0 && iqt==0 && iqx==0 && itrig==1) cout << "local_pid(4a) = " << daughter_particle_id << "   "
+							<< current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt][iqx][iqy][iqz][0] << "   "
+							<< current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt][iqx][iqy][iqz][1] << "   "
+							<< ssum_vec[qpt_cs_idx-1] << "   "
+							<< ssum_vec[qpt_cs_idx] << endl;*/
 				++qpt_cs_idx;
 			}
 
@@ -223,11 +237,20 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 						double PKphi = VEC_PPhi_tilde[is][iv][izeta];
 						for (int tempidx = 0; tempidx <= 1; ++tempidx)
 						{
+/*if (ipt==0 && ipphi==0)
+	local_verbose = 1;
+else
+	local_verbose = 0;*/
 							if (tempidx != 0)
 								PKphi = VEC_PPhi_tildeFLIP[is][iv][izeta];		//also takes Pp --> Pm
 							currentPpm = VEC_Ppm[is][iv][izeta][tempidx];
 							Edndp3(PKT, PKphi, &Csum);							//set spectra
-							eiqxEdndp3(PKT, PKphi, Csum_vec);					//set weights
+							eiqxEdndp3(PKT, PKphi, Csum_vec, local_verbose);					//set weights
+/*if (ipt==0 && ipphi==0)
+{
+	cout << "(" << is << "," << iv << "," << izeta << "," << tempidx << "): Csum_vec[0] = " << Csum_vec[0] << endl;
+	exit(1);
+}*/
 						}										// end of tempidx sum
 						for (int qpt_cs_idx = 0; qpt_cs_idx < qspace_cs_slice_length; ++qpt_cs_idx)
 							zetasum_vec[qpt_cs_idx] += VEC_zeta_factor[is][iv][izeta]*Csum_vec[qpt_cs_idx];
@@ -250,6 +273,11 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 			for (int itrig = 0; itrig < 2; ++itrig)
 			{
 				current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt][iqx][iqy][iqz][itrig] += ssum_vec[qpt_cs_idx];
+/*if (ipt==0 && ipphi==0 && iqt==0 && iqx==0 && itrig==1) cout << "local_pid(4b) = " << daughter_particle_id << "   "
+							<< current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt][iqx][iqy][iqz][0] << "   "
+							<< current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt][iqx][iqy][iqz][1] << "   "
+							<< ssum_vec[qpt_cs_idx-1] << "   "
+							<< ssum_vec[qpt_cs_idx] << endl;*/
 				++qpt_cs_idx;
 			}
 
@@ -340,6 +368,13 @@ void CorrelationFunction::Flatten_dN_dypTdpTdphi_moments()
 			res_sign_info[ipt][ipphi][qpt_cs_idx] = current_sign_of_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][itrig];
 			res_log_info[ipt][ipphi][qpt_cs_idx] = current_ln_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][itrig];
 			res_moments_info[ipt][ipphi][qpt_cs_idx] = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][itrig];
+/*if (ipt==0 && ipphi==0 && iqt==0 && iqx==0 && itrig==1) cout << "local_pid(3) = flattening   "
+							<< current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0] << "   "
+							<< current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1] << "   "
+							<< current_ln_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0] << "   "
+							<< current_ln_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1] << "   "
+							<< current_sign_of_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0] << "   "
+							<< current_sign_of_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1] << endl;*/
 			++qpt_cs_idx;
 		}
 	}

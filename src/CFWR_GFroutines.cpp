@@ -46,8 +46,8 @@ void CorrelationFunction::Get_GF_HBTradii(int folderindex)
 		else
 			Fit_Correlationfunction3D( CF_for_fitting, ipt, ipphi, FLESH_OUT_CF );
 
-		if (FLESH_OUT_CF)
-			Output_fleshed_out_correlationfunction(ipt, ipphi);
+		//if (FLESH_OUT_CF)
+		//	Output_fleshed_out_correlationfunction(ipt, ipphi);
 	}
 
 	if (FLESH_OUT_CF)
@@ -488,10 +488,10 @@ void CorrelationFunction::Fit_Correlationfunction3D(double *** Correl_3D, int ip
 		status = gsl_multifit_fdfsolver_iterate (solver_ptr);
 
 		// print out the status of the fit
-		cout << "status = " << gsl_strerror (status) << endl;
+		if (VERBOSE > 2) cout << "status = " << gsl_strerror (status) << endl;
 
 		// customized routine to print out current parameters
-		print_fit_state_3D (iteration, solver_ptr);
+		if (VERBOSE > 2) print_fit_state_3D (iteration, solver_ptr);
 
 		if (status)    // check for a nonzero status code
 		{
@@ -509,8 +509,8 @@ void CorrelationFunction::Fit_Correlationfunction3D(double *** Correl_3D, int ip
 	gsl_multifit_covar (solver_ptr->J, 0.0, covariance_ptr);
 
 	// print out the covariance matrix using the gsl function (not elegant!)
-	cout << endl << "Covariance matrix: " << endl;
-	gsl_matrix_fprintf (stdout, covariance_ptr, "%g");
+	if (VERBOSE > 2) cout << endl << "Covariance matrix: " << endl;
+	if (VERBOSE > 2) gsl_matrix_fprintf (stdout, covariance_ptr, "%g");
 
 	cout.setf (ios::fixed, ios::floatfield);	// output in fixed format
 	cout.precision (5);		                // # of digits in doubles
@@ -547,15 +547,18 @@ void CorrelationFunction::Fit_Correlationfunction3D(double *** Correl_3D, int ip
 	R2_long_err[ipt][ipphi] = c*get_fit_err(2, covariance_ptr)*hbarC*hbarC;
 	R2_outside_err[ipt][ipphi] = c*get_fit_err(3, covariance_ptr)*hbarC*hbarC;
 
-	cout << "final results: " << endl;
-	cout << scientific << setw(10) << setprecision(5) 
-		<< "chisq/dof = " << chi*chi/dof << endl;
-	cout << scientific << setw(10) << setprecision(5) 
-		<< " lambda[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << lambda_Correl[ipt][ipphi] << " +/- " << lambda_Correl_err[ipt][ipphi] << endl;
-	cout << " R2_out[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_out[ipt][ipphi] << " +/- " << R2_out_err[ipt][ipphi] << endl;
-	cout << " R2_side[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_side[ipt][ipphi] << " +/- " << R2_side_err[ipt][ipphi] << endl;
-	cout << " R2_long[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_long[ipt][ipphi] << " +/- " << R2_long_err[ipt][ipphi] << endl;
-	cout << " R2_outside[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_outside[ipt][ipphi] << " +/- " << R2_outside_err[ipt][ipphi] << endl;
+	if (VERBOSE > 1) 
+	{
+		cout << "final results: " << endl;
+		cout << scientific << setw(10) << setprecision(5) 
+			<< "chisq/dof = " << chi*chi/dof << endl;
+		cout << scientific << setw(10) << setprecision(5) 
+			<< " lambda[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << lambda_Correl[ipt][ipphi] << " +/- " << lambda_Correl_err[ipt][ipphi] << endl;
+		cout << " R2_out[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_out[ipt][ipphi] << " +/- " << R2_out_err[ipt][ipphi] << endl;
+		cout << " R2_side[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_side[ipt][ipphi] << " +/- " << R2_side_err[ipt][ipphi] << endl;
+		cout << " R2_long[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_long[ipt][ipphi] << " +/- " << R2_long_err[ipt][ipphi] << endl;
+		cout << " R2_outside[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_outside[ipt][ipphi] << " +/- " << R2_outside_err[ipt][ipphi] << endl;
+	}
 
 	//clean up
 	gsl_matrix_free (covariance_ptr);
@@ -648,10 +651,10 @@ void CorrelationFunction::Fit_Correlationfunction3D_withlambda(double *** Correl
 		status = gsl_multifit_fdfsolver_iterate (solver_ptr);
 
 		// print out the status of the fit
-		cout << "status = " << gsl_strerror (status) << endl;
+		if (VERBOSE > 2) cout << "status = " << gsl_strerror (status) << endl;
 
 		// customized routine to print out current parameters
-		print_fit_state_3D (iteration, solver_ptr);
+		if (VERBOSE > 2) print_fit_state_3D (iteration, solver_ptr);
 
 		if (status)    // check for a nonzero status code
 		{
@@ -667,8 +670,8 @@ void CorrelationFunction::Fit_Correlationfunction3D_withlambda(double *** Correl
 	gsl_multifit_covar (solver_ptr->J, 0.0, covariance_ptr);
 
 	// print out the covariance matrix using the gsl function (not elegant!)
-	cout << endl << "Covariance matrix: " << endl;
-	gsl_matrix_fprintf (stdout, covariance_ptr, "%g");
+	if (VERBOSE > 2) cout << endl << "Covariance matrix: " << endl;
+	if (VERBOSE > 2) gsl_matrix_fprintf (stdout, covariance_ptr, "%g");
 
 	cout.setf (ios::fixed, ios::floatfield);	// output in fixed format
 	cout.precision (5);		                // # of digits in doubles
@@ -708,15 +711,18 @@ void CorrelationFunction::Fit_Correlationfunction3D_withlambda(double *** Correl
 	R2_long_err[ipt][ipphi] = c*get_fit_err(3, covariance_ptr)*hbarC*hbarC;
 	R2_outside_err[ipt][ipphi] = c*get_fit_err(4, covariance_ptr)*hbarC*hbarC;
 
-	cout << "final results: " << endl;
-	cout << scientific << setw(10) << setprecision(5) 
-		<< "chisq/dof = " << chi*chi/dof << endl;
-	cout << scientific << setw(10) << setprecision(5) 
-		<< " lambda = " << lambda_Correl[ipt][ipphi] << " +/- " << lambda_Correl_err[ipt][ipphi] << endl;
-	cout << " R2_out[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_out[ipt][ipphi] << " +/- " << R2_out_err[ipt][ipphi] << endl;
-	cout << " R2_side[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_side[ipt][ipphi] << " +/- " << R2_side_err[ipt][ipphi] << endl;
-	cout << " R2_long[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_long[ipt][ipphi] << " +/- " << R2_long_err[ipt][ipphi] << endl;
-	cout << " R2_outside[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_outside[ipt][ipphi] << " +/- " << R2_outside_err[ipt][ipphi] << endl;
+	if (VERBOSE > 1) 
+	{
+		cout << "final results: " << endl;
+		cout << scientific << setw(10) << setprecision(5) 
+			<< "chisq/dof = " << chi*chi/dof << endl;
+		cout << scientific << setw(10) << setprecision(5) 
+			<< " lambda = " << lambda_Correl[ipt][ipphi] << " +/- " << lambda_Correl_err[ipt][ipphi] << endl;
+		cout << " R2_out[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_out[ipt][ipphi] << " +/- " << R2_out_err[ipt][ipphi] << endl;
+		cout << " R2_side[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_side[ipt][ipphi] << " +/- " << R2_side_err[ipt][ipphi] << endl;
+		cout << " R2_long[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_long[ipt][ipphi] << " +/- " << R2_long_err[ipt][ipphi] << endl;
+		cout << " R2_outside[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_outside[ipt][ipphi] << " +/- " << R2_outside_err[ipt][ipphi] << endl;
+	}
 
 	//clean up
 	gsl_matrix_free (covariance_ptr);
@@ -798,8 +804,8 @@ int Fittarget_correlfun3D_f (const gsl_vector *xvec_ptr, void *params_ptr, gsl_v
 	{
 		double Yi = 1.0 + exp(- q_l[i]*q_l[i]*R2_l - q_s[i]*q_s[i]*R2_s - q_o[i]*q_o[i]*R2_o - 2.*q_o[i]*q_s[i]*R2_os);
 		gsl_vector_set (f_ptr, i, (Yi - y[i]) / sigma[i]);
-cout << "i = " << i << ": " << y[i] << "   " << Yi << "   " << (Yi - y[i]) / sigma[i]
-		<< "   " << q_o[i] << "   " << q_s[i] << "   " << q_l[i] << "   " << R2_o << "   " << R2_s << "   " << R2_l << "   " << R2_os << endl;
+//cout << "i = " << i << ": " << y[i] << "   " << Yi << "   " << (Yi - y[i]) / sigma[i]
+//		<< "   " << q_o[i] << "   " << q_s[i] << "   " << q_l[i] << "   " << R2_o << "   " << R2_s << "   " << R2_l << "   " << R2_os << endl;
 	}
 
 	return GSL_SUCCESS;
@@ -829,8 +835,8 @@ int Fittarget_correlfun3D_f_withlambda (const gsl_vector *xvec_ptr, void *params
 		//             - q_o[i]*q_o[i]*R_o*R_o - q_o[i]*q_s[i]*R_os*R_os);
 		double Yi = 1.0 + lambda*exp(- q_l[i]*q_l[i]*R2_l - q_s[i]*q_s[i]*R2_s - q_o[i]*q_o[i]*R2_o - 2.*q_o[i]*q_s[i]*R2_os);
 		gsl_vector_set (f_ptr, i, (Yi - y[i]) / sigma[i]);
-cout << "i = " << i << ": " << y[i] << "   " << Yi << "   " << (Yi - y[i]) / sigma[i] << "   " << lambda
-		<< "   " << q_o[i] << "   " << q_s[i] << "   " << q_l[i] << "   " << R2_o << "   " << R2_s << "   " << R2_l << "   " << R2_os << endl;
+//cout << "i = " << i << ": " << y[i] << "   " << Yi << "   " << (Yi - y[i]) / sigma[i] << "   " << lambda
+//		<< "   " << q_o[i] << "   " << q_s[i] << "   " << q_l[i] << "   " << R2_o << "   " << R2_s << "   " << R2_l << "   " << R2_os << endl;
 	}
 
 	return GSL_SUCCESS;

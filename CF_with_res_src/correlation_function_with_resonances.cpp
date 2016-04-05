@@ -204,7 +204,7 @@ int main(int argc, char *argv[])
 		{
 			output << "Fleshing out ipt = " << ipt << ", ipphi = " << ipphi << "..." << endl;
 			correlation_function.Flesh_out_CF(ipt, ipphi);
-			correlation_function.Output_fleshed_out_correlationfunction(ipt, ipphi);
+			//correlation_function.Output_fleshed_out_correlationfunction(ipt, ipphi);
 		}
 	}
 

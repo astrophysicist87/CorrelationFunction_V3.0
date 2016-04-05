@@ -1783,7 +1783,7 @@ void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, 
 		results[qpt_cs_idx+1] += akr*Zki+aki*Zkr;
 
 
-		/*if ( loc_verb || isinf( results[qpt_cs_idx] ) || isnan( results[qpt_cs_idx] ) || isinf( results[qpt_cs_idx+1] ) || isnan( results[qpt_cs_idx+1] ) )
+		if ( loc_verb || isinf( results[qpt_cs_idx] ) || isnan( results[qpt_cs_idx] ) || isinf( results[qpt_cs_idx+1] ) || isnan( results[qpt_cs_idx+1] ) )
 		{
 			*global_out_stream_ptr << "ERROR in eiqxEdndp3(double, double, double*): problems encountered!" << endl
 				<< "results(" << iqt << "," << iqx << "," << iqy << "," << iqz << ") = "
@@ -1807,7 +1807,7 @@ void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, 
 				<< "  --> akr*Zkr-aki*Zki = " << akr*Zkr-aki*Zki << endl
 				<< "  --> akr*Zki+aki*Zkr = " << akr*Zki+aki*Zkr << endl;
 							//exit(1);
-		}*/
+		}
 
 		//++qpt_cs_idx;	// step to next cell in results array
 		qpt_cs_idx += 2;
