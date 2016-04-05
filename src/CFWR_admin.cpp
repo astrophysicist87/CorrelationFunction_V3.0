@@ -1777,7 +1777,9 @@ void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, 
 		//results[qpt_cs_idx+1] += lin_int(phir-phi0, one_by_pphidiff, f1, f2);
 		double Zki = lin_int(phir-phi0, one_by_pphidiff, f1, f2);
 					
-		//Finally, update results vectors appropriately
+		/////////////////////////////////////////////////////
+		// Finally, update results vectors appropriately
+		/////////////////////////////////////////////////////
 		//--> update the real part of weighted daughter spectra
 		results[qpt_cs_idx] += akr*Zkr-aki*Zki;
 		//--> update the imaginary part of weighted daughter spectra
@@ -1814,6 +1816,212 @@ void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, 
 		qpt_cs_idx += 2;
 		qlist_idx++;
 	}	// ending all loops at once in linearized version
+
+	return;
+}
+
+void CorrelationFunction::eiqxEdndp3_NEW(double ptr, double phir, double * results, int loc_verb /*==0*/)
+{
+	double phi0, phi1;
+	double f1, f2;
+
+	int npphi_max = n_interp_pphi_pts - 1;
+	int npT_max = n_interp_pT_pts - 1;
+
+	// locate pT interval
+	int npt = 1;
+	while ((ptr > SPinterp_pT[npt]) &&
+			(npt < npT_max)) ++npt;
+	double pT0 = SPinterp_pT[npt-1];
+	double pT1 = SPinterp_pT[npt];
+
+	// locate pphi interval
+	int nphi = 1, nphim1 = 0;
+	if(phir < SPinterp_pphi[0])			//if angle is less than minimum angle grid point
+	{
+		phi0 = SPinterp_pphi[npphi_max] - 2. * M_PI;
+		phi1 = SPinterp_pphi[0];
+		nphi = 0;
+		nphim1 = npphi_max;
+	}
+	else if(phir > SPinterp_pphi[npphi_max])	//if angle is greater than maximum angle grid point
+	{
+		phi0 = SPinterp_pphi[npphi_max];
+		phi1 = SPinterp_pphi[0] + 2. * M_PI;
+		nphi = 0;
+		nphim1 = npphi_max;
+	}
+	else						//if angle is within grid range
+	{
+		while ((phir > SPinterp_pphi[nphi]) &&
+				(nphi < npphi_max)) ++nphi;
+		nphim1 = nphi - 1;
+		phi0 = SPinterp_pphi[nphim1];
+		phi1 = SPinterp_pphi[nphi];
+	}
+
+	if (pT0==pT1 || phi0==phi1)
+	{
+		cerr << "ERROR in eiqxEdndp3(): pT and/or pphi values equal!" << endl;
+		exit(1);
+	}
+
+	double one_by_pTdiff = 1./(pT1 - pT0), one_by_pphidiff = 1./(phi1 - phi0);
+	double del_ptr_pt0 = ptr - pT0, del_phir_phi0 = phir - phi0;
+
+	// choose pt-pphi slice of resonance info arrays
+	double * sign_of_f11_arr = res_sign_info[npt-1][nphim1];
+	double * sign_of_f12_arr = res_sign_info[npt-1][nphi];
+	double * sign_of_f21_arr = res_sign_info[npt][nphim1];
+	double * sign_of_f22_arr = res_sign_info[npt][nphi];
+
+	double * log_f11_arr = res_log_info[npt-1][nphim1];
+	double * log_f12_arr = res_log_info[npt-1][nphi];
+	double * log_f21_arr = res_log_info[npt][nphim1];
+	double * log_f22_arr = res_log_info[npt][nphi];
+
+	double * f11_arr = res_moments_info[npt-1][nphim1];
+	double * f12_arr = res_moments_info[npt-1][nphi];
+	double * f21_arr = res_moments_info[npt][nphim1];
+	double * f22_arr = res_moments_info[npt][nphi];
+
+	// set index for looping
+	int qpt_cs_idx = 0;
+	int qlist_idx = 0;
+
+	if(ptr > PTCHANGE)				// if pT interpolation point is larger than PTCHANGE (currently 1.0 GeV)
+	{
+		for (int iqt = 0; iqt < qtnpts; ++iqt)
+		for (int iqx = 0; iqx < qxnpts; ++iqx)
+		for (int iqy = 0; iqy < qynpts; ++iqy)
+		for (int iqz = 0; iqz < qznpts; ++iqz)
+		{
+			double arg = one_by_Gamma_Mres * dot_four_vectors(current_qlist_slice[qlist_idx], currentPpm);
+			double akr = 1./(1.+arg*arg);
+			double aki = arg/(1.+arg*arg);
+
+			/////////////////////////////////////////////////////////////////
+			// DO COSINE PART FIRST
+			/////////////////////////////////////////////////////////////////
+			// interpolate over pT values first
+			/////////////////////////////////////////////////////////////////
+			double sign_of_f11 = sign_of_f11_arr[qpt_cs_idx];
+			double sign_of_f12 = sign_of_f12_arr[qpt_cs_idx];
+			double sign_of_f21 = sign_of_f21_arr[qpt_cs_idx];
+			double sign_of_f22 = sign_of_f22_arr[qpt_cs_idx];
+			
+			//*******************************************************************************************************************
+			// set f1 first
+			//*******************************************************************************************************************
+			// if using extrapolation and spectra at pT1 has larger magnitude than at pT0 (or the signs are different), just return zero
+			if ( ptr > pT1 && ( log_f21_arr[qpt_cs_idx] > log_f11_arr[qpt_cs_idx] || sign_of_f11 * sign_of_f21 < 0 ) )
+				f1 = 0.0;
+			else if (sign_of_f11 * sign_of_f21 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
+				f1 = sign_of_f11 * exp( lin_int(del_ptr_pt0, one_by_pTdiff, log_f11_arr[qpt_cs_idx], log_f21_arr[qpt_cs_idx]) );
+			else					// otherwise, just interpolate original vals
+				f1 = lin_int(del_ptr_pt0, one_by_pTdiff, f11_arr[qpt_cs_idx], f21_arr[qpt_cs_idx]);
+				
+			//*******************************************************************************************************************
+			// set f2 next
+			//*******************************************************************************************************************
+			if ( ptr > pT1 && ( log_f22_arr[qpt_cs_idx] > log_f12_arr[qpt_cs_idx] || sign_of_f12 * sign_of_f22 < 0 ) )
+				f2 = 0.0;
+			else if (sign_of_f12 * sign_of_f22 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
+				f2 = sign_of_f12 * exp( lin_int(del_ptr_pt0, one_by_pTdiff, log_f12_arr[qpt_cs_idx], log_f22_arr[qpt_cs_idx]) );
+			else					// otherwise, just interpolate original vals
+				f2 = lin_int(del_ptr_pt0, one_by_pTdiff, f12_arr[qpt_cs_idx], f22_arr[qpt_cs_idx]);
+			//*******************************************************************************************************************
+			// now, interpolate f1 and f2 over the pphi direction
+			double Zkr = lin_int(del_phir_phi0, one_by_pphidiff, f1, f2);
+	
+			/////////////////////////////////////////////////////////////////
+			// DO SINE PART NEXT
+			/////////////////////////////////////////////////////////////////
+			// interpolate over pT values first
+			/////////////////////////////////////////////////////////////////
+			sign_of_f11 = sign_of_f11_arr[qpt_cs_idx+1];
+			sign_of_f12 = sign_of_f12_arr[qpt_cs_idx+1];
+			sign_of_f21 = sign_of_f21_arr[qpt_cs_idx+1];
+			sign_of_f22 = sign_of_f22_arr[qpt_cs_idx+1];
+			
+			//*******************************************************************************************************************
+			// set f1 first
+			//*******************************************************************************************************************
+			// if using extrapolation and spectra at pT1 has larger magnitude than at pT0 (or the signs are different), just return zero
+			if ( ptr > pT1 && ( log_f21_arr[qpt_cs_idx+1] > log_f11_arr[qpt_cs_idx+1] || sign_of_f11 * sign_of_f21 < 0 ) )
+				f1 = 0.0;
+			else if (sign_of_f11 * sign_of_f21 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
+				f1 = sign_of_f11 * exp( lin_int(del_ptr_pt0, one_by_pTdiff, log_f11_arr[qpt_cs_idx+1], log_f21_arr[qpt_cs_idx+1]) );
+			else					// otherwise, just interpolate original vals
+				f1 = lin_int(del_ptr_pt0, one_by_pTdiff, f11_arr[qpt_cs_idx+1], f21_arr[qpt_cs_idx+1]);
+				
+			//*******************************************************************************************************************
+			// set f2 next
+			//*******************************************************************************************************************
+			if ( ptr > pT1 && ( log_f22_arr[qpt_cs_idx+1] > log_f12_arr[qpt_cs_idx+1] || sign_of_f12 * sign_of_f22 < 0 ) )
+				f2 = 0.0;
+			else if (sign_of_f12 * sign_of_f22 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
+				f2 = sign_of_f12 * exp( lin_int(del_ptr_pt0, one_by_pTdiff, log_f12_arr[qpt_cs_idx+1], log_f22_arr[qpt_cs_idx+1]) );
+			else					// otherwise, just interpolate original vals
+				f2 = lin_int(del_ptr_pt0, one_by_pTdiff, f12_arr[qpt_cs_idx+1], f22_arr[qpt_cs_idx+1]);
+			//*******************************************************************************************************************
+
+			// now, interpolate f1 and f2 over the pphi direction
+			double Zki = lin_int(del_phir_phi0, one_by_pphidiff, f1, f2);
+
+			/////////////////////////////////////////////////////
+			// Finally, update results vectors appropriately
+			/////////////////////////////////////////////////////
+			//--> update the real part of weighted daughter spectra
+			results[qpt_cs_idx] += akr*Zkr-aki*Zki;
+			//--> update the imaginary part of weighted daughter spectra
+			results[qpt_cs_idx+1] += akr*Zki+aki*Zkr;
+	
+			qpt_cs_idx += 2;
+			qlist_idx++;
+		}	//end of all q-loops
+	}
+	else						// if pT is smaller than PTCHANGE, just use linear interpolation, no matter what
+	{
+		for (int iqt = 0; iqt < qtnpts; ++iqt)
+		for (int iqx = 0; iqx < qxnpts; ++iqx)
+		for (int iqy = 0; iqy < qynpts; ++iqy)
+		for (int iqz = 0; iqz < qznpts; ++iqz)
+		{
+			/////////////////////////////////////////////////////////////////
+			// DO COSINE PART FIRST
+			/////////////////////////////////////////////////////////////////
+			// interpolate over pT values first
+			/////////////////////////////////////////////////////////////////
+			f1 = lin_int(del_ptr_pt0, one_by_pTdiff, f11_arr[qpt_cs_idx], f21_arr[qpt_cs_idx]);
+			f2 = lin_int(del_ptr_pt0, one_by_pTdiff, f12_arr[qpt_cs_idx], f22_arr[qpt_cs_idx]);
+
+			// now, interpolate f1 and f2 over the pphi direction
+			double Zkr = lin_int(del_phir_phi0, one_by_pphidiff, f1, f2);
+	
+			/////////////////////////////////////////////////////////////////
+			// DO SINE PART NEXT
+			/////////////////////////////////////////////////////////////////
+			// interpolate over pT values first
+			/////////////////////////////////////////////////////////////////
+			f1 = lin_int(del_ptr_pt0, one_by_pTdiff, f11_arr[qpt_cs_idx+1], f21_arr[qpt_cs_idx+1]);
+			f2 = lin_int(del_ptr_pt0, one_by_pTdiff, f12_arr[qpt_cs_idx+1], f22_arr[qpt_cs_idx+1]);
+
+			// now, interpolate f1 and f2 over the pphi direction
+			double Zki = lin_int(del_phir_phi0, one_by_pphidiff, f1, f2);
+
+			/////////////////////////////////////////////////////
+			// Finally, update results vectors appropriately
+			/////////////////////////////////////////////////////
+			//--> update the real part of weighted daughter spectra
+			results[qpt_cs_idx] += akr*Zkr-aki*Zki;
+			//--> update the imaginary part of weighted daughter spectra
+			results[qpt_cs_idx+1] += akr*Zki+aki*Zkr;
+	
+			qpt_cs_idx += 2;
+			qlist_idx++;
+		}	//end of all q-loops
+	}
 
 	return;
 }

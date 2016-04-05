@@ -198,8 +198,8 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 			// if so, set decay channel info
 			// ************************************************************
 			Set_current_particle_info(idc);
-			//Load_resonance_and_daughter_spectra(decay_channels[idc-1].resonance_particle_id);
-			Load_resonance_spectra(decay_channels[idc-1].resonance_particle_id);
+			Load_resonance_and_daughter_spectra(decay_channels[idc-1].resonance_particle_id);
+			//Load_resonance_spectra(decay_channels[idc-1].resonance_particle_id);
 	
 			// ************************************************************
 			// begin resonance decay calculations here...
@@ -213,7 +213,7 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 					continue;
 
 				Set_current_daughter_info(idc, idc_DI);
-				Load_daughter_spectra_for_decay_channel(decay_channels[idc-1].resonance_particle_id);
+				//Load_daughter_spectra_for_decay_channel(decay_channels[idc-1].resonance_particle_id);
 				Do_resonance_integrals(current_resonance_particle_id, daughter_resonance_particle_id, idc);
 			}
 	
@@ -628,42 +628,6 @@ void CorrelationFunction::Load_resonance_and_daughter_spectra(int local_pid)
 
 	return;
 }
-
-//**************************************************************
-//**************************************************************
-void CorrelationFunction::Load_resonance_and_daughter_spectra(int local_pid)
-{
-	// get parent resonance spectra, set logs and signs arrays that are needed for interpolation
-	int getHDFresonanceSpectra = Get_resonance_from_HDF_array(local_pid, current_dN_dypTdpTdphi_moments);
-	Set_current_resonance_logs_and_signs();
-
-	// get spectra for all daughters, set all of the logs and signs arrays that are needed for interpolation
-	int n_daughters = Set_daughter_list(local_pid);
-
-	if (n_daughters > 0)
-	{
-		int d_idx = 0;
-
-		Setup_current_daughters_dN_dypTdpTdphi_moments(n_daughters);
-
-		for (set<int>::iterator it = daughter_resonance_indices.begin(); it != daughter_resonance_indices.end(); ++it)
-		{
-			int daughter_pid = *it;		//daughter pid is pointed to by iterator
-			getHDFresonanceSpectra = Get_resonance_from_HDF_array(daughter_pid, current_daughters_dN_dypTdpTdphi_moments[d_idx]);
-			++d_idx;
-		}
-	
-		Set_current_daughters_resonance_logs_and_signs(n_daughters);
-	}
-	else
-	{
-		cerr << "Particle is stable, shouldn't have ended up here!  Something went wrong..." << endl;
-		exit;
-	}
-
-	return;
-}
-
 
 void CorrelationFunction::Update_daughter_spectra(int local_pid)
 {
