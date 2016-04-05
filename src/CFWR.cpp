@@ -226,6 +226,8 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 	}
 	else	// must be a pre-existing resonances*.h5 file to use this option
 	{
+		Set_thermal_target_moments();
+
 		*global_out_stream_ptr << "Reading in resonance spectra from file!" << endl;
 		int HDFOpenSuccess = Open_resonance_HDF_array("resonance_spectra.h5");
 		if (HDFOpenSuccess < 0)
@@ -238,10 +240,6 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 		Load_spectra_array("full_spectra.dat", spectra);
 		for (int ipid = 0; ipid < Nparticle; ++ipid)
 			Set_spectra_logs_and_signs(ipid);
-
-		//also retain pion(+) moments for later use...
-		*global_out_stream_ptr << "Saving all thermal " << all_particles[target_particle_id].name << " moments in thermal_target_dN_dypTdpTdphi_moments..." << endl;
-		int getHDFresonanceSpectra = Get_resonance_from_HDF_array(target_particle_id, thermal_target_dN_dypTdpTdphi_moments);
 
 		//also read in pT-dependent q points
 		Load_q_pTdep_pts();
@@ -259,6 +257,32 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 
 
    return;
+}
+//////////////////////////////////////////////////////////////////////////////////
+// End of main routine for computing correlation function
+
+void CorrelationFunction::Set_thermal_target_moments()
+{
+	*global_out_stream_ptr << "Reading in resonance spectra from file!" << endl;
+	int HDFOpenSuccess = Open_resonance_HDF_array("resonance_thermal_moments.h5");
+	if (HDFOpenSuccess < 0)
+	{
+		cerr << "Failed to open HDF array of resonances (resonance_thermal_moments.h5)!  Exiting..." << endl;
+		exit(1);
+	}
+
+	*global_out_stream_ptr << "Storing all thermal " << all_particles[target_particle_id].name << " moments in thermal_target_dN_dypTdpTdphi_moments..." << endl;
+	int getHDFresonanceSpectra = Get_resonance_from_HDF_array(target_particle_id, thermal_target_dN_dypTdpTdphi_moments);
+
+	int HDFCloseSuccess = Close_resonance_HDF_array();	//finalize HDF spectra file at this stage, then save, then reopen
+
+	if (HDFCloseSuccess < 0)
+	{
+		cerr << "Failed to close HDF array of resonances (resonance_spectra.h5)!  Exiting..." << endl;
+		exit(1);
+	}
+
+	return;
 }
 
 bool CorrelationFunction::Do_this_decay_channel(int dc_idx)
