@@ -1128,7 +1128,8 @@ int CorrelationFunction::Set_daughter_list(int parent_resonance_index)
 		for (int l = 0; l < nb; l++)				// loop through each daughter particle
 		{
 			int pid = lookup_particle_id_from_monval(all_particles, Nparticle, parent.decays_part[k][l]);
-			daughter_resonance_indices.insert(pid);		// using a <set> object will automatically remove duplicates and keep pid's in a fixed order
+			if (all_particles[pid].effective_branchratio >= 1.e-12)
+				daughter_resonance_indices.insert(pid);		// using a <set> object will automatically remove duplicates and keep pid's in a fixed order
 		}
 	}
 

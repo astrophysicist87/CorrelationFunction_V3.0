@@ -254,13 +254,10 @@ int CorrelationFunction::Get_resonance_from_HDF_array(int local_pid, double ****
 	try
     {
 		Exception::dontPrint();
-	
 		hsize_t offset[RANK2D] = {local_pid, 0};
 		hsize_t count[RANK2D] = {1, chunk_size};				// == chunk_dims
 		resonance_dataspace->selectHyperslab(H5S_SELECT_SET, count, offset);
-
 		resonance_dataset->read(resonance_chunk, PredType::NATIVE_DOUBLE, *resonance_memspace, *resonance_dataspace);
-
 		// use loaded chunk to fill resonance_array_to_fill
 		int iidx = 0;
 		for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
@@ -275,7 +272,6 @@ int CorrelationFunction::Get_resonance_from_HDF_array(int local_pid, double ****
 			resonance_array_to_fill[ipt][ipphi][iqt][iqx][iqy][iqz][itrig] = temp;
 			++iidx;
 		}
-
    }
 
     catch(FileIException error)
