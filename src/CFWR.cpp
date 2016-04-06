@@ -610,11 +610,6 @@ void CorrelationFunction::Load_resonance_and_daughter_spectra(int local_pid)
 		{
 			int daughter_pid = *it;		//daughter pid is pointed to by iterator
 			getHDFresonanceSpectra = Get_resonance_from_HDF_array(daughter_pid, current_daughters_dN_dypTdpTdphi_moments[d_idx]);
-	/*for (int iqy = 0; iqy < qynpts; ++iqy)
-	for (int iqz = 0; iqz < qznpts; ++iqz)
-	cout << "local_pid(2) = " << daughter_pid << "   "
-			<< current_daughters_dN_dypTdpTdphi_moments[d_idx][0][0][0][0][iqy][iqz][0] << "   "
-			<< current_daughters_dN_dypTdpTdphi_moments[d_idx][0][0][0][0][iqy][iqz][1] << endl;*/
 			++d_idx;
 		}
 	

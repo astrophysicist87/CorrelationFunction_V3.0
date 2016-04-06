@@ -102,12 +102,15 @@ void CorrelationFunction::Cal_correlationfunction()
 	sw.Stop();
 	*global_out_stream_ptr << "Finished computing correlator in " << sw.printTime() << " seconds." << endl;
 
-	sw.Reset();
-	sw.Start();
-	*global_out_stream_ptr << "Regulating computed correlator values using Hampel criterion for outlier detection..." << endl;
+	//output the un-regulated correlation function to separate file for debugging purposes
+	Output_correlationfunction(false);
 
 	if (REGULATE_CF)
 	{
+		sw.Reset();
+		sw.Start();
+	
+		*global_out_stream_ptr << "WARNING: Regulating computed correlator values using Hampel criterion for outlier detection..." << endl;
 		double * pphi_CF_slice = new double [n_interp_pphi_pts];
 		double * pphi_CF_slice_term1 = new double [n_interp_pphi_pts];
 		double * pphi_CF_slice_term2 = new double [n_interp_pphi_pts];
@@ -117,16 +120,19 @@ void CorrelationFunction::Cal_correlationfunction()
 		for (int iqx = 0; iqx < qxnpts; ++iqx)
 		for (int iqy = 0; iqy < qynpts; ++iqy)
 		for (int iqz = 0; iqz < qznpts; ++iqz)
-		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 		{
-			pphi_CF_slice[ipphi] = CFvals[ipt][ipphi][iqx][iqy][iqz];
-			pphi_CF_slice_term1[ipphi] = thermalCFvals[ipt][ipphi][iqx][iqy][iqz];
-			pphi_CF_slice_term2[ipphi] = crosstermCFvals[ipt][ipphi][iqx][iqy][iqz];
-			pphi_CF_slice_term3[ipphi] = resonancesCFvals[ipt][ipphi][iqx][iqy][iqz];
-			Regulate_CF_Hampel(ipt, iqx, iqy, iqz, pphi_CF_slice, pphi_CF_slice_term1, pphi_CF_slice_term2, pphi_CF_slice_term3);
+			for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+			{
+				pphi_CF_slice[ipphi] = CFvals[ipt][ipphi][iqx][iqy][iqz];
+				pphi_CF_slice_term1[ipphi] = thermalCFvals[ipt][ipphi][iqx][iqy][iqz];
+				pphi_CF_slice_term2[ipphi] = crosstermCFvals[ipt][ipphi][iqx][iqy][iqz];
+				pphi_CF_slice_term3[ipphi] = resonancesCFvals[ipt][ipphi][iqx][iqy][iqz];
+			}
+			//Regulate_CF_Hampel(ipt, iqx, iqy, iqz, pphi_CF_slice, pphi_CF_slice_term1, pphi_CF_slice_term2, pphi_CF_slice_term3);
+			Regulate_CF_Hampel_v2(ipt, iqx, iqy, iqz, pphi_CF_slice, pphi_CF_slice_term1, pphi_CF_slice_term2, pphi_CF_slice_term3);
 		}
 		sw.Stop();
-		*global_out_stream_ptr << "Finished regulating computed correlator values in " << sw.printTime() << " seconds." << endl;
+		*global_out_stream_ptr << "WARNING: Finished regulating computed correlator values in " << sw.printTime() << " seconds." << endl;
 	
 		delete [] pphi_CF_slice;
 		delete [] pphi_CF_slice_term1;
@@ -183,6 +189,8 @@ void CorrelationFunction::Compute_correlationfunction(double * totalresult, doub
 			*thermalresult = cft.eval(point);
 			*CTresult = cfct.eval(point);
 			*resonanceresult = cfr.eval(point);
+
+			//*global_out_stream_ptr << "CHECK: " << *totalresult << "   " << *thermalresult << "   " << *CTresult << "   " << *resonanceresult << endl;
 		}
 		else	//if not using Chebyshev nodes in qt-direction, just use straight-up linear(0) or cubic(1) interpolation
 		{

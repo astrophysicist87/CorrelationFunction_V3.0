@@ -213,86 +213,17 @@ void CorrelationFunction::Output_results(int folderindex)
 	return;
 }
 
-/*
-void CorrelationFunction::Output_resonance_spectra(int resonance_pid, int folderindex, double ******* resonance_spectra)
-{
-	ostringstream filename_stream;
-	filename_stream << global_path << "/resonance_" << resonance_pid << "_spectra_ev" << folderindex << no_df_stem << ".dat";
-	FILE *out = fopen(filename_stream.str().c_str(), "w");
-
-	for (int iqt = 0; iqt < qtnpts; ++iqt)
-	{
-		double ****** CRS_s1 = resonance_spectra[iqt];
-		for (int iqx = 0; iqx < qxnpts; ++iqx)
-		{
-			double ***** CRS_s2 = CRS_s1[iqx];
-			for (int iqy = 0; iqy < qynpts; ++iqy)
-			{
-				double **** CRS_s3 = CRS_s2[iqy];
-				for (int iqz = 0; iqz < qznpts; ++iqz)
-				{
-					double *** CRS_s4 = CRS_s3[iqz];
-					double ** CRS_s4a = CRS_s4[0];	//itrig == 0
-					double ** CRS_s4b = CRS_s4[1];	//itrig == 1
-					for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-					{
-						double * CRS_s5a = CRS_s4a[ipt];
-						double * CRS_s5b = CRS_s4a[ipt];
-						for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-							fprintf(out, "%lf   %lf   ", CRS_s5a[ipphi], CRS_s5b[ipphi]);
-						fprintf(out, "\n");
-					}
-				}
-			}
-		}
-	}
-
-	return(fclose(out));
-}
-
-void CorrelationFunction::Readin_resonance_spectra(int resonance_pid, int folderindex, double ******* resonance_spectra)
-{
-	ostringstream filename_stream;
-	filename_stream << global_path << "/resonance_" << resonance_pid << "_spectra_ev" << folderindex << no_df_stem << ".dat";
-	FILE *in = fopen(filename_stream.str().c_str(), "r");
-
-	for (int iqt = 0; iqt < qtnpts; ++iqt)
-	for (int iqx = 0; iqx < qxnpts; ++iqx)
-	for (int iqy = 0; iqy < qynpts; ++iqy)
-	for (int iqz = 0; iqz < qznpts; ++iqz)
-	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-		fscanf(in, "%lf", &resonance_spectra[iqt][iqx][iqy][iqz][0][ipt][ipphi]
-                            &resonance_spectra[iqt][iqx][iqy][iqz][1][ipt][ipphi]);
-
-	return(fclose(in));
-}
-
-void CorrelationFunction::Readin_daughter_spectra(int resonance_pid, int folderindex, double ******* resonance_spectra)
-{
-	ostringstream filename_stream;
-	filename_stream << global_path << "/resonance_" << resonance_pid << "_spectra_ev" << folderindex << no_df_stem << ".dat";
-	FILE *in = fopen(filename_stream.str().c_str(), "r");
-
-	for (int iqt = 0; iqt < qtnpts; ++iqt)
-	for (int iqx = 0; iqx < qxnpts; ++iqx)
-	for (int iqy = 0; iqy < qynpts; ++iqy)
-	for (int iqz = 0; iqz < qznpts; ++iqz)
-	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-		fscanf(in, "%lf", &resonance_spectra[iqt][iqx][iqy][iqz][0][ipt][ipphi]
-                            &resonance_spectra[iqt][iqx][iqy][iqz][1][ipt][ipphi]);
-
-	return(fclose(in));
-}
-*/
-
-void CorrelationFunction::Output_correlationfunction(int folderindex)
+void CorrelationFunction::Output_correlationfunction(bool regulated_CF /*==true*/)
 {
 	ostringstream oCorrFunc_stream;
 	string temp_particle_name = particle_name;
 	replace_parentheses(temp_particle_name);
-	oCorrFunc_stream << global_path << "/correlfunct3D" << "_" << temp_particle_name << ".dat";
+
+	string CF_reg_string = "";
+	if (!regulated_CF)
+		CF_reg_string = "unregulated_";
+
+	oCorrFunc_stream << global_path << "/correlfunct3D_" << CF_reg_string << temp_particle_name << ".dat";
 	ofstream oCorrFunc;
 	oCorrFunc.open(oCorrFunc_stream.str().c_str());
 
@@ -303,7 +234,7 @@ void CorrelationFunction::Output_correlationfunction(int folderindex)
 	for (int iqz = 0; iqz < qznpts; ++iqz)
 	{
 		double ckp = cos_SPinterp_pphi[ipphi], skp = sin_SPinterp_pphi[ipphi];
-		oCorrFunc << scientific << setprecision(7) << setw(15)
+		oCorrFunc << scientific << setprecision(16) << setw(20)
 			<< SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   " << qx_PTdep_pts[ipt][iqx] << "   "
 			<< qy_PTdep_pts[ipt][iqy] << "   " << qz_PTdep_pts[ipt][iqz] << "   "
 			<< qx_PTdep_pts[ipt][iqx] * ckp + qy_PTdep_pts[ipt][iqy] * skp << "   "
@@ -479,14 +410,15 @@ void CorrelationFunction::Regulate_CF_Hampel(int ipt, int iqx, int iqy, int iqz,
 
 	double pphi_median = 0.0;
 
-	find_outliers_Hampel(pphi_CF_slice, n_interp_pphi_pts, is_outlier, &pphi_median);
+	find_outliers_Hampel(pphi_CF_slice, n_interp_pphi_pts, is_outlier, &pphi_median, 7.5);	//last part is Hampel factor
 
 	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 	if (is_outlier[ipphi] || abs(pphi_CF_slice[ipphi]-1.5) > 0.500001)
 	{
 		//if (SPinterp_pT[ipt] < pTcutoff)
-			*global_out_stream_ptr << "\t WARNING: regulated CF point at pT = " << SPinterp_pT[ipt]
-				<< ": (" << pphi_CF_slice[ipphi] << ", " << pphi_CF_slice_term1[ipphi] << ", " << pphi_CF_slice_term2[ipphi] << ", " << pphi_CF_slice_term3[ipphi] << ") --> (";
+			*global_out_stream_ptr << "\t WARNING: regulated CF point at pT = " << SPinterp_pT[ipt] << ", pphi = " << SPinterp_pphi[ipphi]
+				<< " (" << iqx << ", " << iqy << ", " << iqz << "): (" << scientific << setprecision(6) << setw(9)
+				<< pphi_CF_slice[ipphi] << ", " << pphi_CF_slice_term1[ipphi] << ", " << pphi_CF_slice_term2[ipphi] << ", " << pphi_CF_slice_term3[ipphi] << ") --> (";
 		pphi_CF_slice[ipphi] = pphi_median;	//if it's an outlier, replace with pphi-median value
 		pphi_CF_slice_term1[ipphi] = get_median(pphi_CF_slice_term1, n_interp_pphi_pts);
 		pphi_CF_slice_term2[ipphi] = get_median(pphi_CF_slice_term2, n_interp_pphi_pts);
@@ -500,6 +432,37 @@ void CorrelationFunction::Regulate_CF_Hampel(int ipt, int iqx, int iqy, int iqz,
 	return;
 }
 
+void CorrelationFunction::Regulate_CF_Hampel_v2(int ipt, int iqx, int iqy, int iqz,
+												double * pphi_CF_slice, double * pphi_CF_slice_term1, double * pphi_CF_slice_term2, double * pphi_CF_slice_term3)
+{
+	bool * is_outlier = new bool [n_interp_pphi_pts];
+	double * local_pphi_medians = new double [n_interp_pphi_pts];
+
+	int window_width = 13;	//this seems to work fairly well
+
+	find_outliers_window_Hampel(pphi_CF_slice, n_interp_pphi_pts, is_outlier, local_pphi_medians, 5.2, window_width);	//last part is Hampel factor
+
+	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+	if (is_outlier[ipphi] || abs(pphi_CF_slice[ipphi]-1.5) > 0.500001)
+	{
+		//if (SPinterp_pT[ipt] < pTcutoff)
+			*global_out_stream_ptr << "\t WARNING: regulated CF point at pT = " << SPinterp_pT[ipt] << ", pphi = " << SPinterp_pphi[ipphi]
+				<< " (" << iqx << ", " << iqy << ", " << iqz << "): (" << scientific << setprecision(6) << setw(9)
+				<< pphi_CF_slice[ipphi] << ", " << pphi_CF_slice_term1[ipphi] << ", " << pphi_CF_slice_term2[ipphi] << ", " << pphi_CF_slice_term3[ipphi] << ") --> (";
+		pphi_CF_slice[ipphi] = local_pphi_medians[ipphi];	//if it's an outlier, replace with pphi-median value
+		pphi_CF_slice_term1[ipphi] = get_median(pphi_CF_slice_term1, n_interp_pphi_pts);
+		pphi_CF_slice_term2[ipphi] = get_median(pphi_CF_slice_term2, n_interp_pphi_pts);
+		pphi_CF_slice_term3[ipphi] = get_median(pphi_CF_slice_term3, n_interp_pphi_pts);
+		//if (SPinterp_pT[ipt] < pTcutoff)
+			*global_out_stream_ptr << pphi_CF_slice[ipphi] << ", " << pphi_CF_slice_term1[ipphi] << ", " << pphi_CF_slice_term2[ipphi] << ", " << pphi_CF_slice_term3[ipphi] << ")" << endl;
+	}
+
+if (1) exit (1);
+
+	delete [] is_outlier;
+
+	return;
+}
 
 double CorrelationFunction::get_CF(int ipt, int ipphi, int iqt, int iqx, int iqy, int iqz, bool return_projected_value)
 {

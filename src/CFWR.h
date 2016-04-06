@@ -278,6 +278,8 @@ class CorrelationFunction
 		void Regulate_CF(int ipt, int iqt, int iqx, int iqy, int iqz, double * CF, double * projCF);
 		void Regulate_CF_Hampel(int ipt, int iqx, int iqy, int iqz,
 												double * pphi_CF_slice, double * pphi_CF_slice_term1, double * pphi_CF_slice_term2, double * pphi_CF_slice_term3);
+		void Regulate_CF_Hampel_v2(int ipt, int iqx, int iqy, int iqz,
+												double * pphi_CF_slice, double * pphi_CF_slice_term1, double * pphi_CF_slice_term2, double * pphi_CF_slice_term3);
 
 		void Fill_out_pts(double * pointsarray, int numpoints, double max_val, int spacing_type);
 		void Set_q_pTdep_pts(int ipt, double qxw, double qyw, double qzw);
@@ -304,6 +306,7 @@ class CorrelationFunction
 		int lookup_resonance_idx_from_particle_id(int particle_id);
 		int list_daughters(int parent_resonance_index, set<int> * daughter_resonance_indices_ptr, particle_info * particle, int Nparticle);
 		void eiqxEdndp3(double ptr, double phir, double * results, int loc_verb = 0);
+		//void eiqxEdndp3_NEW(double ptr, double phir, double * results, int loc_verb = 0);
 		void Edndp3(double ptr, double phir, double * result, int loc_verb = 0);
 		void Set_correlation_function_q_pts();
 		void Get_q_points(double qo, double qs, double ql, double KT, double Kphi, double * qgridpts);
@@ -353,7 +356,7 @@ class CorrelationFunction
 		void Read_in_all_dN_dypTdpTdphi(int folderindex);
 		void Output_chosen_resonances();
 		void Output_resonance_fraction();
-		void Output_correlationfunction(int folderindex);
+		void Output_correlationfunction(bool regulated_CF = true);
 		void Output_fleshed_out_correlationfunction(int ipt, int ipphi);
 		void Dump_spectra_array(string output_filename, double *** array_to_dump);
 		void Load_spectra_array(string output_filename, double *** array_to_read);

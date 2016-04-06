@@ -1112,13 +1112,16 @@ void CorrelationFunction::Get_current_decay_string(int dc_idx, string * decay_st
 	return;
 }
 
-int CorrelationFunction::Set_daughter_list(int parent_resonance_index)
+int CorrelationFunction::Set_daughter_list(int parent_pid)
 {
 	// reset list
 	daughter_resonance_indices.clear();
 	
+//for (int i = 0; i < (int)chosen_resonances.size(); ++i)
+//	cout << chosen_resonances[i] << "   " << all_particles[chosen_resonances[i]].name << endl;
+
 	// then re-populate it
-	particle_info parent = all_particles[parent_resonance_index];
+	particle_info parent = all_particles[parent_pid];
 	if (parent.stable == 1 && parent.decays_Npart[0] == 1)
 		return (0);									// no daughters to worry about if parent resonance is actually stable
 	int number_of_decays = parent.decays;
@@ -1128,10 +1131,16 @@ int CorrelationFunction::Set_daughter_list(int parent_resonance_index)
 		for (int l = 0; l < nb; l++)				// loop through each daughter particle
 		{
 			int pid = lookup_particle_id_from_monval(all_particles, Nparticle, parent.decays_part[k][l]);
-			if (all_particles[pid].effective_branchratio >= 1.e-12)
+//cout << "Searching for " << pid << "   (" << all_particles[pid].name << ", " << all_particles[pid].effective_branchratio << ")"<< endl;
+			if ( all_particles[pid].effective_branchratio >= 1.e-12 || pid == target_particle_id )
 				daughter_resonance_indices.insert(pid);		// using a <set> object will automatically remove duplicates and keep pid's in a fixed order
 		}
 	}
+
+cout << endl << "Ended up with n_daughter = " << daughter_resonance_indices.size() << " for " << all_particles[parent_pid].name << " (" << parent_pid << ")" << endl;
+int i = 0;
+for (set<int>::iterator it = daughter_resonance_indices.begin(); it != daughter_resonance_indices.end(); ++it)
+	cout << i++ << "   " << *it << "   " << all_particles[*it].name << "   " << all_particles[*it].effective_branchratio << endl;
 
 	// return value is total number of daughters found
 	return (daughter_resonance_indices.size());
@@ -1606,7 +1615,7 @@ void CorrelationFunction::Edndp3(double ptr, double phir, double * result, int l
 }
 
 
-void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, int loc_verb /*==0*/)
+/*void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, int loc_verb)
 {
 	double phi0, phi1;
 	double f1, f2;
@@ -1818,9 +1827,9 @@ void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, 
 	}	// ending all loops at once in linearized version
 
 	return;
-}
+}*/
 
-void CorrelationFunction::eiqxEdndp3_NEW(double ptr, double phir, double * results, int loc_verb /*==0*/)
+void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, int loc_verb /*==0*/)
 {
 	double phi0, phi1;
 	double f1, f2;
@@ -1988,6 +1997,10 @@ void CorrelationFunction::eiqxEdndp3_NEW(double ptr, double phir, double * resul
 		for (int iqy = 0; iqy < qynpts; ++iqy)
 		for (int iqz = 0; iqz < qznpts; ++iqz)
 		{
+			double arg = one_by_Gamma_Mres * dot_four_vectors(current_qlist_slice[qlist_idx], currentPpm);
+			double akr = 1./(1.+arg*arg);
+			double aki = arg/(1.+arg*arg);
+
 			/////////////////////////////////////////////////////////////////
 			// DO COSINE PART FIRST
 			/////////////////////////////////////////////////////////////////

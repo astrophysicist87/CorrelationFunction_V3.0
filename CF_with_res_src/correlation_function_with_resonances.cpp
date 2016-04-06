@@ -183,7 +183,7 @@ int main(int argc, char *argv[])
 	correlation_function.Output_total_target_eiqx_dN_dypTdpTdphi(folderindex);
 	correlation_function.Output_chosen_resonances();
 	correlation_function.Output_resonance_fraction();
-	correlation_function.Output_correlationfunction(folderindex);
+	correlation_function.Output_correlationfunction();
 
 	output << "Finished calculating correlation function with all resonance decays..." << endl;
 

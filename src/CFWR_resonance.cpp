@@ -100,8 +100,8 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 			double vsum = 0.0;
 			for (int iv = 0; iv < n_v_pts; ++iv)
 			{
-				time (&rawtime);
-				timeinfo = localtime (&rawtime);
+				//time (&rawtime);
+				//timeinfo = localtime (&rawtime);
 				Zero_resonance_running_sum_vector(zetasum_vec);
 				double zetasum = 0.0;
 				for (int izeta = 0; izeta < n_zeta_pts; ++izeta)
@@ -299,22 +299,6 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 			}
 		}								// end of pT, pphi loops
 	}										// end of nbody == 3
-
-	/*cout << "Resonance integrals (n_body = " << n_body << "): added " << scientific << setprecision(17) << setw(20)
-			<< current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][0][0][0][0][0][0][0] - tmp_spec_save << endl
-			<< "  --> pt = " << SPinterp_pT[0] << endl
-			<< "  --> pphi = " << SPinterp_pphi[0] << endl
-			<< "daughter_particle_id = " << daughter_particle_id << endl
-			<< "parent_resonance_particle_id = " << parent_resonance_particle_id << endl
-			<< "  --> Qfunc = " << Qfunc << endl
-			<< "  --> n_body = " << n_body << endl
-			<< "  --> gRES = " << gRES << endl
-			<< "  --> Mres = " << Mres << endl
-			<< "  --> mass = " << mass << endl
-			<< "  --> Gamma = " << Gamma << endl
-			<< "  --> br = " << br << endl
-			<< "  --> m2 = " << m2 << endl
-			<< "  --> m3 = " << m3 << endl << endl;*/
 
 	// clean up
 	Delete_resonance_running_sum_vectors();

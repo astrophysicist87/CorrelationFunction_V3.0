@@ -17,7 +17,7 @@ export HDF5_CLINKER=$(shell /home/plumberg.1/iEBE/EBE-Node/crank/configure_compi
 #CC := $(shell /home/plumberg.1/iEBE/EBE-Node/crank/configure_compiler_C++.sh)
 CC := h5c++
 CFLAGS= $(shell /home/plumberg.1/iEBE/EBE-Node/crank/configure_compiler_C++_Flags.sh)
-CFLAGS += -pg
+CFLAGS += -g
 
 RM		=	rm -f
 O               =       .o
