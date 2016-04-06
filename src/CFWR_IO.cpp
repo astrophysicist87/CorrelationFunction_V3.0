@@ -234,7 +234,7 @@ void CorrelationFunction::Output_correlationfunction(bool regulated_CF /*==true*
 	for (int iqz = 0; iqz < qznpts; ++iqz)
 	{
 		double ckp = cos_SPinterp_pphi[ipphi], skp = sin_SPinterp_pphi[ipphi];
-		oCorrFunc << scientific << setprecision(16) << setw(20)
+		oCorrFunc << scientific << setprecision(8) << setw(12)
 			<< SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   " << qx_PTdep_pts[ipt][iqx] << "   "
 			<< qy_PTdep_pts[ipt][iqy] << "   " << qz_PTdep_pts[ipt][iqz] << "   "
 			<< qx_PTdep_pts[ipt][iqx] * ckp + qy_PTdep_pts[ipt][iqy] * skp << "   "
@@ -438,7 +438,7 @@ void CorrelationFunction::Regulate_CF_Hampel_v2(int ipt, int iqx, int iqy, int i
 	bool * is_outlier = new bool [n_interp_pphi_pts];
 	double * local_pphi_medians = new double [n_interp_pphi_pts];
 
-	int window_width = 13;	//this seems to work fairly well
+	int window_width = 11;	//this seems to work fairly well
 
 	find_outliers_window_Hampel(pphi_CF_slice, n_interp_pphi_pts, is_outlier, local_pphi_medians, 5.2, window_width);	//last part is Hampel factor
 
@@ -455,9 +455,10 @@ void CorrelationFunction::Regulate_CF_Hampel_v2(int ipt, int iqx, int iqy, int i
 		pphi_CF_slice_term3[ipphi] = get_median(pphi_CF_slice_term3, n_interp_pphi_pts);
 		//if (SPinterp_pT[ipt] < pTcutoff)
 			*global_out_stream_ptr << pphi_CF_slice[ipphi] << ", " << pphi_CF_slice_term1[ipphi] << ", " << pphi_CF_slice_term2[ipphi] << ", " << pphi_CF_slice_term3[ipphi] << ")" << endl;
+if (1) exit (1);
 	}
 
-if (1) exit (1);
+//if (1) exit (1);
 
 	delete [] is_outlier;
 
