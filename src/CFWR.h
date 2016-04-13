@@ -96,6 +96,7 @@ class CorrelationFunction
 				
 		//array to hold previous and current resonance info
 		decay_info * decay_channels;
+		int current_parent_resonance;
 		int current_decay_channel_idx, current_resonance_particle_id, previous_resonance_idx, current_resonance_idx, current_reso_nbody;
 		double current_resonance_mu, current_resonance_mass, current_resonance_Gamma, current_m2_Gamma, current_m3_Gamma;
 		double current_resonance_total_br, current_resonance_direct_br, current_daughter_mass, current_daughter_Gamma;
@@ -131,6 +132,7 @@ class CorrelationFunction
 
 		//SP momentum arrays for interpolation grid
 		double * SPinterp_pT, * SPinterp_pphi;
+		double * SPinterp_pT_wts, * SPinterp_pphi_wts;
 		double * sin_SPinterp_pphi, * cos_SPinterp_pphi;
 		double ** SPinterp_p0, ** SPinterp_pz;
 
@@ -256,7 +258,7 @@ class CorrelationFunction
 		void Cal_dN_dypTdpTdphi_heap(FO_surf* FOsurf_ptr, int local_pid, double cutoff);
 		void Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, int local_pid);
 		double Cal_dN_dypTdpTdphi_function(FO_surf* FOsurf_ptr, int local_pid, double pT, double pphi);
-		double Cal_dN_dypTdpTdphi_with_weights_function(FO_surf* FOsurf_ptr, int local_pid, double pT, double pphi, double qt, double qx, double qy, double qz);
+		void Cal_dN_dypTdpTdphi_with_weights_function(FO_surf* FOsurf_ptr, int local_pid, double pT, double pphi, double qt, double qx, double qy, double qz, double * cosqx_dN_dypTdpTdphi, double * sinqx_dN_dypTdpTdphi);
 		void Do_resonance_integrals(int iKT, int iKphi, int dc_idx);
 		void Flatten_dN_dypTdpTdphi_moments();
 		void Set_current_daughter_info(int dc_idx, int daughter_idx);

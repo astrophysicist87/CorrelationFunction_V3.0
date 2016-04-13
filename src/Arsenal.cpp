@@ -833,23 +833,31 @@ double interpCubicDirect(double * x, double * y, double x0, long size, bool retu
 
 }
 
+
+
+
+
+
+
 /////////////////////////////////////////////////////////////////////////////////////////
 //**********************************************************************
 //double interpCubicNondirect(double * x, double * y, double xx, long size)
-double interpCubicNonDirect(double * x, double * y, double x0, long size, bool returnflag /*= false*/, double default_return_value /* = 0*/)
+double interpCubicNonDirect(double * x, double * y, double xi, long size, bool returnflag /*= false*/, double default_return_value /* = 0*/)
 // Returns the interpreted value of y=y(x) at x=x0 using cubic polynomial interpolation method.
 // -- x,y: the independent and dependent double x0ables; x is *NOT* assumed to be equal spaced but it has to be increasing
-// -- x0: where the interpolation should be performed
+// -- xi: where the interpolation should be performed
 {
+//cout << "interpCubicNondirect: " << xi << "   " << size << endl;
   //long size = x->size();
   if (size==1) {cout<<"interpCubicNondirect warning: table size = 1"<<endl; return y[0];}
 
   // if close to left end:
-  if (abs(x0-x[0])<(x[1]-x[0])*1e-30) return y[0];
+  if (abs(xi-x[0])<(x[1]-x[0])*1e-30) return y[0];
 
   // find x's integer index
-  //long idx = binarySearch(x, x0);
-  long idx = binarySearch(x, size, x0, true);
+  //long idx = binarySearch(x, xi);
+  long idx = binarySearch(x, size, xi, true);
+//cout << "interpCubicNondirect: " << idx << endl;
 
   //if (idx<0 || idx>=size-1)
   //{
@@ -863,7 +871,7 @@ double interpCubicNonDirect(double * x, double * y, double x0, long size, bool r
 		if (!returnflag)	//i.e., if returnflag is false, exit
 		{
 			cerr << "interpCubicNonDirect(): index out of range!  Aborting!" << endl
-				<< "interpCubicNonDirect(): size = " << size << ", x0 = " << x0 << ", " << "idx=" << idx << endl;
+				<< "interpCubicNonDirect(): size = " << size << ", x0 = " << xi << ", " << "idx=" << idx << endl;
 			exit(1);
 		}
 		else return (default_return_value);
@@ -872,12 +880,12 @@ double interpCubicNonDirect(double * x, double * y, double x0, long size, bool r
   if (idx==0)
   {
     // use linear interpolation at the left end
-    return y[0] + (y[1]-y[0])/(x[1]-x[0])*(x0-x[0]);
+    return y[0] + (y[1]-y[0])/(x[1]-x[0])*(xi-x[0]);
   }
   else if (idx==size-2)
   {
     // use linear interpolation at the right end
-    return y[size-2] + (y[size-1]-y[size-2] )/(x[size-1]-x[size-2] )*(x0-x[size-2]);
+    return y[size-2] + (y[size-1]-y[size-2] )/(x[size-1]-x[size-2] )*(xi-x[size-2]);
   }
   else
   {
@@ -912,7 +920,13 @@ double interpCubicNonDirect(double * x, double * y, double x0, long size, bool r
           + x2*(-x3s*y01-x0s*y13)
           + x1s*(-x3*y02+x2*y03-x0*y23)
           )/denominator;
-    return C0 + C1*x0 + C2*x0*x0 + C3*x0*x0*x0;
+//cout << "interpCubicNondirect(list1): " << y0 << "   " << y1 << "   " << y2 << "   " << y3 << "   "
+//				<< y01 << "   " << y02 << "   " << y03 << "   " << y12 << "   " << y13 << "   " << y23 << endl;
+//cout << "interpCubicNondirect(list2): " << x0 << "   " << x1 << "   " << x2 << "   " << x3 << "   "
+//				<< x01 << "   " << x02 << "   " << x03 << "   " << x12 << "   " << x13 << "   " << x23 << endl;
+//cout << "interpCubicNondirect(list3): " << x0s << "   " << x1s << "   " << x2s << "   " << x3s << "   " << denominator << endl;
+//cout << "interpCubicNondirect(list4): " << C0 << "   " << C1 << "   " << C2 << "   " << C3 << endl;
+    return C0 + C1*xi + C2*xi*xi + C3*xi*xi*xi;
   }
 
 }
@@ -1053,23 +1067,23 @@ double interpBiCubicDirectALT(double * x, double * y, double ** z, double x0, do
 
 /////////////////////////////////////////////////////////////////////////////////////////
 //**********************************************************************
-double interpBiCubicNonDirectALT(double * x, double * y, double ** f, double x0, double y0, long x_size, long y_size, bool returnflag /*= false*/, double default_return_value /* = 0*/)
+double interpBiCubicNonDirectALT(double * x, double * y, double ** f, double xi, double yi, long x_size, long y_size, bool returnflag /*= false*/, double default_return_value /* = 0*/)
 {
   //long size = x->size();
   if (x_size==1 && y_size==1) {cout<<"interpBiCubicNonDirectALT warning: table size = 1"<<endl; return f[0][0];}
 
   // if close to left end:
-  if (abs(x0-x[0])<(x[1]-x[0])*1e-30) return interpCubicNonDirect(y, f[0], y0, y_size, returnflag, default_return_value);
+  if (abs(xi-x[0])<(x[1]-x[0])*1e-30) return interpCubicNonDirect(y, f[0], yi, y_size, returnflag, default_return_value);
 
   // find x's integer index
-  long idx = binarySearch(x, x_size, x0, true);
+  long idx = binarySearch(x, x_size, xi, true);
 
 	if (idx < 0 || idx >= x_size-1)
 	{
 		if (!returnflag)	//i.e., if returnflag is false, exit
 		{
 			cerr << "interpBiCubicNonDirectALT(): index out of range!  Aborting!" << endl
-				<< "interpBiCubicNonDirectALT(): x_size = " << x_size << ", x0 = " << x0 << ", " << "idx=" << idx << endl;
+				<< "interpBiCubicNonDirectALT(): x_size = " << x_size << ", x0 = " << xi << ", " << "idx=" << idx << endl;
 			exit(1);
 		}
 		else return (default_return_value);
@@ -1078,28 +1092,24 @@ double interpBiCubicNonDirectALT(double * x, double * y, double ** f, double x0,
   if (idx==0)
   {
     // use linear interpolation at the left end
-	double f0 = interpCubicNonDirect(y, f[0], y0, y_size, returnflag, default_return_value);
-	double f1 = interpCubicNonDirect(y, f[1], y0, y_size, returnflag, default_return_value);
-    return f0 + (f1-f0)/(x[1]-x[0])*(x0-x[0]);
+	double f0 = interpCubicNonDirect(y, f[0], yi, y_size, returnflag, default_return_value);
+	double f1 = interpCubicNonDirect(y, f[1], yi, y_size, returnflag, default_return_value);
+    return f0 + (f1-f0)/(x[1]-x[0])*(xi-x[0]);
   }
   else if (idx==x_size-2)
   {
     // use linear interpolation at the right end
-	double fnm2 = interpCubicNonDirect(y, f[x_size-2], y0, y_size, returnflag, default_return_value);
-	double fnm1 = interpCubicNonDirect(y, f[x_size-1], y0, y_size, returnflag, default_return_value);
-    return fnm2 + (fnm1-fnm2 )/(x[x_size-1]-x[x_size-2] )*(x0-x[x_size-2]);
+	double fnm2 = interpCubicNonDirect(y, f[x_size-2], yi, y_size, returnflag, default_return_value);
+	double fnm1 = interpCubicNonDirect(y, f[x_size-1], yi, y_size, returnflag, default_return_value);
+    return fnm2 + (fnm1-fnm2 )/(x[x_size-1]-x[x_size-2] )*(xi-x[x_size-2]);
   }
   else
   {
     // use cubic interpolation
-    //long double f0 = f[idx-1];
-	//long double f1 = f[idx];
-	//long double f2 = f[idx+1];
-	//long double f3 = f[idx+2];
-    long double f0 = interpCubicNonDirect(y, f[idx-1], y0, y_size, returnflag, default_return_value);
-    long double f1 = interpCubicNonDirect(y, f[idx], y0, y_size, returnflag, default_return_value);
-    long double f2 = interpCubicNonDirect(y, f[idx+1], y0, y_size, returnflag, default_return_value);
-    long double f3 = interpCubicNonDirect(y, f[idx+2], y0, y_size, returnflag, default_return_value);
+    long double f0 = interpCubicNonDirect(y, f[idx-1], yi, y_size, returnflag, default_return_value);
+    long double f1 = interpCubicNonDirect(y, f[idx], yi, y_size, returnflag, default_return_value);
+    long double f2 = interpCubicNonDirect(y, f[idx+1], yi, y_size, returnflag, default_return_value);
+    long double f3 = interpCubicNonDirect(y, f[idx+2], yi, y_size, returnflag, default_return_value);
     long double f01=f0-f1, f02=f0-f2, f03=f0-f3, f12=f1-f2, f13=f1-f3, f23=f2-f3;
     long double x0 = x[idx-1], x1 = x[idx], x2 = x[idx+1], x3 = x[idx+2];
     long double x01=x0-x1, x02=x0-x2, x03=x0-x3, x12=x1-x2, x13=x1-x3, x23=x2-x3;
@@ -1129,7 +1139,7 @@ double interpBiCubicNonDirectALT(double * x, double * y, double ** f, double x0,
           + x2*(-x3s*f01-x0s*f13)
           + x1s*(-x3*f02+x2*f03-x0*f23)
           )/denominator;
-    return C0 + C1*x0 + C2*x0*x0 + C3*x0*x0*x0;
+    return C0 + C1*xi + C2*xi*xi + C3*xi*xi*xi;
   }
 }
 

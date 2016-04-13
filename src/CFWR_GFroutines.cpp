@@ -465,6 +465,8 @@ void CorrelationFunction::Fit_Correlationfunction3D(double *** Correl_3D, int ip
 		Correlfun3D_data.y[idx] = Correl_3D[i][j][k];
 		//Correlfun3D_data.sigma[idx] = Correl_3D_err[i][j][k];
 		Correlfun3D_data.sigma[idx] = 1.e-2;
+if (i==(q1npts-1)/2 && j==(q2npts-1)/2 && k==(q3npts-1)/2)
+	Correlfun3D_data.sigma[idx] = 1.e10;	//ignore central point
 		idx++;
 	}
 
@@ -629,6 +631,8 @@ void CorrelationFunction::Fit_Correlationfunction3D_withlambda(double *** Correl
 		Correlfun3D_data.y[idx] = Correl_3D[i][j][k];
 		//Correlfun3D_data.sigma[idx] = Correl_3D_err[i][j][k];
 		Correlfun3D_data.sigma[idx] = 1.e-3;
+if (i==(q1npts-1)/2 && j==(q2npts-1)/2 && k==(q3npts-1)/2)
+	Correlfun3D_data.sigma[idx] = 1.e10;	//ignore central point
 		idx++;
 	}
 	double para_init[n_para] = { 1.0, 1.0, 1.0, 1.0, 1.0 };  // initial guesses of parameters

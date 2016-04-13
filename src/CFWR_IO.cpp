@@ -198,17 +198,33 @@ void CorrelationFunction::Output_results(int folderindex)
 	filename_stream_HBT << global_path << "/HBTradii_GF_ev" << folderindex << no_df_stem << ".dat";
 	ofstream outputHBT;
 	outputHBT.open(filename_stream_HBT.str().c_str());
+	ostringstream filename_stream_HBTcfs;
+	filename_stream_HBTcfs << global_path << "/HBTradii_GF_cfs_ev" << folderindex << no_df_stem << ".dat";
+	ofstream outputHBTcfs;
+	outputHBT.open(filename_stream_HBTcfs.str().c_str());
 
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 	{
-		outputHBT << SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi]
-			<< "   " << R2_side[ipt][ipphi] << "   " << R2_out[ipt][ipphi]
-			<< "   " << R2_outside[ipt][ipphi] << "   " << R2_long[ipt][ipphi]
-			<< "   " << R2_sidelong[ipt][ipphi] << "   " << R2_outlong[ipt][ipphi] << endl;
+		double R2s = 0.0, R2o = 0.0, R2l = 0.0;
+		double R2os = 0.0, R2ol = 0.0, R2sl = 0.0;
+		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		{
+			outputHBT << SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi]
+				<< "   " << R2_side[ipt][ipphi] << "   " << R2_out[ipt][ipphi]
+				<< "   " << R2_outside[ipt][ipphi] << "   " << R2_long[ipt][ipphi]
+				<< "   " << R2_sidelong[ipt][ipphi] << "   " << R2_outlong[ipt][ipphi] << endl;
+			R2s += R2_side[ipt][ipphi] * SPinterp_pphi_wts[ipphi] / (2.*M_PI);
+			R2o += R2_out[ipt][ipphi] * SPinterp_pphi_wts[ipphi] / (2.*M_PI);
+			R2l += R2_long[ipt][ipphi] * SPinterp_pphi_wts[ipphi] / (2.*M_PI);
+			R2os += R2_outside[ipt][ipphi] * SPinterp_pphi_wts[ipphi] / (2.*M_PI);
+			R2ol += R2_outlong[ipt][ipphi] * SPinterp_pphi_wts[ipphi] / (2.*M_PI);
+			R2sl += R2_sidelong[ipt][ipphi] * SPinterp_pphi_wts[ipphi] / (2.*M_PI);
+		}
+		outputHBTcfs << SPinterp_pT[ipt] << "   " << R2s << "   " << R2o << "   " << R2os << "   " << R2l << "   " << R2sl << "   " << R2ol << endl;
 	}
 
 	outputHBT.close();
+	outputHBTcfs.close();
 
 	return;
 }
@@ -455,7 +471,7 @@ void CorrelationFunction::Regulate_CF_Hampel_v2(int ipt, int iqx, int iqy, int i
 		pphi_CF_slice_term3[ipphi] = get_median(pphi_CF_slice_term3, n_interp_pphi_pts);
 		//if (SPinterp_pT[ipt] < pTcutoff)
 			*global_out_stream_ptr << pphi_CF_slice[ipphi] << ", " << pphi_CF_slice_term1[ipphi] << ", " << pphi_CF_slice_term2[ipphi] << ", " << pphi_CF_slice_term3[ipphi] << ")" << endl;
-if (1) exit (1);
+//if (1) exit (1);
 	}
 
 //if (1) exit (1);

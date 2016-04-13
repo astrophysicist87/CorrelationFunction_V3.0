@@ -150,6 +150,7 @@ int main(int argc, char *argv[])
 	correlation_function.Set_path(currentworkingdirectory);
 	correlation_function.Set_use_delta_f(true);
 	correlation_function.Set_ofstream(output);
+	correlation_function.Set_current_FOsurf_ptr(FOsurf_ptr);
 
 	bool rescale_truncated_resonance_contributions = true;
 	if (rescale_truncated_resonance_contributions)

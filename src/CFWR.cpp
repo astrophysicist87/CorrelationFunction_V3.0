@@ -1086,20 +1086,22 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 	double ** abs_spec_this_pid = abs_spectra[local_pid];
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 	{
+//if (ipt > 0) continue;
+
 		debug_sw2.Reset();
 		double ** slice1 = S_p_withweight_array[ipt];
 		size_t ** mif1 = most_important_FOcells[ipt];
 		int * NOFACA_slice1 = number_of_FOcells_above_cutoff_array[ipt];
 		double * ASTP_slice1 = abs_spec_this_pid[ipt];
 
-		if (local_pid == target_particle_id)
+		if (local_pid == target_particle_id || 1)
 		{
 			//use ipphi = 0 for estimates
 			size_t * mif1_slice = mif1[0];
 			double * slice2 = slice1[0];
 			double Ssum = 0.0, xsum = 0.0, ysum = 0.0, zsum = 0.0, x2sum = 0.0, y2sum = 0.0, z2sum = 0.0;
 			//choose q_points intelligently based on pT values and rough (SV) estimates of HBT radii
-			for (int iFO = 0; iFO < NOFACA_slice1[0]; ++iFO)
+			for (int iFO = 0; iFO < NOFACA_slice1[0]; ++iFO)			//using ipphi == 0 for simplicity
 			{
 				size_t next_most_important_FOindex = mif1_slice[iFO];	//== isurf * eta_s_npts + ieta
 				int isurf = next_most_important_FOindex / eta_s_npts;
@@ -1122,13 +1124,17 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 				y2sum += 2.0*tmpS*ypt*ypt;
 				z2sum += 2.0*tmpS*zpt*zpt;
 			}
-			Set_q_pTdep_pts(ipt, sqrt(abs((x2sum/Ssum)-(xsum*xsum)/(Ssum*Ssum))),
-									sqrt(abs((y2sum/Ssum)-(ysum*ysum)/(Ssum*Ssum))), sqrt(abs((z2sum/Ssum)-(zsum*zsum)/(Ssum*Ssum))) );
-
-			//set weights corresponding to chosen q_points
-			sw_set_eiqx_with_q_pTdep_slice.Start();
-			Set_eiqx_with_q_pTdep_pts(ipt);
-			sw_set_eiqx_with_q_pTdep_slice.Stop();
+//cout << "TESTING SVs(" << local_pid << "," << ipt << "): " << sqrt(abs((x2sum/Ssum)-(xsum*xsum)/(Ssum*Ssum))) << "   "
+//					<< sqrt(abs((y2sum/Ssum)-(ysum*ysum)/(Ssum*Ssum))) << "   " << sqrt(abs((z2sum/Ssum)-(zsum*zsum)/(Ssum*Ssum))) << endl;
+			if (local_pid == target_particle_id)
+			{
+				Set_q_pTdep_pts(ipt, sqrt(abs((x2sum/Ssum)-(xsum*xsum)/(Ssum*Ssum))),
+										sqrt(abs((y2sum/Ssum)-(ysum*ysum)/(Ssum*Ssum))), sqrt(abs((z2sum/Ssum)-(zsum*zsum)/(Ssum*Ssum))) );
+				//set weights corresponding to chosen q_points
+				sw_set_eiqx_with_q_pTdep_slice.Start();
+				Set_eiqx_with_q_pTdep_pts(ipt);
+				sw_set_eiqx_with_q_pTdep_slice.Stop();
+			}
 		}
 		else
 		{
@@ -1175,6 +1181,7 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 
 			for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 			{
+//if (ipphi > 0) continue;
 				double * slice2 = slice1[ipphi];
 				size_t * most_important_FOcells_for_current_pt_and_pphi = mif1[ipphi];
 				int ptphi_index = ipt * n_interp_pphi_pts + ipphi;
@@ -1463,14 +1470,17 @@ void CorrelationFunction::Load_decay_channel_info(int dc_idx, double K_T_local, 
 
 //***************************************************************************************************
 
-double CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights_function(FO_surf* FOsurf_ptr, int local_pid, double pT, double pphi, double qt, double qx, double qy, double qz)
+void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights_function(FO_surf* FOsurf_ptr, int local_pid, double pT, double pphi,
+					double qt, double qx, double qy, double qz, double * cosqx_dN_dypTdpTdphi, double * sinqx_dN_dypTdpTdphi)
 {
+
+//debugger(__LINE__, __FILE__);
 	// set particle information
 	double sign = all_particles[local_pid].sign;
 	double degen = all_particles[local_pid].gspin;
 	double localmass = all_particles[local_pid].mass;
 	double mu = all_particles[local_pid].mu;
-
+//debugger(__LINE__, __FILE__);
 	// set some freeze-out surface information that's constant the whole time
 	double prefactor = 1.0*degen/(8.0*M_PI*M_PI*M_PI)/(hbarC*hbarC*hbarC);
 	double Tdec = (&FOsurf_ptr[0])->Tdec;
@@ -1480,7 +1490,7 @@ double CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights_function(FO_surf* FO
 	double deltaf_prefactor = 0.;
 	if (use_delta_f)
 		deltaf_prefactor = 1./(2.0*Tdec*Tdec*(Edec+Pdec));
-
+//debugger(__LINE__, __FILE__);
 	// set the rapidity-integration symmetry factor
 	double eta_odd_factor = 1.0, eta_even_factor = 1.0;
 	if (ASSUME_ETA_SYMMETRIC)
@@ -1488,15 +1498,15 @@ double CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights_function(FO_surf* FO
 		eta_odd_factor = 0.0;
 		eta_even_factor = 2.0;
 	}
-
+//debugger(__LINE__, __FILE__);
 	double sin_pphi = sin(pphi);
 	double cos_pphi = cos(pphi);
 	double px = pT*cos_pphi;
 	double py = pT*sin_pphi;
-
-	double cosqx_dN_dypTdpTdphi = 0.0;
-	double sinqx_dN_dypTdpTdphi = 0.0;
-
+//debugger(__LINE__, __FILE__);
+	*cosqx_dN_dypTdpTdphi = 0.0;
+	*sinqx_dN_dypTdpTdphi = 0.0;
+//debugger(__LINE__, __FILE__);
 	for(int isurf=0; isurf<FO_length; ++isurf)
 	{
 		FO_surf*surf = &FOsurf_ptr[isurf];
@@ -1520,14 +1530,14 @@ double CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights_function(FO_surf* FO
 		double pi12 = surf->pi12;
 		double pi22 = surf->pi22;
 		double pi33 = surf->pi33;
-
+//debugger(__LINE__, __FILE__);
 		for(int ieta=0; ieta < eta_s_npts; ++ieta)
 		{
 			double p0 = sqrt(pT*pT+localmass*localmass)*cosh(SP_p_y - eta_s[ieta]);
 			double pz = sqrt(pT*pT+localmass*localmass)*sinh(SP_p_y - eta_s[ieta]);
 
 			double f0 = 1./(exp( one_by_Tdec*(gammaT*(p0*1. - px*vx - py*vy) - mu) )+sign);	//thermal equilibrium distributions
-	
+//debugger(__LINE__, __FILE__);
 			//viscous corrections
 			double deltaf = 0.;
 			if (use_delta_f)
@@ -1550,8 +1560,8 @@ double CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights_function(FO_surf* FO
 			{
 				zpt *= -1.;
 				double arg = tpt*qt-(xpt*qx+ypt*qy+zpt*qz);
-				cosqx_dN_dypTdpTdphi += cos(arg/hbarC)*S_p*tau*eta_s_weight[ieta];
-				sinqx_dN_dypTdpTdphi += sin(arg/hbarC)*S_p*tau*eta_s_weight[ieta];
+				*cosqx_dN_dypTdpTdphi += cos(arg/hbarC)*S_p*tau*eta_s_weight[ieta];
+				*sinqx_dN_dypTdpTdphi += sin(arg/hbarC)*S_p*tau*eta_s_weight[ieta];
 				/*if (isnan(cosqx_dN_dypTdpTdphi) || isinf(cosqx_dN_dypTdpTdphi))
 				{
 					cerr << "NaN or Inf at isurf = " << isurf << " and ieta = " << ieta << endl;
@@ -1561,8 +1571,10 @@ double CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights_function(FO_surf* FO
 			}
 		}
 	}
+//debugger(__LINE__, __FILE__);
 
-	return ( cosqx_dN_dypTdpTdphi*cosqx_dN_dypTdpTdphi+sinqx_dN_dypTdpTdphi*sinqx_dN_dypTdpTdphi );
+	//return ( cosqx_dN_dypTdpTdphi*cosqx_dN_dypTdpTdphi+sinqx_dN_dypTdpTdphi*sinqx_dN_dypTdpTdphi );
+	return;
 }
 
 
