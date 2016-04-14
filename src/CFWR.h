@@ -258,7 +258,8 @@ class CorrelationFunction
 		void Cal_dN_dypTdpTdphi_heap(FO_surf* FOsurf_ptr, int local_pid, double cutoff);
 		void Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, int local_pid);
 		double Cal_dN_dypTdpTdphi_function(FO_surf* FOsurf_ptr, int local_pid, double pT, double pphi);
-		void Cal_dN_dypTdpTdphi_with_weights_function(FO_surf* FOsurf_ptr, int local_pid, double pT, double pphi, double qt, double qx, double qy, double qz, double * cosqx_dN_dypTdpTdphi, double * sinqx_dN_dypTdpTdphi);
+		void Cal_dN_dypTdpTdphi_with_weights_function(FO_surf* FOsurf_ptr, int local_pid, double pT, double pphi,
+												double qt, double qx, double qy, double qz, double * cosqx_dN_dypTdpTdphi, double * sinqx_dN_dypTdpTdphi);
 		void Do_resonance_integrals(int iKT, int iKphi, int dc_idx);
 		void Flatten_dN_dypTdpTdphi_moments();
 		void Set_current_daughter_info(int dc_idx, int daughter_idx);
@@ -302,13 +303,11 @@ class CorrelationFunction
 		void Set_current_FOsurf_ptr(FO_surf* FOsurf_ptr);
 		double get_Q();
 		double g(double s);
-		//void adaptive_simpson_integration(void (*f) (double, double *), double a, double b, double * results);
 		double place_in_range(double phi, double min, double max);
 		void Get_current_decay_string(int dc_idx, string * decay_string);
 		int lookup_resonance_idx_from_particle_id(int particle_id);
 		int list_daughters(int parent_resonance_index, set<int> * daughter_resonance_indices_ptr, particle_info * particle, int Nparticle);
 		void eiqxEdndp3(double ptr, double phir, double * results, int loc_verb = 0);
-		//void eiqxEdndp3_NEW(double ptr, double phir, double * results, int loc_verb = 0);
 		void Edndp3(double ptr, double phir, double * result, int loc_verb = 0);
 		void Set_correlation_function_q_pts();
 		void Get_q_points(double qo, double qs, double ql, double KT, double Kphi, double * qgridpts);
@@ -321,6 +320,7 @@ class CorrelationFunction
 		void Cleanup_current_daughters_dN_dypTdpTdphi_moments(int n_daughter);
 		void Delete_S_p_withweight_array();
 		void test_interpolator();
+		void R2_Fourier_transform(int ipt, double plane_psi);
 
 		// Gaussian fit / correlation function routines
 		void Allocate_CFvals();

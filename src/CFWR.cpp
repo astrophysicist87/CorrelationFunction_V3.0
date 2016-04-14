@@ -1663,6 +1663,58 @@ double CorrelationFunction::Cal_dN_dypTdpTdphi_function(FO_surf* FOsurf_ptr, int
 	return dN_dypTdpTdphi;
 }
 
+void CorrelationFunction::R2_Fourier_transform(int ipt, double plane_psi)
+{
+	for(int Morder = 0; Morder < n_order; ++Morder)
+	{
+		double cos_mK_phi[n_interp_phi_pts], sin_mK_phi[n_interp_phi_pts];
+
+		for(int ipphi = 0; ipphi < n_interp_phi_pts; ++ipphi)
+		{
+			cos_mK_phi[ipphi] = cos(Morder*(SPinterp_pphi[ipphi] - plane_psi));
+			sin_mK_phi[ipphi] = sin(Morder*(SPinterp_pphi[ipphi] - plane_psi));
+		}
+
+		double temp_sum_side_cos = 0.0, temp_sum_side_sin = 0.0;
+		double temp_sum_out_cos = 0.0, temp_sum_out_sin = 0.0;
+		double temp_sum_outside_cos = 0.0, temp_sum_outside_sin = 0.0;
+		double temp_sum_long_cos = 0.0, temp_sum_long_sin = 0.0;
+		double temp_sum_sidelong_cos = 0.0, temp_sum_sidelong_sin = 0.0;
+		double temp_sum_outlong_cos = 0.0, temp_sum_outlong_sin = 0.0;
+
+		for(int ipphi = 0; ipphi < n_localp_phi; ++ipphi)
+		{
+			temp_sum_side_cos += R2_side[ipt][ipphi]*cos_mK_phi[ipphi]*K_phi_weight[ipphi];
+			temp_sum_side_sin += R2_side[ipt][ipphi]*sin_mK_phi[ipphi]*K_phi_weight[ipphi];
+			temp_sum_out_cos += R2_out[ipt][ipphi]*cos_mK_phi[ipphi]*K_phi_weight[ipphi];
+			temp_sum_out_sin += R2_out[ipt][ipphi]*sin_mK_phi[ipphi]*K_phi_weight[ipphi];
+			temp_sum_outside_cos += R2_outside[ipt][ipphi]*cos_mK_phi[ipphi]*K_phi_weight[ipphi];
+			temp_sum_outside_sin += R2_outside[ipt][ipphi]*sin_mK_phi[ipphi]*K_phi_weight[ipphi];
+			temp_sum_long_cos += R2_long[ipt][ipphi]*cos_mK_phi[ipphi]*K_phi_weight[ipphi];
+			temp_sum_long_sin += R2_long[ipt][ipphi]*sin_mK_phi[ipphi]*K_phi_weight[ipphi];
+			temp_sum_sidelong_cos += R2_sidelong[ipt][ipphi]*cos_mK_phi[ipphi]*K_phi_weight[ipphi];
+			temp_sum_sidelong_sin += R2_sidelong[ipt][ipphi]*sin_mK_phi[ipphi]*K_phi_weight[ipphi];
+			temp_sum_outlong_cos += R2_outlong[ipt][ipphi]*cos_mK_phi[ipphi]*K_phi_weight[ipphi];
+			temp_sum_outlong_sin += R2_outlong[ipt][ipphi]*sin_mK_phi[ipphi]*K_phi_weight[ipphi];
+		}
+
+		R2_side_C[ipt][Morder] = temp_sum_side_cos/(2.*M_PI);
+		R2_side_S[ipt][Morder] = temp_sum_side_sin/(2.*M_PI);
+		R2_out_C[ipt][Morder] = temp_sum_out_cos/(2.*M_PI);
+		R2_out_S[ipt][Morder] = temp_sum_out_sin/(2.*M_PI);
+		R2_outside_C[ipt][Morder] = temp_sum_outside_cos/(2.*M_PI);
+		R2_outside_S[ipt][Morder] = temp_sum_outside_sin/(2.*M_PI);
+		R2_long_C[ipt][Morder] = temp_sum_long_cos/(2.*M_PI);
+		R2_long_S[ipt][Morder] = temp_sum_long_sin/(2.*M_PI);
+		R2_sidelong_C[ipt][Morder] = temp_sum_sidelong_cos/(2.*M_PI);
+		R2_sidelong_S[ipt][Morder] = temp_sum_sidelong_sin/(2.*M_PI);
+		R2_outlong_C[ipt][Morder] = temp_sum_outlong_cos/(2.*M_PI);
+		R2_outlong_S[ipt][Morder] = temp_sum_outlong_sin/(2.*M_PI);
+	}
+
+	return;
+}
+
 //performs extrapolation of running_sum of FO integrals to unity (1) by polynomial fit
 double CorrelationFunction::gsl_polynomial_fit(const vector<double> &data_x, const vector<double> &data_y, const int order, double & chisq, bool verbose /* == false*/)
 {
