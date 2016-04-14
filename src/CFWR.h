@@ -202,6 +202,8 @@ class CorrelationFunction
 
 		//HBT radii coefficients
 		double ** R2_side, ** R2_out, ** R2_long, ** R2_outside, ** R2_sidelong, ** R2_outlong;
+		double ** R2_side_C, ** R2_out_C, ** R2_long_C, ** R2_outside_C, ** R2_sidelong_C, ** R2_outlong_C;
+		double ** R2_side_S, ** R2_out_S, ** R2_long_S, ** R2_outside_S, ** R2_sidelong_S, ** R2_outlong_S;
 		double ** R2_side_err, ** R2_out_err, ** R2_long_err, ** R2_outside_err, ** R2_sidelong_err, ** R2_outlong_err;
 
 		double *** res_sign_info, *** res_log_info, *** res_moments_info;

@@ -118,7 +118,6 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 							PKphi = VEC_n2_PPhi_tildeFLIP[iv][izeta];		//also takes Pp --> Pm
 						currentPpm = VEC_n2_Ppm[iv][izeta][tempidx];
 						Edndp3(PKT, PKphi, &Csum);							//set spectra
-//debugger(__LINE__, __FILE__);
 						eiqxEdndp3(PKT, PKphi, Csum_vec, local_verbose);					//set weights
 					}												// end of tempidx sum
 					for (int qpt_cs_idx = 0; qpt_cs_idx < qspace_cs_slice_length; ++qpt_cs_idx)

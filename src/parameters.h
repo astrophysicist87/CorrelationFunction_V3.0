@@ -82,6 +82,11 @@ static double usr_def_pc_markers[UDPMsize] = {
 				};
 static double usr_def_pc_markers_thinned[UDPMTsize] = { 0.00, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90 };
 
+//phase space integral info
+const int s_npts = 2;
+const int v_npts = 2;
+const int zeta_npts = 2;
+
 //relative momentum information
 const int qonpts = 11;
 const int qsnpts = 11;
@@ -94,9 +99,9 @@ const int new_nqpts = 51;
 
 //all direction-specific q points information here
 const int qtnpts = 9;
-const int qxnpts = 5;
-const int qynpts = 5;
-const int qznpts = 5;
+const int qxnpts = 9;
+const int qynpts = 1;
+const int qznpts = 1;
 const double delta_qt = 0.02;
 const double delta_qx = 0.0016;
 const double delta_qy = 0.02;

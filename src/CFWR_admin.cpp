@@ -69,9 +69,10 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
 			break;
 	}
 
-	n_zeta_pts = 12;
-	n_v_pts = 12;
-	n_s_pts = 12;
+	n_zeta_pts = zeta_npts;
+	n_v_pts = v_npts;
+	n_s_pts = s_npts;
+
 	v_min = -1.;
 	v_max = 1.;
 	zeta_min = 0.;
@@ -1729,17 +1730,14 @@ void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, 
 	int qpt_cs_idx = 0;
 	int qlist_idx = 0;
 
-//debugger(__LINE__, __FILE__);
 
 	if (USE_EXACT)
 	{
-//debugger(__LINE__, __FILE__);
 		for (int iqt = 0; iqt < qtnpts; ++iqt)
 		for (int iqx = 0; iqx < qxnpts; ++iqx)
 		for (int iqy = 0; iqy < qynpts; ++iqy)
 		for (int iqz = 0; iqz < qznpts; ++iqz)
 		{
-//debugger(__LINE__, __FILE__);
 			double arg = one_by_Gamma_Mres * dot_four_vectors(current_qlist_slice[qlist_idx], currentPpm);
 			double akr = 1./(1.+arg*arg);
 			double aki = arg/(1.+arg*arg);

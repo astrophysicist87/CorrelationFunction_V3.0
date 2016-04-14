@@ -1473,14 +1473,12 @@ void CorrelationFunction::Load_decay_channel_info(int dc_idx, double K_T_local, 
 void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights_function(FO_surf* FOsurf_ptr, int local_pid, double pT, double pphi,
 					double qt, double qx, double qy, double qz, double * cosqx_dN_dypTdpTdphi, double * sinqx_dN_dypTdpTdphi)
 {
-
-//debugger(__LINE__, __FILE__);
 	// set particle information
 	double sign = all_particles[local_pid].sign;
 	double degen = all_particles[local_pid].gspin;
 	double localmass = all_particles[local_pid].mass;
 	double mu = all_particles[local_pid].mu;
-//debugger(__LINE__, __FILE__);
+
 	// set some freeze-out surface information that's constant the whole time
 	double prefactor = 1.0*degen/(8.0*M_PI*M_PI*M_PI)/(hbarC*hbarC*hbarC);
 	double Tdec = (&FOsurf_ptr[0])->Tdec;
@@ -1490,7 +1488,6 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights_function(FO_surf* FOsu
 	double deltaf_prefactor = 0.;
 	if (use_delta_f)
 		deltaf_prefactor = 1./(2.0*Tdec*Tdec*(Edec+Pdec));
-//debugger(__LINE__, __FILE__);
 	// set the rapidity-integration symmetry factor
 	double eta_odd_factor = 1.0, eta_even_factor = 1.0;
 	if (ASSUME_ETA_SYMMETRIC)
@@ -1498,15 +1495,14 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights_function(FO_surf* FOsu
 		eta_odd_factor = 0.0;
 		eta_even_factor = 2.0;
 	}
-//debugger(__LINE__, __FILE__);
 	double sin_pphi = sin(pphi);
 	double cos_pphi = cos(pphi);
 	double px = pT*cos_pphi;
 	double py = pT*sin_pphi;
-//debugger(__LINE__, __FILE__);
+
 	*cosqx_dN_dypTdpTdphi = 0.0;
 	*sinqx_dN_dypTdpTdphi = 0.0;
-//debugger(__LINE__, __FILE__);
+
 	for(int isurf=0; isurf<FO_length; ++isurf)
 	{
 		FO_surf*surf = &FOsurf_ptr[isurf];
@@ -1530,14 +1526,12 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights_function(FO_surf* FOsu
 		double pi12 = surf->pi12;
 		double pi22 = surf->pi22;
 		double pi33 = surf->pi33;
-//debugger(__LINE__, __FILE__);
 		for(int ieta=0; ieta < eta_s_npts; ++ieta)
 		{
 			double p0 = sqrt(pT*pT+localmass*localmass)*cosh(SP_p_y - eta_s[ieta]);
 			double pz = sqrt(pT*pT+localmass*localmass)*sinh(SP_p_y - eta_s[ieta]);
 
 			double f0 = 1./(exp( one_by_Tdec*(gammaT*(p0*1. - px*vx - py*vy) - mu) )+sign);	//thermal equilibrium distributions
-//debugger(__LINE__, __FILE__);
 			//viscous corrections
 			double deltaf = 0.;
 			if (use_delta_f)
@@ -1571,9 +1565,7 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights_function(FO_surf* FOsu
 			}
 		}
 	}
-//debugger(__LINE__, __FILE__);
 
-	//return ( cosqx_dN_dypTdpTdphi*cosqx_dN_dypTdpTdphi+sinqx_dN_dypTdpTdphi*sinqx_dN_dypTdpTdphi );
 	return;
 }
 
@@ -1667,9 +1659,9 @@ void CorrelationFunction::R2_Fourier_transform(int ipt, double plane_psi)
 {
 	for(int Morder = 0; Morder < n_order; ++Morder)
 	{
-		double cos_mK_phi[n_interp_phi_pts], sin_mK_phi[n_interp_phi_pts];
+		double cos_mK_phi[n_interp_pphi_pts], sin_mK_phi[n_interp_pphi_pts];
 
-		for(int ipphi = 0; ipphi < n_interp_phi_pts; ++ipphi)
+		for(int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 		{
 			cos_mK_phi[ipphi] = cos(Morder*(SPinterp_pphi[ipphi] - plane_psi));
 			sin_mK_phi[ipphi] = sin(Morder*(SPinterp_pphi[ipphi] - plane_psi));
