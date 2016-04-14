@@ -212,6 +212,10 @@ void CorrelationFunction::Output_results(int folderindex)
 				<< "   " << R2_outside[ipt][ipphi] << "   " << R2_long[ipt][ipphi]
 				<< "   " << R2_sidelong[ipt][ipphi] << "   " << R2_outlong[ipt][ipphi] << endl;
 		}
+
+		//do Fourier transforming here for now...
+		double plane_psi = 0.0;
+		R2_Fourier_transform(ipt, plane_psi);
 		for (int Morder = 0; Morder < n_order; Morder++)
 		{
 			outputHBTcfs << folderindex << "  " << SPinterp_pT[ipt] << "  " << Morder
