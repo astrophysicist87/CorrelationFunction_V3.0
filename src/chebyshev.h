@@ -28,6 +28,7 @@ class Chebyshev
 
 	public:
 		Chebyshev(double * fpts_in, int * numbers_of_points_in, int * orders_in, double * lower_limits_in, double * upper_limits_in, int dimension_in);
+		~Chebyshev();
 
 		void get_nodes(double a, double b, int number_of_points, double * nodes, double * adjnodes);
 

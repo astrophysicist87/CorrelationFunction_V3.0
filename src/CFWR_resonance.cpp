@@ -116,6 +116,7 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 					{
 						if (tempidx != 0)
 							PKphi = VEC_n2_PPhi_tildeFLIP[iv][izeta];		//also takes Pp --> Pm
+//cout << "Starting loop (iv, izeta, tempidx) = (" << iv << ", " << izeta << ", " << tempidx << ")" << endl;
 						currentPpm = VEC_n2_Ppm[iv][izeta][tempidx];
 						Edndp3(PKT, PKphi, &Csum);							//set spectra
 						eiqxEdndp3(PKT, PKphi, Csum_vec, local_verbose);					//set weights
@@ -226,9 +227,9 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 						{
 							if (tempidx != 0)
 								PKphi = VEC_PPhi_tildeFLIP[is][iv][izeta];		//also takes Pp --> Pm
+//cout << "Starting loop (is, iv, izeta, tempidx) = (" << is << ", " << iv << ", " << izeta << ", " << tempidx << ")" << endl;
 							currentPpm = VEC_Ppm[is][iv][izeta][tempidx];
 							Edndp3(PKT, PKphi, &Csum);							//set spectra
-//debugger(__LINE__, __FILE__);
 							eiqxEdndp3(PKT, PKphi, Csum_vec, local_verbose);					//set weights
 						}										// end of tempidx sum
 						for (int qpt_cs_idx = 0; qpt_cs_idx < qspace_cs_slice_length; ++qpt_cs_idx)

@@ -1184,10 +1184,10 @@ int CorrelationFunction::Set_daughter_list(int parent_pid)
 		}
 	}
 
-cout << endl << "Ended up with n_daughter = " << daughter_resonance_indices.size() << " for " << all_particles[parent_pid].name << " (" << parent_pid << ")" << endl;
-int i = 0;
-for (set<int>::iterator it = daughter_resonance_indices.begin(); it != daughter_resonance_indices.end(); ++it)
-	cout << i++ << "   " << *it << "   " << all_particles[*it].name << "   " << all_particles[*it].effective_branchratio << endl;
+//cout << endl << "Ended up with n_daughter = " << daughter_resonance_indices.size() << " for " << all_particles[parent_pid].name << " (" << parent_pid << ")" << endl;
+//int i = 0;
+//for (set<int>::iterator it = daughter_resonance_indices.begin(); it != daughter_resonance_indices.end(); ++it)
+//	cout << i++ << "   " << *it << "   " << all_particles[*it].name << "   " << all_particles[*it].effective_branchratio << endl;
 
 	// return value is total number of daughters found
 	return (daughter_resonance_indices.size());
@@ -1753,6 +1753,9 @@ void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, 
 			results[qpt_cs_idx] += akr*Zkr-aki*Zki;
 			results[qpt_cs_idx+1] += akr*Zki+aki*Zkr;
 
+			/*Zkr = 0.0;
+			Zki = 0.0;*/
+
 			qpt_cs_idx += 2;
 			qlist_idx++;
 		}
@@ -1801,6 +1804,8 @@ void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, 
 			//*******************************************************************************************************************
 			// now, interpolate f1 and f2 over the pphi direction
 			double Zkr = lin_int(del_phir_phi0, one_by_pphidiff, f1, f2);
+
+			double f1s = f1, f2s = f2;
 	
 			/////////////////////////////////////////////////////////////////
 			// DO SINE PART NEXT
@@ -1844,6 +1849,47 @@ void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, 
 			results[qpt_cs_idx] += akr*Zkr-aki*Zki;
 			//--> update the imaginary part of weighted daughter spectra
 			results[qpt_cs_idx+1] += akr*Zki+aki*Zkr;
+
+			double Zkrc = 0.0, Zkic = 0.0;
+			Cal_dN_dypTdpTdphi_with_weights_function(current_FOsurf_ptr, current_parent_resonance,
+							ptr, phir, qt_PTdep_pts[current_ipt][iqt], qx_PTdep_pts[current_ipt][iqx], qy_PTdep_pts[current_ipt][iqy], qz_PTdep_pts[current_ipt][iqz],
+							&Zkrc, &Zkic);
+			cout << "CHECK(log): " << current_parent_resonance << "   " << ptr << "   " << phir << "   " << qt_PTdep_pts[current_ipt][iqt] << "   " << qx_PTdep_pts[current_ipt][iqx]
+					<< "   " << qy_PTdep_pts[current_ipt][iqy] << "   " << qz_PTdep_pts[current_ipt][iqz] << "   "
+					<< Zkr << "   " << Zki << "   " << akr*Zkr-aki*Zki << "   " << akr*Zki+aki*Zkr << "   "
+					<< Zkrc << "   " << Zkic << "   " << akr*Zkrc-aki*Zkic << "   " << akr*Zkic+aki*Zkrc << endl;
+
+//if ( loc_verb || isinf( results[qpt_cs_idx] ) || isnan( results[qpt_cs_idx] ) || isinf( results[qpt_cs_idx+1] ) || isnan( results[qpt_cs_idx+1] ) )
+//		{
+			*global_out_stream_ptr << "ERROR in eiqxEdndp3(double, double, double*): problems encountered!" << endl
+				<< "results(" << iqt << "," << iqx << "," << iqy << "," << iqz << ") = "
+				<< setw(25) << setprecision(20) << results[qpt_cs_idx] << ",   " << results[qpt_cs_idx+1] << endl
+				<< "  --> ptr = " << ptr << endl
+				<< "  --> pt0 = " << pT0 << endl
+				<< "  --> pt1 = " << pT1 << endl
+				<< "  --> phir = " << phir << endl
+				<< "  --> phi0 = " << phi0 << endl
+				<< "  --> phi1 = " << phi1 << endl
+				<< "  --> f11c = " << f11_arr[qpt_cs_idx] << endl
+				<< "  --> f12c = " << f12_arr[qpt_cs_idx] << endl
+				<< "  --> f21c = " << f21_arr[qpt_cs_idx] << endl
+				<< "  --> f22c = " << f22_arr[qpt_cs_idx] << endl
+				<< "  --> f11s = " << f11_arr[qpt_cs_idx+1] << endl
+				<< "  --> f12s = " << f12_arr[qpt_cs_idx+1] << endl
+				<< "  --> f21s = " << f21_arr[qpt_cs_idx+1] << endl
+				<< "  --> f22s = " << f22_arr[qpt_cs_idx+1] << endl
+				<< "  --> f1c = " << f1s << endl
+				<< "  --> f2c = " << f2s << endl
+				<< "  --> f1s = " << f1 << endl
+				<< "  --> f2s = " << f2 << endl
+				<< "  --> akr = " << akr << endl
+				<< "  --> aki = " << aki << endl
+				<< "  --> Zkr = " << Zkr << endl
+				<< "  --> Zki = " << Zki << endl
+				<< "  --> akr*Zkr-aki*Zki = " << akr*Zkr-aki*Zki << endl
+				<< "  --> akr*Zki+aki*Zkr = " << akr*Zki+aki*Zkr << endl;
+							exit(1);
+//		}
 	
 			qpt_cs_idx += 2;
 			qlist_idx++;
@@ -1870,6 +1916,8 @@ void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, 
 
 			// now, interpolate f1 and f2 over the pphi direction
 			double Zkr = lin_int(del_phir_phi0, one_by_pphidiff, f1, f2);
+
+			double f1s = f1, f2s = f2;
 	
 			/////////////////////////////////////////////////////////////////
 			// DO SINE PART NEXT
@@ -1889,6 +1937,75 @@ void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, 
 			results[qpt_cs_idx] += akr*Zkr-aki*Zki;
 			//--> update the imaginary part of weighted daughter spectra
 			results[qpt_cs_idx+1] += akr*Zki+aki*Zkr;
+
+			double Zkrc = 0.0, Zkic = 0.0;
+			Cal_dN_dypTdpTdphi_with_weights_function(current_FOsurf_ptr, current_parent_resonance,
+							ptr, phir, qt_PTdep_pts[current_ipt][iqt], qx_PTdep_pts[current_ipt][iqx], qy_PTdep_pts[current_ipt][iqy], qz_PTdep_pts[current_ipt][iqz],
+							&Zkrc, &Zkic);
+			cout << "CHECK(lin): " << current_parent_resonance << "   " << ptr << "   " << phir << "   " << qt_PTdep_pts[current_ipt][iqt] << "   " << qx_PTdep_pts[current_ipt][iqx]
+					<< "   " << qy_PTdep_pts[current_ipt][iqy] << "   " << qz_PTdep_pts[current_ipt][iqz] << "   "
+					<< Zkr << "   " << Zki << "   " << akr*Zkr-aki*Zki << "   " << akr*Zki+aki*Zkr << "   "
+					<< Zkrc << "   " << Zkic << "   " << akr*Zkrc-aki*Zkic << "   " << akr*Zkic+aki*Zkrc << endl;
+			Cal_dN_dypTdpTdphi_with_weights_function(current_FOsurf_ptr, current_parent_resonance,
+							pT0, phi0, qt_PTdep_pts[npt-1][iqt], qx_PTdep_pts[npt-1][iqx], qy_PTdep_pts[npt-1][iqy], qz_PTdep_pts[npt-1][iqz],
+							&Zkrc, &Zkic);
+			cout << "CHECK(lin): " << current_parent_resonance << "   " << pT0 << "   " << phi0 << "   " << qt_PTdep_pts[npt-1][iqt] << "   " << qx_PTdep_pts[npt-1][iqx]
+					<< "   " << qy_PTdep_pts[npt-1][iqy] << "   " << qz_PTdep_pts[npt-1][iqz] << "   "
+					<< f11_arr[qpt_cs_idx] << "   " << f11_arr[qpt_cs_idx+1] << "   "
+					<< Zkrc << "   " << Zkic << endl;
+			Cal_dN_dypTdpTdphi_with_weights_function(current_FOsurf_ptr, current_parent_resonance,
+							pT0, phi1, qt_PTdep_pts[npt-1][iqt], qx_PTdep_pts[npt-1][iqx], qy_PTdep_pts[npt-1][iqy], qz_PTdep_pts[npt-1][iqz],
+							&Zkrc, &Zkic);
+			cout << "CHECK(lin): " << current_parent_resonance << "   " << pT0 << "   " << phi1 << "   " << qt_PTdep_pts[npt-1][iqt] << "   " << qx_PTdep_pts[npt-1][iqx]
+					<< "   " << qy_PTdep_pts[npt-1][iqy] << "   " << qz_PTdep_pts[npt-1][iqz] << "   "
+					<< f12_arr[qpt_cs_idx] << "   " << f12_arr[qpt_cs_idx+1] << "   "
+					<< Zkrc << "   " << Zkic << endl;
+			Cal_dN_dypTdpTdphi_with_weights_function(current_FOsurf_ptr, current_parent_resonance,
+							pT1, phi0, qt_PTdep_pts[npt][iqt], qx_PTdep_pts[npt][iqx], qy_PTdep_pts[npt][iqy], qz_PTdep_pts[npt][iqz],
+							&Zkrc, &Zkic);
+			cout << "CHECK(lin): " << current_parent_resonance << "   " << pT1 << "   " << phi0 << "   " << qt_PTdep_pts[npt][iqt] << "   " << qx_PTdep_pts[npt][iqx]
+					<< "   " << qy_PTdep_pts[npt][iqy] << "   " << qz_PTdep_pts[npt][iqz] << "   "
+					<< f21_arr[qpt_cs_idx] << "   " << f21_arr[qpt_cs_idx+1] << "   "
+					<< Zkrc << "   " << Zkic << endl;
+			Cal_dN_dypTdpTdphi_with_weights_function(current_FOsurf_ptr, current_parent_resonance,
+							pT1, phi1, qt_PTdep_pts[npt][iqt], qx_PTdep_pts[npt][iqx], qy_PTdep_pts[npt][iqy], qz_PTdep_pts[npt][iqz],
+							&Zkrc, &Zkic);
+			cout << "CHECK(lin): " << current_parent_resonance << "   " << pT1 << "   " << phi1 << "   " << qt_PTdep_pts[npt][iqt] << "   " << qx_PTdep_pts[npt][iqx]
+					<< "   " << qy_PTdep_pts[npt][iqy] << "   " << qz_PTdep_pts[npt][iqz] << "   "
+					<< f22_arr[qpt_cs_idx] << "   " << f22_arr[qpt_cs_idx+1] << "   "
+					<< Zkrc << "   " << Zkic << endl;
+
+//if ( loc_verb || isinf( results[qpt_cs_idx] ) || isnan( results[qpt_cs_idx] ) || isinf( results[qpt_cs_idx+1] ) || isnan( results[qpt_cs_idx+1] ) )
+//		{
+			*global_out_stream_ptr << "ERROR in eiqxEdndp3(double, double, double*): problems encountered!" << endl
+				<< "results(" << iqt << "," << iqx << "," << iqy << "," << iqz << ") = "
+				<< setw(25) << setprecision(20) << results[qpt_cs_idx] << ",   " << results[qpt_cs_idx+1] << endl
+				<< "  --> ptr = " << ptr << endl
+				<< "  --> pt0 = " << pT0 << endl
+				<< "  --> pt1 = " << pT1 << endl
+				<< "  --> phir = " << phir << endl
+				<< "  --> phi0 = " << phi0 << endl
+				<< "  --> phi1 = " << phi1 << endl
+				<< "  --> f11c = " << f11_arr[qpt_cs_idx] << endl
+				<< "  --> f12c = " << f12_arr[qpt_cs_idx] << endl
+				<< "  --> f21c = " << f21_arr[qpt_cs_idx] << endl
+				<< "  --> f22c = " << f22_arr[qpt_cs_idx] << endl
+				<< "  --> f11s = " << f11_arr[qpt_cs_idx+1] << endl
+				<< "  --> f12s = " << f12_arr[qpt_cs_idx+1] << endl
+				<< "  --> f21s = " << f21_arr[qpt_cs_idx+1] << endl
+				<< "  --> f22s = " << f22_arr[qpt_cs_idx+1] << endl
+				<< "  --> f1 = " << f1s << endl
+				<< "  --> f2 = " << f2s << endl
+				<< "  --> f1 = " << f1 << endl
+				<< "  --> f2 = " << f2 << endl
+				<< "  --> akr = " << akr << endl
+				<< "  --> aki = " << aki << endl
+				<< "  --> Zkr = " << Zkr << endl
+				<< "  --> Zki = " << Zki << endl
+				<< "  --> akr*Zkr-aki*Zki = " << akr*Zkr-aki*Zki << endl
+				<< "  --> akr*Zki+aki*Zkr = " << akr*Zki+aki*Zkr << endl;
+							exit(1);
+//		}
 	
 			qpt_cs_idx += 2;
 			qlist_idx++;

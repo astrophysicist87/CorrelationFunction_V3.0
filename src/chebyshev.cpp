@@ -42,6 +42,27 @@ Chebyshev::Chebyshev(double * fpts_in, int * numbers_of_points_in, int * orders_
 	return;
 }
 
+Chebyshev::~Chebyshev()
+{
+	delete [] fpts;
+	delete [] coeffs;
+	delete [] numbers_of_points;
+	delete [] orders;
+	delete [] lower_limits;
+	delete [] upper_limits;
+
+	for (int ic = 0; ic <= total_coeffs_length; ++ic)
+		delete [] coeffs_indices[ic];
+
+	for (int ifpt = 0; ifpt < total_fpts_length; ++ifpt)
+		delete [] fpts_indices[ifpt];
+
+	delete [] coeffs_indices;
+	delete [] fpts_indices;
+
+	return;
+}
+
 inline double Chebyshev::dot(double * x, double * y, int length)
 {
     double sum = 0.0;

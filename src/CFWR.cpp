@@ -801,7 +801,11 @@ void CorrelationFunction::Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int lo
 		exit;
 	}
 
-//if (1) exit(1);
+//double tmp1 = 0.0, tmp2 = 0.0;
+//Cal_dN_dypTdpTdphi_with_weights_function(FOsurf_ptr, local_pid, SPinterp_pT[0], SPinterp_pphi[0],
+//							qt_PTdep_pts[0][0], qx_PTdep_pts[0][0], qy_PTdep_pts[0][0], qz_PTdep_pts[0][0], &tmp1, &tmp2);
+
+//if (local_pid == 12) exit(1);
 
 	return;
 }
@@ -1033,7 +1037,7 @@ pc_cutoff_vals.resize( number_of_percentage_markers );
 			for (int ii = 0; ii < FOcells_PQ_size; ++ii)
 			{
 				size_t topFOcell = most_impt_FOcells_vec[ii];
-				most_important_FOcells[ipt][ipphi][ii] = topFOcell;
+				most_important_FOcells[ipt][ipphi][ii] = topFOcell;	// == isurf * eta_s_npts + ieta
 				double tmpval = tmp_S_p_withweight_array[topFOcell];
 				S_p_withweight_array[ipt][ipphi][ii] = tmpval;
 				//checksum += tmpval;
@@ -1086,15 +1090,13 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 	double ** abs_spec_this_pid = abs_spectra[local_pid];
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 	{
-//if (ipt > 0) continue;
-
 		debug_sw2.Reset();
 		double ** slice1 = S_p_withweight_array[ipt];
 		size_t ** mif1 = most_important_FOcells[ipt];
 		int * NOFACA_slice1 = number_of_FOcells_above_cutoff_array[ipt];
 		double * ASTP_slice1 = abs_spec_this_pid[ipt];
 
-		if (local_pid == target_particle_id || 1)
+		if (local_pid == target_particle_id)
 		{
 			//use ipphi = 0 for estimates
 			size_t * mif1_slice = mif1[0];
@@ -1124,17 +1126,12 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 				y2sum += 2.0*tmpS*ypt*ypt;
 				z2sum += 2.0*tmpS*zpt*zpt;
 			}
-//cout << "TESTING SVs(" << local_pid << "," << ipt << "): " << sqrt(abs((x2sum/Ssum)-(xsum*xsum)/(Ssum*Ssum))) << "   "
-//					<< sqrt(abs((y2sum/Ssum)-(ysum*ysum)/(Ssum*Ssum))) << "   " << sqrt(abs((z2sum/Ssum)-(zsum*zsum)/(Ssum*Ssum))) << endl;
-			if (local_pid == target_particle_id)
-			{
-				Set_q_pTdep_pts(ipt, sqrt(abs((x2sum/Ssum)-(xsum*xsum)/(Ssum*Ssum))),
-										sqrt(abs((y2sum/Ssum)-(ysum*ysum)/(Ssum*Ssum))), sqrt(abs((z2sum/Ssum)-(zsum*zsum)/(Ssum*Ssum))) );
-				//set weights corresponding to chosen q_points
-				sw_set_eiqx_with_q_pTdep_slice.Start();
-				Set_eiqx_with_q_pTdep_pts(ipt);
-				sw_set_eiqx_with_q_pTdep_slice.Stop();
-			}
+			Set_q_pTdep_pts(ipt, sqrt(abs((x2sum/Ssum)-(xsum*xsum)/(Ssum*Ssum))),
+									sqrt(abs((y2sum/Ssum)-(ysum*ysum)/(Ssum*Ssum))), sqrt(abs((z2sum/Ssum)-(zsum*zsum)/(Ssum*Ssum))) );
+			//set weights corresponding to chosen q_points
+			sw_set_eiqx_with_q_pTdep_slice.Start();
+			Set_eiqx_with_q_pTdep_pts(ipt);
+			sw_set_eiqx_with_q_pTdep_slice.Stop();
 		}
 		else
 		{
@@ -1163,25 +1160,24 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 		
 			//initialize some arrays to save time
 			debug_sw3.Start();
-			vector<double> factor_cos;
-			vector<double> factor_sin;
+			vector<double> factor_cos;		//will contain FO_length * eta_s_npts elements
+			vector<double> factor_sin;		//will contain FO_length * eta_s_npts elements
 			int tmp_idx = 0;
 			for (int isurf = 0; isurf < FO_length; ++isurf)
 			for (int ieta = 0; ieta < eta_s_npts; ++ieta)
 			{
-				double cosA0 = eiqttslice[2*tmp_idx], cosA1 = eiqxxslice[2*isurf], cosA2 = eiqyyslice[2*isurf], cosA3 = eiqzzslice[2*tmp_idx];
-				double sinA0 = eiqttslice[2*tmp_idx+1], sinA1 = eiqxxslice[2*isurf+1], sinA2 = eiqyyslice[2*isurf+1], sinA3 = eiqzzslice[2*tmp_idx+1];
+				double cosA0 = eiqttslice[tmp_idx], cosA1 = eiqxxslice[2*isurf], cosA2 = eiqyyslice[2*isurf], cosA3 = eiqzzslice[tmp_idx];
+				double sinA0 = eiqttslice[tmp_idx+1], sinA1 = eiqxxslice[2*isurf+1], sinA2 = eiqyyslice[2*isurf+1], sinA3 = eiqzzslice[tmp_idx+1];
 
 				factor_cos.push_back(2. * (cosA0*cosA1*cosA2*cosA3 + cosA2*cosA3*sinA0*sinA1 + cosA1*cosA3*sinA0*sinA2 - cosA0*cosA3*sinA1*sinA2));
 				factor_sin.push_back(2. * (cosA1*cosA2*cosA3*sinA0 - cosA0*cosA2*cosA3*sinA1 - cosA0*cosA1*cosA3*sinA2 - cosA3*sinA0*sinA1*sinA2));
 
-				++tmp_idx;
+				tmp_idx+=2;
 			}
 			debug_sw3.Stop();
 
 			for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 			{
-//if (ipphi > 0) continue;
 				double * slice2 = slice1[ipphi];
 				size_t * most_important_FOcells_for_current_pt_and_pphi = mif1[ipphi];
 				int ptphi_index = ipt * n_interp_pphi_pts + ipphi;
@@ -1207,6 +1203,11 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 						double S_p_withweight = slice2[iFO];
 						tmla_C += factor_cos[next_most_important_FOindex] * S_p_withweight;
 						tmla_S += factor_sin[next_most_important_FOindex] * S_p_withweight;
+
+/*if (ipt==0 && ipphi==0 && iqt==0 && iqx==0 && iqy==0 && iqz==0)
+	cout << "Original: " << local_pid << "   " << next_most_important_FOindex << "   "
+		<< next_most_important_FOindex / eta_s_npts << "   " << next_most_important_FOindex % eta_s_npts << "   "
+		<< S_p_withweight << "   " << factor_cos[next_most_important_FOindex] << "   " << factor_sin[next_most_important_FOindex] << endl;*/
 								
 						running_sum += abs(S_p_withweight);
 					}
@@ -1314,7 +1315,7 @@ void CorrelationFunction::Load_decay_channel_info(int dc_idx, double K_T_local, 
 	Gamma = current_resonance_Gamma;
 	//one_by_Gamma_Mres = hbarC/(Gamma*Mres + 1.e-25);	//keeps calculation safe when Gamma == 0
 	one_by_Gamma_Mres = 1./(Gamma*Mres + 1.e-25);	//keeps calculation safe when Gamma == 0
-	//N.B. - no need for hbarc, since this will multiply something with GeV^2 units in the end
+	//N.B. - no need for hbarc, since this will only multiply something with GeV^2 units in the end
 	mass = current_daughter_mass;
 	br = current_resonance_direct_br;	//doesn't depend on target daughter particle, just parent resonance and decay channel
 	m2 = current_resonance_decay_masses[0];
@@ -1500,10 +1501,12 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights_function(FO_surf* FOsu
 	double px = pT*cos_pphi;
 	double py = pT*sin_pphi;
 
+	double mT = sqrt(pT*pT+localmass*localmass);
+
 	*cosqx_dN_dypTdpTdphi = 0.0;
 	*sinqx_dN_dypTdpTdphi = 0.0;
 
-	for(int isurf=0; isurf<FO_length; ++isurf)
+	for (int isurf = 0; isurf < FO_length; ++isurf)
 	{
 		FO_surf*surf = &FOsurf_ptr[isurf];
 
@@ -1526,10 +1529,10 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights_function(FO_surf* FOsu
 		double pi12 = surf->pi12;
 		double pi22 = surf->pi22;
 		double pi33 = surf->pi33;
-		for(int ieta=0; ieta < eta_s_npts; ++ieta)
+		for (int ieta = 0; ieta < eta_s_npts; ++ieta)
 		{
-			double p0 = sqrt(pT*pT+localmass*localmass)*cosh(SP_p_y - eta_s[ieta]);
-			double pz = sqrt(pT*pT+localmass*localmass)*sinh(SP_p_y - eta_s[ieta]);
+			double p0 = mT*cosh(SP_p_y - eta_s[ieta]);
+			double pz = mT*sinh(SP_p_y - eta_s[ieta]);
 
 			double f0 = 1./(exp( one_by_Tdec*(gammaT*(p0*1. - px*vx - py*vy) - mu) )+sign);	//thermal equilibrium distributions
 			//viscous corrections
@@ -1542,7 +1545,7 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights_function(FO_surf* FOsu
 			double S_p = prefactor*(p0*da0 + px*da1 + py*da2)*f0*(1.+deltaf);
 
 			//ignore points where delta f is large or emission function goes negative from pdsigma
-			if ((1. + deltaf < 0.0) || (flagneg == 1 && S_p < tol))
+			if ( (1. + deltaf < 0.0) || (flagneg == 1 && S_p < tol) )
 			{
 				S_p = 0.0;
 				continue;
@@ -1550,10 +1553,14 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights_function(FO_surf* FOsu
 
 			double tpt = tau*ch_eta_s[ieta];
 			double zpt = tau*sh_eta_s[ieta];
+			double cosfact = 0.0;
+			double sinfact = 0.0;
 			for (int ii = 0; ii < 2; ++ii)
 			{
 				zpt *= -1.;
 				double arg = tpt*qt-(xpt*qx+ypt*qy+zpt*qz);
+				cosfact += cos(arg/hbarC);
+				sinfact += sin(arg/hbarC);
 				*cosqx_dN_dypTdpTdphi += cos(arg/hbarC)*S_p*tau*eta_s_weight[ieta];
 				*sinqx_dN_dypTdpTdphi += sin(arg/hbarC)*S_p*tau*eta_s_weight[ieta];
 				/*if (isnan(cosqx_dN_dypTdpTdphi) || isinf(cosqx_dN_dypTdpTdphi))
@@ -1561,8 +1568,9 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights_function(FO_surf* FOsu
 					cerr << "NaN or Inf at isurf = " << isurf << " and ieta = " << ieta << endl;
 					exit(1);
 				}*/
-
 			}
+/*cout << "Exact: " << local_pid << "   " << isurf*eta_s_npts+ieta << "   " << isurf << "   " << ieta << "   "
+		<< S_p*tau*eta_s_weight[ieta] << "   " << cosfact << "   " << sinfact << endl;*/
 		}
 	}
 
