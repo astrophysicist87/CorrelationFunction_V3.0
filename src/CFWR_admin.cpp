@@ -1850,17 +1850,17 @@ void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, 
 			//--> update the imaginary part of weighted daughter spectra
 			results[qpt_cs_idx+1] += akr*Zki+aki*Zkr;
 
-			double Zkrc = 0.0, Zkic = 0.0;
+			/*double Zkrc = 0.0, Zkic = 0.0;
 			Cal_dN_dypTdpTdphi_with_weights_function(current_FOsurf_ptr, current_parent_resonance,
 							ptr, phir, qt_PTdep_pts[current_ipt][iqt], qx_PTdep_pts[current_ipt][iqx], qy_PTdep_pts[current_ipt][iqy], qz_PTdep_pts[current_ipt][iqz],
 							&Zkrc, &Zkic);
 			cout << "CHECK(log): " << current_parent_resonance << "   " << ptr << "   " << phir << "   " << qt_PTdep_pts[current_ipt][iqt] << "   " << qx_PTdep_pts[current_ipt][iqx]
 					<< "   " << qy_PTdep_pts[current_ipt][iqy] << "   " << qz_PTdep_pts[current_ipt][iqz] << "   "
 					<< Zkr << "   " << Zki << "   " << akr*Zkr-aki*Zki << "   " << akr*Zki+aki*Zkr << "   "
-					<< Zkrc << "   " << Zkic << "   " << akr*Zkrc-aki*Zkic << "   " << akr*Zkic+aki*Zkrc << endl;
+					<< Zkrc << "   " << Zkic << "   " << akr*Zkrc-aki*Zkic << "   " << akr*Zkic+aki*Zkrc << endl;*/
 
-//if ( loc_verb || isinf( results[qpt_cs_idx] ) || isnan( results[qpt_cs_idx] ) || isinf( results[qpt_cs_idx+1] ) || isnan( results[qpt_cs_idx+1] ) )
-//		{
+if ( loc_verb || isinf( results[qpt_cs_idx] ) || isnan( results[qpt_cs_idx] ) || isinf( results[qpt_cs_idx+1] ) || isnan( results[qpt_cs_idx+1] ) )
+		{
 			*global_out_stream_ptr << "ERROR in eiqxEdndp3(double, double, double*): problems encountered!" << endl
 				<< "results(" << iqt << "," << iqx << "," << iqy << "," << iqz << ") = "
 				<< setw(25) << setprecision(20) << results[qpt_cs_idx] << ",   " << results[qpt_cs_idx+1] << endl
@@ -1889,7 +1889,7 @@ void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, 
 				<< "  --> akr*Zkr-aki*Zki = " << akr*Zkr-aki*Zki << endl
 				<< "  --> akr*Zki+aki*Zkr = " << akr*Zki+aki*Zkr << endl;
 							exit(1);
-//		}
+		}
 	
 			qpt_cs_idx += 2;
 			qlist_idx++;
@@ -1938,7 +1938,7 @@ void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, 
 			//--> update the imaginary part of weighted daughter spectra
 			results[qpt_cs_idx+1] += akr*Zki+aki*Zkr;
 
-			double Zkrc = 0.0, Zkic = 0.0;
+			/*double Zkrc = 0.0, Zkic = 0.0;
 			Cal_dN_dypTdpTdphi_with_weights_function(current_FOsurf_ptr, current_parent_resonance,
 							ptr, phir, qt_PTdep_pts[current_ipt][iqt], qx_PTdep_pts[current_ipt][iqx], qy_PTdep_pts[current_ipt][iqy], qz_PTdep_pts[current_ipt][iqz],
 							&Zkrc, &Zkic);
@@ -1973,10 +1973,10 @@ void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, 
 			cout << "CHECK(lin): " << current_parent_resonance << "   " << pT1 << "   " << phi1 << "   " << qt_PTdep_pts[npt][iqt] << "   " << qx_PTdep_pts[npt][iqx]
 					<< "   " << qy_PTdep_pts[npt][iqy] << "   " << qz_PTdep_pts[npt][iqz] << "   "
 					<< f22_arr[qpt_cs_idx] << "   " << f22_arr[qpt_cs_idx+1] << "   "
-					<< Zkrc << "   " << Zkic << endl;
+					<< Zkrc << "   " << Zkic << endl;*/
 
-//if ( loc_verb || isinf( results[qpt_cs_idx] ) || isnan( results[qpt_cs_idx] ) || isinf( results[qpt_cs_idx+1] ) || isnan( results[qpt_cs_idx+1] ) )
-//		{
+if ( loc_verb || isinf( results[qpt_cs_idx] ) || isnan( results[qpt_cs_idx] ) || isinf( results[qpt_cs_idx+1] ) || isnan( results[qpt_cs_idx+1] ) )
+		{
 			*global_out_stream_ptr << "ERROR in eiqxEdndp3(double, double, double*): problems encountered!" << endl
 				<< "results(" << iqt << "," << iqx << "," << iqy << "," << iqz << ") = "
 				<< setw(25) << setprecision(20) << results[qpt_cs_idx] << ",   " << results[qpt_cs_idx+1] << endl
@@ -2005,7 +2005,7 @@ void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, 
 				<< "  --> akr*Zkr-aki*Zki = " << akr*Zkr-aki*Zki << endl
 				<< "  --> akr*Zki+aki*Zkr = " << akr*Zki+aki*Zkr << endl;
 							exit(1);
-//		}
+		}
 	
 			qpt_cs_idx += 2;
 			qlist_idx++;
