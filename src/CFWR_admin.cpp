@@ -13,6 +13,7 @@
 #include "CFWR.h"
 #include "CFWR_lib.h"
 #include "Arsenal.h"
+#include "chebyshev.h"
 #include "gauss_quadrature.h"
 
 using namespace std;
@@ -68,6 +69,12 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
 		default:
 			break;
 	}
+
+	//set arrays containing q points
+	Set_q_points();
+
+	//sort by proximity to origin (where CF is largest) and do those points first
+	Set_sorted_q_pts_list();
 
 	n_zeta_pts = zeta_npts;
 	n_v_pts = v_npts;
@@ -281,16 +288,6 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
 		qidx++;
 	}
 
-/*
-	spectra_to_subtract = new double * [n_interp_pT_pts];
-	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-	{
-		spectra_to_subtract[ipt] = new double [n_interp_pphi_pts];
-		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-			spectra_to_subtract[ipt][ipphi] = 0.0;
-	}
-*/
-
 	res_log_info = new double ** [n_interp_pT_pts];
 	res_sign_info = new double ** [n_interp_pT_pts];
 	res_moments_info = new double ** [n_interp_pT_pts];
@@ -416,11 +413,25 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
 		//try just gaussian points...
 		//syntax:
 		//int gauss_quadrature(int order, int kind, double alpha, double beta, double a, double b, double x[], double w[]) 
-		gauss_quadrature(n_interp_pT_pts, 5, 0.0, 0.0, 0.0, 13.0, SPinterp_pT, SPinterp_pT_wts);	//use this one to agree with iS.e
-		gauss_quadrature(n_interp_pT_pts, 5, 0.0, 0.0, 0.0, 13.0, SPinterp_pT_public, SPinterp_pT_wts);	//use this one to agree with iS.e
-		//for(int ipt=0; ipt<n_interp_pT_pts; ipt++)
-		//	cout << "PointCheck, pT: " << scientific << setprecision(17) << setw(20) << SPinterp_pT[ipt] << "   " << dummywts3[ipt] << endl;
+		//gauss_quadrature(n_interp_pT_pts, 5, 0.0, 0.0, 0.0, 13.0, SPinterp_pT, SPinterp_pT_wts);	//use this one to agree with iS.e
+		//gauss_quadrature(n_interp_pT_pts, 5, 0.0, 0.0, 0.0, 13.0, SPinterp_pT_public, SPinterp_pT_wts);	//use this one to agree with iS.e
+		gauss_quadrature(n_interp_pT_pts, 1, 0.0, 0.0, 0.0, 4.0, SPinterp_pT, SPinterp_pT_wts);
+		gauss_quadrature(n_interp_pT_pts, 1, 0.0, 0.0, 0.0, 4.0, SPinterp_pT_public, SPinterp_pT_wts);
+		for(int ipt=0; ipt<n_interp_pT_pts; ipt++)
+		{
+			double del = 0.5 * (4.0 - 0.0);
+			double cen = 0.5 * (4.0 + 0.0);
+			SPinterp_pT[ipt] = cen - del * cos( M_PI*(2.*(ipt+1.) - 1.) / (2.*n_interp_pT_pts) );
+			//cout << "PointCheck, pT: " << scientific << setprecision(17) << setw(20) << SPinterp_pT[ipt] << "   " << SPinterp_pT_public[ipt] << endl;
+		}
+//if (1) exit(1);
 		gauss_quadrature(n_interp_pphi_pts, 1, 0.0, 0.0, interp_pphi_min, interp_pphi_max, SPinterp_pphi, SPinterp_pphi_wts);
+		for(int ipphi=0; ipphi<n_interp_pphi_pts; ipphi++)
+		{
+			double del = 0.5 * (interp_pphi_max - interp_pphi_min);
+			double cen = 0.5 * (interp_pphi_max + interp_pphi_min);
+			SPinterp_pphi[ipphi] = cen - del * cos( M_PI*(2.*(ipphi+1.) - 1.) / (2.*n_interp_pphi_pts) );
+		}
 		//for(int ipphi=0; ipphi<n_interp_pphi_pts; ipphi++)
 		//	cout << "PointCheck, pphi: " << scientific << setprecision(17) << setw(20) << SPinterp_pphi[ipphi] << "   " << dummywts4[ipphi] << endl;
 		for(int ipphi=0; ipphi<n_interp_pphi_pts; ipphi++)
@@ -571,28 +582,133 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
    return;
 }
 
+void CorrelationFunction::Allocate_osc_arrays(int FOarray_length)
+{
+	osc0 = new double *** [qtnpts];
+	osc1 = new double ** [qxnpts];
+	osc2 = new double ** [qynpts];
+	osc3 = new double *** [qznpts];
+
+	//allocate qtpts
+	for (int iqt = 0; iqt < qtnpts; ++iqt)
+	{
+		osc0[iqt] = new double ** [FOarray_length];
+		for (int isurf = 0; isurf < FOarray_length; ++isurf)
+		{
+			osc0[iqt][isurf] = new double * [eta_s_npts];
+			for (int ieta = 0; ieta < eta_s_npts; ++ieta)
+				osc0[iqt][isurf][ieta] = new double [2];
+		}
+	}
+	//allocate qxpts
+	for (int iqx = 0; iqx < qxnpts; ++iqx)
+	{
+		osc1[iqx] = new double * [FOarray_length];
+		for (int isurf = 0; isurf < FOarray_length; ++isurf)
+			osc1[iqx][isurf] = new double [2];
+	}
+	//allocate qypts
+	for (int iqy = 0; iqy < qynpts; ++iqy)
+	{
+		osc2[iqy] = new double * [FOarray_length];
+		for (int isurf = 0; isurf < FOarray_length; ++isurf)
+			osc2[iqy][isurf] = new double [2];
+	}
+	//allocate qzpts
+	for (int iqz = 0; iqz < qznpts; ++iqz)
+	{
+		osc3[iqz] = new double ** [FOarray_length];
+		for (int isurf = 0; isurf < FOarray_length; ++isurf)
+		{
+			osc3[iqz][isurf] = new double * [eta_s_npts];
+			for (int ieta = 0; ieta < eta_s_npts; ++ieta)
+				osc3[iqz][isurf][ieta] = new double [2];
+		}
+	}
+
+	return;
+}
+
+void CorrelationFunction::Delete_osc_arrays()
+{
+	for (int iqt = 0; iqt < qtnpts; ++iqt)
+	{
+		for (int isurf = 0; isurf < FO_length; ++isurf)
+		{
+			for (int ieta = 0; ieta < eta_s_npts; ++ieta)
+				delete [] osc0[iqt][isurf][ieta];
+			delete [] osc0[iqt][isurf];
+		}
+		delete [] osc0[iqt];
+	}
+	for (int iqx = 0; iqx < qxnpts; ++iqx)
+	{
+		for (int isurf = 0; isurf < FO_length; ++isurf)
+			delete [] osc1[iqx][isurf];
+		delete [] osc1[iqx];
+	}
+	for (int iqy = 0; iqy < qynpts; ++iqy)
+	{
+		for (int isurf = 0; isurf < FO_length; ++isurf)
+			delete [] osc2[iqy][isurf];
+		delete [] osc2[iqy];
+	}
+	for (int iqz = 0; iqz < qznpts; ++iqz)
+	{
+		for (int isurf = 0; isurf < FO_length; ++isurf)
+		{
+			for (int ieta = 0; ieta < eta_s_npts; ++ieta)
+				delete [] osc3[iqz][isurf][ieta];
+			delete [] osc3[iqz][isurf];
+		}
+		delete [] osc3[iqz];
+	}
+}
+
 void CorrelationFunction::Update_sourcefunction(particle_info* particle, int FOarray_length, int particle_idx)
 {
 	full_FO_length = FOarray_length * eta_s_npts;
 
-	eiqtt = new double * [qtnpts];					//to hold cos/sin(q0 t)
-	eiqxx = new double * [qxnpts];					//to hold cos/sin(qx x)
-	eiqyy = new double * [qynpts];					//to hold cos/sin(qy y)
-	eiqzz = new double * [qznpts];					//to hold cos/sin(+/- qz z)
+	Allocate_osc_arrays(FOarray_length);
 
-	for (int iqt = 0; iqt < qtnpts; ++iqt)
-		eiqtt[iqt] = new double [FOarray_length * eta_s_npts * 2];
-	for (int iqx = 0; iqx < qxnpts; ++iqx)
-		eiqxx[iqx] = new double [FOarray_length * 2];
-	for (int iqy = 0; iqy < qynpts; ++iqy)
-		eiqyy[iqy] = new double [FOarray_length * 2];
-	for (int iqz = 0; iqz < qznpts; ++iqz)
-		eiqzz[iqz] = new double [FOarray_length * eta_s_npts * 2];
+	for (int isurf = 0; isurf < FOarray_length; ++isurf)
+	{
+		FO_surf * surf = &current_FOsurf_ptr[isurf];
 
-	qt_PTdep_pts = new double * [n_interp_pT_pts];
-	qx_PTdep_pts = new double * [n_interp_pT_pts];
-	qy_PTdep_pts = new double * [n_interp_pT_pts];
-	qz_PTdep_pts = new double * [n_interp_pT_pts];
+		double tau = surf->tau;
+		double xpt = surf->xpt;
+		double ypt = surf->ypt;
+
+		for (int iqx = 0; iqx < qxnpts; ++iqx)
+		{
+			osc1[iqx][isurf][0] = cos(hbarCm1*qx_pts[iqx]*xpt);
+			osc1[iqx][isurf][1] = sin(hbarCm1*qx_pts[iqx]*xpt);
+		}
+
+		for (int iqy = 0; iqy < qynpts; ++iqy)
+		{
+			osc2[iqy][isurf][0] = cos(hbarCm1*qy_pts[iqy]*ypt);
+			osc2[iqy][isurf][1] = sin(hbarCm1*qy_pts[iqy]*ypt);
+		}
+
+		for (int ieta = 0; ieta < eta_s_npts; ++ieta)
+		{
+			double tpt = tau*ch_eta_s[ieta];
+			double zpt = tau*sh_eta_s[ieta];
+
+			for (int iqt = 0; iqt < qtnpts; ++iqt)
+			{
+				osc0[iqt][isurf][ieta][0] = cos(hbarCm1*qt_pts[iqt]*tpt);
+				osc0[iqt][isurf][ieta][1] = sin(hbarCm1*qt_pts[iqt]*tpt);
+			}
+
+			for (int iqz = 0; iqz < qznpts; ++iqz)
+			{
+				osc3[iqz][isurf][ieta][0] = cos(hbarCm1*qz_pts[iqz]*zpt);
+				osc3[iqz][isurf][ieta][1] = sin(hbarCm1*qz_pts[iqz]*zpt);
+			}
+		}
+	}
 
 	S_p_withweight_array = new double ** [n_interp_pT_pts];
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
@@ -612,11 +728,7 @@ void CorrelationFunction::Update_sourcefunction(particle_info* particle, int FOa
 	// set the rest later
 	most_important_FOcells = new size_t ** [n_interp_pT_pts];
 	for(int ipt=0; ipt<n_interp_pT_pts; ipt++)
-	{
 		most_important_FOcells[ipt] = new size_t * [n_interp_pphi_pts];
-		//for(int ipphi=0; ipphi<n_interp_pphi_pts; ipphi++)
-		//	most_important_FOcells[ipt][ipphi] = new size_t [FO_length * eta_s_npts];
-	}
 
    return;
 }
@@ -644,122 +756,6 @@ void CorrelationFunction::Fill_out_pts(double * pointsarray, int numpoints, doub
 				pointsarray[iqd] = local_scale * cos( M_PI*(2.*(iqd+1.) - 1.) / (2.*numpoints) );
 		}
 	}
-	return;
-}
-
-void CorrelationFunction::Set_q_pTdep_pts(int ipt, double qxw, double qyw, double qzw)
-{
-	double pT_local = SPinterp_pT[ipt];
-
-	qt_PTdep_pts[ipt] = new double [qtnpts];
-	qx_PTdep_pts[ipt] = new double [qxnpts];
-	qy_PTdep_pts[ipt] = new double [qynpts];
-	qz_PTdep_pts[ipt] = new double [qznpts];
-
-	double mpion = all_particles[target_particle_id].mass;
-	double eps = 0.1;									//specifies approximate CF value at which to truncate calculation
-														// (used for computing q(i)max)
-	double ln_one_by_eps = hbarC*sqrt(log(1./eps));
-	double rescale = 0.4;
-
-////////////////////////////////////////////////////////////////////////
-	double qxmax = rescale * ln_one_by_eps / sqrt(qxw*qxw+qyw*qyw);
-	double qymax = rescale * ln_one_by_eps / sqrt(qxw*qxw+qyw*qyw);
-	double qzmax = rescale * ln_one_by_eps / qzw;
-//double qzmax = qxmax;
-	double xi2 = mpion*mpion + pT_local*pT_local + 2.0*0.25*qxmax*qxmax;	//pretend that Kphi == 0, qx == qo and qs == ql == 0, to maximize qtmax
-	double qtmax = sqrt(xi2 + sqrt(2.0)*pT_local*qxmax) - sqrt(xi2 - sqrt(2.0)*pT_local*qxmax) + 1.e-10;
-
-//cout << "pt and qmax list: " << pT_local << "   " << qtmax << "   " << qxmax << "   " << qymax << "   " << qzmax << endl;
-	//double qtmax = 2.0 * qxmax;
-////////////////////////////////////////////////////////////////////////
-
-	//finally, set q(i)_PTdep_pts
-	Fill_out_pts(qt_PTdep_pts[ipt], qtnpts, qtmax, QT_POINTS_SPACING);
-	Fill_out_pts(qx_PTdep_pts[ipt], qxnpts, qxmax, QX_POINTS_SPACING);
-	Fill_out_pts(qy_PTdep_pts[ipt], qynpts, qymax, QY_POINTS_SPACING);
-	Fill_out_pts(qz_PTdep_pts[ipt], qznpts, qzmax, QZ_POINTS_SPACING);
-
-	int qidx = 0;
-	//qlist[ipt] = new double * [qtnpts*qxnpts*qynpts*qznpts];
-	for (int iqt = 0; iqt < qtnpts; ++iqt)
-	for (int iqx = 0; iqx < qxnpts; ++iqx)
-	for (int iqy = 0; iqy < qynpts; ++iqy)
-	for (int iqz = 0; iqz < qznpts; ++iqz)
-	//for (int itrig = 0; itrig < 2; ++itrig)
-	{
-		qlist[ipt][qidx][0] = qt_PTdep_pts[ipt][iqt];
-		qlist[ipt][qidx][1] = qx_PTdep_pts[ipt][iqx];
-		qlist[ipt][qidx][2] = qy_PTdep_pts[ipt][iqy];
-		qlist[ipt][qidx][3] = qz_PTdep_pts[ipt][iqz];
-		qidx++;
-	}
-
-	return;
-}
-
-void CorrelationFunction::Set_eiqx_with_q_pTdep_pts(int ipt)
-{
-	int iFO = 0;
-	double * current_qt_slice = qt_PTdep_pts[ipt];
-	double * current_qx_slice = qx_PTdep_pts[ipt];
-	double * current_qy_slice = qy_PTdep_pts[ipt];
-	double * current_qz_slice = qz_PTdep_pts[ipt];
-
-	for (int isurf = 0; isurf < FO_length; ++isurf)
-	{
-		FO_surf * surf = &current_FOsurf_ptr[isurf];
-		double tau = surf->tau;
-
-		for (int ieta = 0; ieta < eta_s_npts; ++ieta)
-		{
-			double tpt = tau*ch_eta_s[ieta];
-			double zpt = tau*sh_eta_s[ieta];
-
-			for (int iqt = 0; iqt < qtnpts; ++iqt)
-			{
-				eiqtt[iqt][iFO] = cos(hbarCm1*current_qt_slice[iqt]*tpt);
-				eiqtt[iqt][iFO+1] = sin(hbarCm1*current_qt_slice[iqt]*tpt);
-			}
-			for (int iqz = 0; iqz < qznpts; ++iqz)
-			{
-				eiqzz[iqz][iFO] = cos(hbarCm1*current_qz_slice[iqz]*zpt);
-				eiqzz[iqz][iFO+1] = sin(hbarCm1*current_qz_slice[iqz]*zpt);
-			}
-
-			iFO += 2;
-		}
-
-		double xpt = surf->xpt;
-		double ypt = surf->ypt;
-		for (int iqx = 0; iqx < qxnpts; ++iqx)
-		{
-			eiqxx[iqx][2*isurf] = cos(hbarCm1*current_qx_slice[iqx]*xpt);
-			eiqxx[iqx][2*isurf+1] = sin(hbarCm1*current_qx_slice[iqx]*xpt);
-		}
-		for (int iqy = 0; iqy < qynpts; ++iqy)
-		{
-			eiqyy[iqy][2*isurf] = cos(hbarCm1*current_qy_slice[iqy]*ypt);
-			eiqyy[iqy][2*isurf+1] = sin(hbarCm1*current_qy_slice[iqy]*ypt);
-		}
-	}
-
-	//dump results to binary files, which is way faster than recalculating everything each time
-	Dump_phases_to_binary('t', ipt, eiqtt, qtnpts, 2*FO_length*eta_s_npts);
-	Dump_phases_to_binary('x', ipt, eiqxx, qxnpts, 2*FO_length);
-	Dump_phases_to_binary('y', ipt, eiqyy, qynpts, 2*FO_length);
-	Dump_phases_to_binary('z', ipt, eiqzz, qznpts, 2*FO_length*eta_s_npts);
-
-	return;
-}
-
-void CorrelationFunction::Load_eiqx_with_q_pTdep_pts(int ipt)
-{
-	Load_phases_from_binary('t', ipt, eiqtt, qtnpts, 2*FO_length*eta_s_npts);
-	Load_phases_from_binary('x', ipt, eiqxx, qxnpts, 2*FO_length);
-	Load_phases_from_binary('y', ipt, eiqyy, qynpts, 2*FO_length);
-	Load_phases_from_binary('z', ipt, eiqzz, qznpts, 2*FO_length*eta_s_npts);
-
 	return;
 }
 
@@ -804,6 +800,16 @@ CorrelationFunction::~CorrelationFunction()
 	delete [] R2_outside_err;
 	delete [] R2_sidelong_err;
 	delete [] R2_outlong_err;
+
+	for (int ir = 0; ir < Nparticle; ++ir)
+	{
+		for (int ipT = 0; ipT < n_interp_pT_pts; ++ipT)
+			delete [] spectra[ir][ipT];
+		delete [] spectra[ir];
+	}
+	delete [] spectra;
+
+	Delete_osc_arrays();
 
    return;
 }
@@ -1061,6 +1067,47 @@ void CorrelationFunction::Set_correlation_function_q_pts()
 	return;
 }
 
+// sets points in q-space for computing weighted spectra grid
+void CorrelationFunction::Set_q_points()
+{
+	q_pts = new double [qnpts];
+	for (int iq = 0; iq < qnpts; ++iq)
+		q_pts[iq] = init_q + (double)iq * delta_q;
+	q_axes = new double [3];
+
+	qt_pts = new double [qtnpts];
+	qx_pts = new double [qxnpts];
+	qy_pts = new double [qynpts];
+	qz_pts = new double [qznpts];
+	for (int iqt = 0; iqt < qtnpts; ++iqt)
+	{
+		qt_pts[iqt] = init_qt + (double)iqt * delta_qt;
+		if (abs(qt_pts[iqt]) < 1.e-15)
+			iqt0 = iqt;
+	}
+	for (int iqx = 0; iqx < qxnpts; ++iqx)
+	{
+		qx_pts[iqx] = init_qx + (double)iqx * delta_qx;
+		if (abs(qx_pts[iqx]) < 1.e-15)
+			iqx0 = iqx;
+	}
+	for (int iqy = 0; iqy < qynpts; ++iqy)
+	{
+		qy_pts[iqy] = init_qy + (double)iqy * delta_qy;
+		if (abs(qy_pts[iqy]) < 1.e-15)
+			iqy0 = iqy;
+	}
+	for (int iqz = 0; iqz < qznpts; ++iqz)
+	{
+		qz_pts[iqz] = init_qz + (double)iqz * delta_qz;
+		if (abs(qz_pts[iqz]) < 1.e-15)
+			iqz0 = iqz;
+	}
+
+	cerr << "Output iq*0 = " << iqt0 << "   " << iqx0 << "   " << iqy0 << "   " << iqz0 << endl;
+
+	return;
+}
 
 // returns points in q-space for computing weighted spectra grid corresponding to to given q and K choices
 // weighted spectra grid thus needs to be interpolated at point returned in qgridpts
@@ -1077,6 +1124,48 @@ void CorrelationFunction::Get_q_points(double q1, double q2, double q3, double p
 	qgridpts[1] = q1;										//set qx component
 	qgridpts[2] = q2;										//set qy component
 	qgridpts[3] = q3;										//set qz component, since qz = ql
+
+	return;
+}
+
+inline int norm (vector<int> v) { int norm2 = 0; for (size_t iv = 0; iv < v.size(); ++iv) norm2+=v[iv]*v[iv]; return (norm2); }
+
+inline bool qpt_comparator (vector<int> i, vector<int> j) { return (norm(i) < norm(j)); }
+
+void CorrelationFunction::Set_sorted_q_pts_list()
+{
+	vector<int> tmp (4);
+
+	//sort through all q-points with qt <= 0 by proximity to origin in q-space
+	//allows to do largest CF values first
+	for (int iqt = 0; iqt < (qtnpts / 2) + 1; ++iqt)
+	for (int iqx = 0; iqx < qxnpts; ++iqx)
+	for (int iqy = 0; iqy < qynpts; ++iqy)
+	for (int iqz = 0; iqz < qznpts; ++iqz)
+	{
+		tmp[0] = iqt - iqt0;
+		tmp[1] = iqx - iqx0;
+		tmp[2] = iqy - iqy0;
+		tmp[3] = iqz - iqz0;
+
+		sorted_q_pts_list.push_back(tmp);
+	}
+
+	sort(sorted_q_pts_list.begin(), sorted_q_pts_list.end(), qpt_comparator);
+
+	cout << "Checking sorting of q-points: " << endl;
+	for (size_t iq = 0; iq < sorted_q_pts_list.size(); ++iq)
+	{
+		sorted_q_pts_list[iq][0] += iqt0;
+		sorted_q_pts_list[iq][1] += iqx0;
+		sorted_q_pts_list[iq][2] += iqy0;
+		sorted_q_pts_list[iq][3] += iqz0;
+
+		cout << "   --> iq = " << iq << ": ";
+		for (size_t iqmu = 0; iqmu < 4; ++iqmu)
+			cout << sorted_q_pts_list[iq][iqmu] << "   ";
+		cout << endl;
+	}
 
 	return;
 }
@@ -1744,17 +1833,8 @@ void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, 
 
 			double Zkr = 0.0, Zki = 0.0;
 
-//cerr << current_parent_resonance << "   " << ptr << "   " << phir << "   "
-//	<< qt_PTdep_pts[current_ipt][iqt] << "   " << qx_PTdep_pts[current_ipt][iqx] << "   " << qy_PTdep_pts[current_ipt][iqy] << "   " << qz_PTdep_pts[current_ipt][iqz] << "   " << Zkr << "   " << Zki << endl;
-			Cal_dN_dypTdpTdphi_with_weights_function(current_FOsurf_ptr, current_parent_resonance,
-							ptr, phir, qt_PTdep_pts[current_ipt][iqt], qx_PTdep_pts[current_ipt][iqx], qy_PTdep_pts[current_ipt][iqy], qz_PTdep_pts[current_ipt][iqz],
-							&Zkr, &Zki);
-
 			results[qpt_cs_idx] += akr*Zkr-aki*Zki;
 			results[qpt_cs_idx+1] += akr*Zki+aki*Zkr;
-
-			/*Zkr = 0.0;
-			Zki = 0.0;*/
 
 			qpt_cs_idx += 2;
 			qlist_idx++;
@@ -1850,17 +1930,8 @@ void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, 
 			//--> update the imaginary part of weighted daughter spectra
 			results[qpt_cs_idx+1] += akr*Zki+aki*Zkr;
 
-			/*double Zkrc = 0.0, Zkic = 0.0;
-			Cal_dN_dypTdpTdphi_with_weights_function(current_FOsurf_ptr, current_parent_resonance,
-							ptr, phir, qt_PTdep_pts[current_ipt][iqt], qx_PTdep_pts[current_ipt][iqx], qy_PTdep_pts[current_ipt][iqy], qz_PTdep_pts[current_ipt][iqz],
-							&Zkrc, &Zkic);
-			cout << "CHECK(log): " << current_parent_resonance << "   " << ptr << "   " << phir << "   " << qt_PTdep_pts[current_ipt][iqt] << "   " << qx_PTdep_pts[current_ipt][iqx]
-					<< "   " << qy_PTdep_pts[current_ipt][iqy] << "   " << qz_PTdep_pts[current_ipt][iqz] << "   "
-					<< Zkr << "   " << Zki << "   " << akr*Zkr-aki*Zki << "   " << akr*Zki+aki*Zkr << "   "
-					<< Zkrc << "   " << Zkic << "   " << akr*Zkrc-aki*Zkic << "   " << akr*Zkic+aki*Zkrc << endl;*/
-
-if ( loc_verb || isinf( results[qpt_cs_idx] ) || isnan( results[qpt_cs_idx] ) || isinf( results[qpt_cs_idx+1] ) || isnan( results[qpt_cs_idx+1] ) )
-		{
+//if ( loc_verb || isinf( results[qpt_cs_idx] ) || isnan( results[qpt_cs_idx] ) || isinf( results[qpt_cs_idx+1] ) || isnan( results[qpt_cs_idx+1] ) )
+//		{
 			*global_out_stream_ptr << "ERROR in eiqxEdndp3(double, double, double*): problems encountered!" << endl
 				<< "results(" << iqt << "," << iqx << "," << iqy << "," << iqz << ") = "
 				<< setw(25) << setprecision(20) << results[qpt_cs_idx] << ",   " << results[qpt_cs_idx+1] << endl
@@ -1889,7 +1960,7 @@ if ( loc_verb || isinf( results[qpt_cs_idx] ) || isnan( results[qpt_cs_idx] ) ||
 				<< "  --> akr*Zkr-aki*Zki = " << akr*Zkr-aki*Zki << endl
 				<< "  --> akr*Zki+aki*Zkr = " << akr*Zki+aki*Zkr << endl;
 							exit(1);
-		}
+//		}
 	
 			qpt_cs_idx += 2;
 			qlist_idx++;
@@ -1938,45 +2009,40 @@ if ( loc_verb || isinf( results[qpt_cs_idx] ) || isnan( results[qpt_cs_idx] ) ||
 			//--> update the imaginary part of weighted daughter spectra
 			results[qpt_cs_idx+1] += akr*Zki+aki*Zkr;
 
-			/*double Zkrc = 0.0, Zkic = 0.0;
+			double Zkrc = 0.0, Zkic = 0.0;
 			Cal_dN_dypTdpTdphi_with_weights_function(current_FOsurf_ptr, current_parent_resonance,
-							ptr, phir, qt_PTdep_pts[current_ipt][iqt], qx_PTdep_pts[current_ipt][iqx], qy_PTdep_pts[current_ipt][iqy], qz_PTdep_pts[current_ipt][iqz],
+							ptr, phir, qt_pts[iqt], qx_pts[iqx], qy_pts[iqy], qz_pts[iqz],
 							&Zkrc, &Zkic);
-			cout << "CHECK(lin): " << current_parent_resonance << "   " << ptr << "   " << phir << "   " << qt_PTdep_pts[current_ipt][iqt] << "   " << qx_PTdep_pts[current_ipt][iqx]
-					<< "   " << qy_PTdep_pts[current_ipt][iqy] << "   " << qz_PTdep_pts[current_ipt][iqz] << "   "
-					<< Zkr << "   " << Zki << "   " << akr*Zkr-aki*Zki << "   " << akr*Zki+aki*Zkr << "   "
-					<< Zkrc << "   " << Zkic << "   " << akr*Zkrc-aki*Zkic << "   " << akr*Zkic+aki*Zkrc << endl;
-			Cal_dN_dypTdpTdphi_with_weights_function(current_FOsurf_ptr, current_parent_resonance,
-							pT0, phi0, qt_PTdep_pts[npt-1][iqt], qx_PTdep_pts[npt-1][iqx], qy_PTdep_pts[npt-1][iqy], qz_PTdep_pts[npt-1][iqz],
-							&Zkrc, &Zkic);
-			cout << "CHECK(lin): " << current_parent_resonance << "   " << pT0 << "   " << phi0 << "   " << qt_PTdep_pts[npt-1][iqt] << "   " << qx_PTdep_pts[npt-1][iqx]
-					<< "   " << qy_PTdep_pts[npt-1][iqy] << "   " << qz_PTdep_pts[npt-1][iqz] << "   "
-					<< f11_arr[qpt_cs_idx] << "   " << f11_arr[qpt_cs_idx+1] << "   "
-					<< Zkrc << "   " << Zkic << endl;
-			Cal_dN_dypTdpTdphi_with_weights_function(current_FOsurf_ptr, current_parent_resonance,
-							pT0, phi1, qt_PTdep_pts[npt-1][iqt], qx_PTdep_pts[npt-1][iqx], qy_PTdep_pts[npt-1][iqy], qz_PTdep_pts[npt-1][iqz],
-							&Zkrc, &Zkic);
-			cout << "CHECK(lin): " << current_parent_resonance << "   " << pT0 << "   " << phi1 << "   " << qt_PTdep_pts[npt-1][iqt] << "   " << qx_PTdep_pts[npt-1][iqx]
-					<< "   " << qy_PTdep_pts[npt-1][iqy] << "   " << qz_PTdep_pts[npt-1][iqz] << "   "
-					<< f12_arr[qpt_cs_idx] << "   " << f12_arr[qpt_cs_idx+1] << "   "
-					<< Zkrc << "   " << Zkic << endl;
-			Cal_dN_dypTdpTdphi_with_weights_function(current_FOsurf_ptr, current_parent_resonance,
-							pT1, phi0, qt_PTdep_pts[npt][iqt], qx_PTdep_pts[npt][iqx], qy_PTdep_pts[npt][iqy], qz_PTdep_pts[npt][iqz],
-							&Zkrc, &Zkic);
-			cout << "CHECK(lin): " << current_parent_resonance << "   " << pT1 << "   " << phi0 << "   " << qt_PTdep_pts[npt][iqt] << "   " << qx_PTdep_pts[npt][iqx]
-					<< "   " << qy_PTdep_pts[npt][iqy] << "   " << qz_PTdep_pts[npt][iqz] << "   "
-					<< f21_arr[qpt_cs_idx] << "   " << f21_arr[qpt_cs_idx+1] << "   "
-					<< Zkrc << "   " << Zkic << endl;
-			Cal_dN_dypTdpTdphi_with_weights_function(current_FOsurf_ptr, current_parent_resonance,
-							pT1, phi1, qt_PTdep_pts[npt][iqt], qx_PTdep_pts[npt][iqx], qy_PTdep_pts[npt][iqy], qz_PTdep_pts[npt][iqz],
-							&Zkrc, &Zkic);
-			cout << "CHECK(lin): " << current_parent_resonance << "   " << pT1 << "   " << phi1 << "   " << qt_PTdep_pts[npt][iqt] << "   " << qx_PTdep_pts[npt][iqx]
-					<< "   " << qy_PTdep_pts[npt][iqy] << "   " << qz_PTdep_pts[npt][iqz] << "   "
-					<< f22_arr[qpt_cs_idx] << "   " << f22_arr[qpt_cs_idx+1] << "   "
-					<< Zkrc << "   " << Zkic << endl;*/
+double tmp_moments_real[n_interp_pT_pts*n_interp_pphi_pts];
+double tmp_moments_imag[n_interp_pT_pts*n_interp_pphi_pts];
+int momidx = 0;
+for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+{
+	tmp_moments_real[momidx] = current_dN_dypTdpTdphi_moments[ipt][ipphi][0][0][0][0][0];
+	tmp_moments_imag[momidx] = current_dN_dypTdpTdphi_moments[ipt][ipphi][0][0][0][0][1];
+	cerr << "GRID: " << ipt << "   " << ipphi << "   " << tmp_moments_real[momidx] << "   " << tmp_moments_imag[momidx] << endl;
+	momidx++;
+}
+			const int dim_loc = 2;
+			int npts_loc[dim_loc] = { n_interp_pT_pts, n_interp_pphi_pts };
+			int os[dim_loc] = { n_interp_pT_pts-1, n_interp_pphi_pts-1 };
+			double lls[dim_loc] = { 0.0, 0.0 };
+			double uls[dim_loc] = { 4.0, 2.0*M_PI };
+			double point[dim_loc] = { ptr, phir };
 
-if ( loc_verb || isinf( results[qpt_cs_idx] ) || isnan( results[qpt_cs_idx] ) || isinf( results[qpt_cs_idx+1] ) || isnan( results[qpt_cs_idx+1] ) )
-		{
+			Chebyshev cfr(tmp_moments_real, npts_loc, os, lls, uls, dim_loc);
+			Chebyshev cfi(tmp_moments_imag, npts_loc, os, lls, uls, dim_loc);
+	
+			double Zkrc2 = cfr.eval(point);
+			double Zkic2 = cfi.eval(point);
+
+			cout << "CHECK(lin): " << current_parent_resonance << "   " << ptr << "   " << phir << "   " << qt_pts[iqt] << "   " << qx_pts[iqx]
+					<< "   " << qy_pts[iqy] << "   " << qz_pts[iqz] << "   "
+					<< Zkr << "   " << Zki << "   " << Zkrc << "   " << Zkic << "   " << Zkrc2 << "   " << Zkic2 << endl;
+
+//if ( loc_verb || isinf( results[qpt_cs_idx] ) || isnan( results[qpt_cs_idx] ) || isinf( results[qpt_cs_idx+1] ) || isnan( results[qpt_cs_idx+1] ) )
+//		{
 			*global_out_stream_ptr << "ERROR in eiqxEdndp3(double, double, double*): problems encountered!" << endl
 				<< "results(" << iqt << "," << iqx << "," << iqy << "," << iqz << ") = "
 				<< setw(25) << setprecision(20) << results[qpt_cs_idx] << ",   " << results[qpt_cs_idx+1] << endl
@@ -2005,7 +2071,7 @@ if ( loc_verb || isinf( results[qpt_cs_idx] ) || isnan( results[qpt_cs_idx] ) ||
 				<< "  --> akr*Zkr-aki*Zki = " << akr*Zkr-aki*Zki << endl
 				<< "  --> akr*Zki+aki*Zkr = " << akr*Zki+aki*Zkr << endl;
 							exit(1);
-		}
+//		}
 	
 			qpt_cs_idx += 2;
 			qlist_idx++;

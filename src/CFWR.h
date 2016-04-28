@@ -119,6 +119,7 @@ class CorrelationFunction
 		double ***** target_pphivar_CFs;
 
 		// needed these to avoid too many trigonometric evaluations
+		double **** osc0, *** osc1, *** osc2, **** osc3;
 		double ** eiqtt, ** eiqxx, ** eiqyy, ** eiqzz;
 	
 		//needed for resonance calculations
@@ -182,12 +183,11 @@ class CorrelationFunction
 		
 		// relative momentum information
 		double * qo_pts, * qs_pts, * ql_pts, * q_pts, * q_axes, * qt_pts, * qx_pts, * qy_pts, * qz_pts;
-		double ** qt_PTdep_pts, ** qx_PTdep_pts, ** qy_PTdep_pts, ** qz_PTdep_pts;
 		double * q_out, * q_side, * q_long;
 		int q1npts, q2npts, q3npts;		//123 indexing allows these to refer to either q[osl]npts or q[xyz]npts
 		double * q1_pts, * q2_pts, * q3_pts;
-		//int iqt0, iqx0, iqy0, iqz0;
-		//vector<vector<int> > sorted_q_pts_list;
+		int iqt0, iqx0, iqy0, iqz0;
+		vector<vector<int> > sorted_q_pts_list;
 		double *** qlist, ** current_qlist_slice;
 		vector<vector<int> > q_axes_and_rays;
 		
@@ -212,7 +212,7 @@ class CorrelationFunction
 		double *** S_p_withweight_array;
 
 		vector<vector<int> > cutoff_FOcells;
-		vector<vector<double> > cutoff_FOcell_vals_C, cutoff_FOcell_vals_S;
+		//vector<vector<double> > cutoff_FOcell_vals_C, cutoff_FOcell_vals_S;
 		vector<double> pc_cutoff_vals, pc_fit_vals;
 		
 		//miscellaneous
@@ -256,6 +256,8 @@ class CorrelationFunction
 
 		void Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int dc_idx);
 		void Set_thermal_target_moments();
+		void form_trig_sign_z(int isurf, int ieta, int iqt, int iqx, int iqy, int iqz, int ii, double * results);
+		void Set_giant_arrays(int iqt, int iqx, int iqy, int iqz);
 		void Cal_dN_dypTdpTdphi(double** SP_p0, double** SP_px, double** SP_py, double** SP_pz, FO_surf* FOsurf_ptr);
 		void Cal_dN_dypTdpTdphi_heap(FO_surf* FOsurf_ptr, int local_pid, double cutoff);
 		void Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, int local_pid);
@@ -287,13 +289,6 @@ class CorrelationFunction
 												double * pphi_CF_slice, double * pphi_CF_slice_term1, double * pphi_CF_slice_term2, double * pphi_CF_slice_term3);
 
 		void Fill_out_pts(double * pointsarray, int numpoints, double max_val, int spacing_type);
-		void Set_q_pTdep_pts(int ipt, double qxw, double qyw, double qzw);
-		void Set_eiqx_with_q_pTdep_pts(int ipt);
-		void Load_eiqx_with_q_pTdep_pts(int ipt);
-		void Dump_phases_to_binary(char direction, int ipt, double ** array, const int nd1, const int nd2);
-		void Load_phases_from_binary(char direction, int ipt, double ** array, const int nd1, const int nd2);
-		void Dump_q_pTdep_pts();
-		void Load_q_pTdep_pts();
 
 		//miscellaneous
 		void Set_ofstream(ofstream& myout);
@@ -312,6 +307,8 @@ class CorrelationFunction
 		void eiqxEdndp3(double ptr, double phir, double * results, int loc_verb = 0);
 		void Edndp3(double ptr, double phir, double * result, int loc_verb = 0);
 		void Set_correlation_function_q_pts();
+		void Set_q_points();
+		void Set_sorted_q_pts_list();
 		void Get_q_points(double qo, double qs, double ql, double KT, double Kphi, double * qgridpts);
 		void Allocate_resonance_running_sum_vectors();
 		void Delete_resonance_running_sum_vectors();
@@ -321,6 +318,8 @@ class CorrelationFunction
 		void Setup_current_daughters_dN_dypTdpTdphi_moments(int n_daughter);
 		void Cleanup_current_daughters_dN_dypTdpTdphi_moments(int n_daughter);
 		void Delete_S_p_withweight_array();
+		void Allocate_osc_arrays(int FOarray_length);
+		void Delete_osc_arrays();
 		void test_interpolator();
 		void R2_Fourier_transform(int ipt, double plane_psi);
 

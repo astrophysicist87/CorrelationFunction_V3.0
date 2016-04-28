@@ -89,7 +89,7 @@ void CorrelationFunction::Cal_correlationfunction()
 	for (int iqy = 0; iqy < qynpts; ++iqy)
 	for (int iqz = 0; iqz < qznpts; ++iqz)
 	{
-		Get_q_points(qx_PTdep_pts[ipt][iqx], qy_PTdep_pts[ipt][iqy], qz_PTdep_pts[ipt][iqz], SPinterp_pT[ipt], SPinterp_pphi[ipphi], q_interp);
+		Get_q_points(qx_pts[iqx], qy_pts[iqy], qz_pts[iqz], SPinterp_pT[ipt], SPinterp_pphi[ipphi], q_interp);
 
 		//returns only projected value automatically if appropriate options are specified!
 		double tmp1 = 0.0, tmp2 = 0.0, tmp2a = 0.0, tmp3 = 0.0;
@@ -148,8 +148,8 @@ void CorrelationFunction::Cal_correlationfunction()
 void CorrelationFunction::Compute_correlationfunction(double * totalresult, double * thermalresult, double * CTresult, double * resonanceresult,
 										int ipt, int ipphi, int iqx, int iqy, int iqz, double qt_interp, int interp_flag /*==0*/)
 {
-	int qidx = binarySearch(qt_PTdep_pts[ipt], qtnpts, qt_interp);
-	double q_min = qt_PTdep_pts[ipt][0] / cos(M_PI / (2.*qtnpts)), q_max = qt_PTdep_pts[ipt][qtnpts-1]/ cos(M_PI / (2.*qtnpts));
+	int qidx = binarySearch(qt_pts, qtnpts, qt_interp);
+	double q_min = qt_pts[0] / cos(M_PI / (2.*qtnpts)), q_max = qt_pts[qtnpts-1]/ cos(M_PI / (2.*qtnpts));
 
 	bool q_point_is_outside_grid = ( qidx == -1 && ( qt_interp < q_min || qt_interp > q_max ) );
 
@@ -195,11 +195,11 @@ void CorrelationFunction::Compute_correlationfunction(double * totalresult, doub
 		else	//if not using Chebyshev nodes in qt-direction, just use straight-up linear(0) or cubic(1) interpolation
 		{
 			*global_out_stream_ptr << "Using cubic interpolation" << endl;
-			//interpolated_result = interpolate1D(qt_PTdep_pts[ipt], C_at_q, qt_interp, qtnpts, 0, true);
-			*totalresult = interpolate1D(qt_PTdep_pts[ipt], C_at_q, qt_interp, qtnpts, 1, false);
-			*thermalresult = interpolate1D(qt_PTdep_pts[ipt], Ct_at_q, qt_interp, qtnpts, 1, false);
-			*CTresult = interpolate1D(qt_PTdep_pts[ipt], Cct_at_q, qt_interp, qtnpts, 1, false);
-			*resonanceresult = interpolate1D(qt_PTdep_pts[ipt], Cr_at_q, qt_interp, qtnpts, 1, false);
+			//interpolated_result = interpolate1D(qt_pts, C_at_q, qt_interp, qtnpts, 0, true);
+			*totalresult = interpolate1D(qt_pts, C_at_q, qt_interp, qtnpts, 1, false);
+			*thermalresult = interpolate1D(qt_pts, Ct_at_q, qt_interp, qtnpts, 1, false);
+			*CTresult = interpolate1D(qt_pts, Cct_at_q, qt_interp, qtnpts, 1, false);
+			*resonanceresult = interpolate1D(qt_pts, Cr_at_q, qt_interp, qtnpts, 1, false);
 		}
 	}
 	else
@@ -218,9 +218,9 @@ void CorrelationFunction::Compute_correlationfunction(double * totalresult, doub
 void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 {
 	//declare needed quantities here
-	double qxmin = 0.9999*qx_PTdep_pts[ipt][0], qxmax = 0.9999*qx_PTdep_pts[ipt][qxnpts-1];
-	double qymin = 0.9999*qy_PTdep_pts[ipt][0], qymax = 0.9999*qy_PTdep_pts[ipt][qynpts-1];
-	double qzmin = 0.9999*qz_PTdep_pts[ipt][0], qzmax = 0.9999*qz_PTdep_pts[ipt][qznpts-1];
+	double qxmin = 0.9999*qx_pts[0], qxmax = 0.9999*qx_pts[qxnpts-1];
+	double qymin = 0.9999*qy_pts[0], qymax = 0.9999*qy_pts[qynpts-1];
+	double qzmin = 0.9999*qz_pts[0], qzmax = 0.9999*qz_pts[qznpts-1];
 
 	double new_Del_qx = (qxmax - qxmin)/(double(new_nqpts-1)+1.e-100);
 	double new_Del_qy = (qymax - qymin)/(double(new_nqpts-1)+1.e-100);
@@ -255,9 +255,9 @@ double CorrelationFunction::interpolate_CF(double *** current_C_slice, double qx
 	//int thermal_or_resonances - 	0: interpolate thermal CF (assuming basically Gaussian)
 	//								1: interpolate resonance contributions (linear near origin, exponential further out)
 
-	int iqx0_loc = binarySearch(qx_PTdep_pts[ipt], qxnpts, qx0, true, true);
-	int iqy0_loc = binarySearch(qy_PTdep_pts[ipt], qynpts, qy0, true, true);
-	int iqz0_loc = binarySearch(qz_PTdep_pts[ipt], qznpts, qz0, true, true);
+	int iqx0_loc = binarySearch(qx_pts, qxnpts, qx0, true, true);
+	int iqy0_loc = binarySearch(qy_pts, qynpts, qy0, true, true);
+	int iqz0_loc = binarySearch(qz_pts, qznpts, qz0, true, true);
 
 	if (iqx0_loc == -1 || iqy0_loc == -1 || iqz0_loc == -1)
 	{
@@ -278,12 +278,12 @@ double CorrelationFunction::interpolate_CF(double *** current_C_slice, double qx
 	double fx1 = current_C_slice[iqx0_loc+1][0][0];
 
 	//interpolate here...
-	double qx_0 = qx_PTdep_pts[ipt][iqx0_loc];
-	double qx_1 = qx_PTdep_pts[ipt][iqx0_loc+1];
-	double qy_0 = qy_PTdep_pts[ipt][iqy0_loc];
-	double qy_1 = qy_PTdep_pts[ipt][iqy0_loc+1];
-	double qz_0 = qz_PTdep_pts[ipt][iqz0_loc];
-	double qz_1 = qz_PTdep_pts[ipt][iqz0_loc+1];
+	double qx_0 = qx_pts[iqx0_loc];
+	double qx_1 = qx_pts[iqx0_loc+1];
+	double qy_0 = qy_pts[iqy0_loc];
+	double qy_1 = qy_pts[iqy0_loc+1];
+	double qz_0 = qz_pts[iqz0_loc];
+	double qz_1 = qz_pts[iqz0_loc+1];
 
 	double fxiyizi = 0.0;
 	if (thermal_or_resonances == 0)
@@ -577,9 +577,9 @@ void CorrelationFunction::get_CF(double * totalresult, double * thermalresult, d
 
 void CorrelationFunction::Fit_Correlationfunction3D(double *** Correl_3D, int ipt, int ipphi, bool fleshing_out_CF /*== true*/)
 {
-	double * q1pts = qx_PTdep_pts[ipt];
-	double * q2pts = qy_PTdep_pts[ipt];
-	double * q3pts = qz_PTdep_pts[ipt];
+	double * q1pts = qx_pts;
+	double * q2pts = qy_pts;
+	double * q3pts = qz_pts;
 	if (fleshing_out_CF)
 	{
 		q1npts = new_nqpts;
@@ -743,9 +743,9 @@ if (i==(q1npts-1)/2 && j==(q2npts-1)/2 && k==(q3npts-1)/2)
 
 void CorrelationFunction::Fit_Correlationfunction3D_withlambda(double *** Correl_3D, int ipt, int ipphi, bool fleshing_out_CF /*== true*/)
 {
-	double * q1pts = qx_PTdep_pts[ipt];
-	double * q2pts = qy_PTdep_pts[ipt];
-	double * q3pts = qz_PTdep_pts[ipt];
+	double * q1pts = qx_pts;
+	double * q2pts = qy_pts;
+	double * q3pts = qz_pts;
 	if (fleshing_out_CF)
 	{
 		q1npts = new_nqpts;

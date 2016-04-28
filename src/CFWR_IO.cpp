@@ -31,98 +31,6 @@ void replace_parentheses(std::string & tempstring)
 	return;
 }
 
-void CorrelationFunction::Dump_q_pTdep_pts()
-{
-	ostringstream filename_stream_t;
-	filename_stream_t << global_path << "/qt_pTdep_pts.dat";
-	ofstream outt(filename_stream_t.str().c_str());
-	ostringstream filename_stream_x;
-	filename_stream_x << global_path << "/qx_pTdep_pts.dat";
-	ofstream outx(filename_stream_x.str().c_str());
-	ostringstream filename_stream_y;
-	filename_stream_y << global_path << "/qy_pTdep_pts.dat";
-	ofstream outy(filename_stream_y.str().c_str());
-	ostringstream filename_stream_z;
-	filename_stream_z << global_path << "/qz_pTdep_pts.dat";
-	ofstream outz(filename_stream_z.str().c_str());
-
-	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-	{
-		for (int iqt = 0; iqt < qtnpts; ++iqt)
-			outt << scientific << setprecision(8) << setw(12) << qt_PTdep_pts[ipt][iqt] << "   ";
-		outt << endl;
-		for (int iqx = 0; iqx < qxnpts; ++iqx)
-			outx << scientific << setprecision(8) << setw(12) << qx_PTdep_pts[ipt][iqx] << "   ";
-		outx << endl;
-		for (int iqy = 0; iqy < qynpts; ++iqy)
-			outy << scientific << setprecision(8) << setw(12) << qy_PTdep_pts[ipt][iqy] << "   ";
-		outy << endl;
-		for (int iqz = 0; iqz < qznpts; ++iqz)
-			outz << scientific << setprecision(8) << setw(12) << qz_PTdep_pts[ipt][iqz] << "   ";
-		outz << endl;
-	}
-
-	outt.close();
-	outx.close();
-	outy.close();
-	outz.close();
-
-	return;
-}
-
-void CorrelationFunction::Load_q_pTdep_pts()
-{
-	ostringstream filename_stream_t;
-	filename_stream_t << global_path << "/qt_pTdep_pts.dat";
-	ifstream in_t(filename_stream_t.str().c_str());
-	ostringstream filename_stream_x;
-	filename_stream_x << global_path << "/qx_pTdep_pts.dat";
-	ifstream in_x(filename_stream_x.str().c_str());
-	ostringstream filename_stream_y;
-	filename_stream_y << global_path << "/qy_pTdep_pts.dat";
-	ifstream in_y(filename_stream_y.str().c_str());
-	ostringstream filename_stream_z;
-	filename_stream_z << global_path << "/qz_pTdep_pts.dat";
-	ifstream in_z(filename_stream_z.str().c_str());
-
-	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-	{
-		qt_PTdep_pts[ipt] = new double [qtnpts];
-		qx_PTdep_pts[ipt] = new double [qxnpts];
-		qy_PTdep_pts[ipt] = new double [qynpts];
-		qz_PTdep_pts[ipt] = new double [qznpts];
-
-		for (int iqt = 0; iqt < qtnpts; ++iqt)
-			in_t >> qt_PTdep_pts[ipt][iqt];
-		for (int iqx = 0; iqx < qxnpts; ++iqx)
-			in_x >> qx_PTdep_pts[ipt][iqx];
-		for (int iqy = 0; iqy < qynpts; ++iqy)
-			in_y >> qy_PTdep_pts[ipt][iqy];
-		for (int iqz = 0; iqz < qznpts; ++iqz)
-			in_z >> qz_PTdep_pts[ipt][iqz];
-
-		int qidx = 0;
-		for (int iqt = 0; iqt < qtnpts; ++iqt)
-		for (int iqx = 0; iqx < qxnpts; ++iqx)
-		for (int iqy = 0; iqy < qynpts; ++iqy)
-		for (int iqz = 0; iqz < qznpts; ++iqz)
-		{
-			qlist[ipt][qidx][0] = qt_PTdep_pts[ipt][iqt];
-			qlist[ipt][qidx][1] = qx_PTdep_pts[ipt][iqx];
-			qlist[ipt][qidx][2] = qy_PTdep_pts[ipt][iqy];
-			qlist[ipt][qidx][3] = qz_PTdep_pts[ipt][iqz];
-			qidx++;
-		}
-	}
-
-	in_t.close();
-	in_x.close();
-	in_y.close();
-	in_z.close();
-
-	return;
-}
-
 //allows possibility of dumping thermal_spectra, spectra, log_spectra, etc...
 void CorrelationFunction::Dump_spectra_array(string output_filename, double *** array_to_dump)
 {
@@ -154,42 +62,6 @@ void CorrelationFunction::Load_spectra_array(string input_filename, double *** a
 		in >> array_to_read[ir][ipT][ipphi];
 
 	in.close();
-}
-
-void CorrelationFunction::Dump_phases_to_binary(char direction, int ipt, double ** array, const int nd1, const int nd2)
-{
-	ostringstream filename_stream;
-	filename_stream << global_path << "/q" << direction << "_pts_ipt_" << ipt << ".bin";
-	ofstream out(filename_stream.str().c_str(), ios::out | ios::binary);
-
-	vector<double> array_copy (nd1*nd2);
-	int ac_idx = 0;
-	for (int i1 = 0; i1 < nd1; ++i1)
-	for (int i2 = 0; i2 < nd2; ++i2)
-		array_copy[ac_idx++] = array[i1][i2];
-
-	out.write(reinterpret_cast<const char*>(&array_copy[0]), array_copy.size()*sizeof(double));
-
-	out.close();
-	return;
-}
-
-void CorrelationFunction::Load_phases_from_binary(char direction, int ipt, double ** array, const int nd1, const int nd2)
-{
-	ostringstream filename_stream;
-	filename_stream << global_path << "/q" << direction << "_pts_ipt_" << ipt << ".bin";
-	ifstream in(filename_stream.str().c_str(), ios::in | ios::binary);
-
-	vector<double> array_copy (nd1*nd2);
-	in.read(reinterpret_cast<char*>(&array_copy[0]), array_copy.size()*sizeof(double));
-	in.close();
-
-	int ac_idx = 0;
-	for (int i1 = 0; i1 < nd1; ++i1)
-	for (int i2 = 0; i2 < nd2; ++i2)
-		array[i1][i2] = array_copy[ac_idx++];
-
-	return;
 }
 
 void CorrelationFunction::Output_results(int folderindex)
@@ -253,11 +125,11 @@ void CorrelationFunction::Output_correlationfunction(bool regulated_CF /*==true*
 	{
 		double ckp = cos_SPinterp_pphi[ipphi], skp = sin_SPinterp_pphi[ipphi];
 		oCorrFunc << scientific << setprecision(8) << setw(12)
-			<< SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   " << qx_PTdep_pts[ipt][iqx] << "   "
-			<< qy_PTdep_pts[ipt][iqy] << "   " << qz_PTdep_pts[ipt][iqz] << "   "
-			<< qx_PTdep_pts[ipt][iqx] * ckp + qy_PTdep_pts[ipt][iqy] * skp << "   "
-			<< -qx_PTdep_pts[ipt][iqx] * skp + qy_PTdep_pts[ipt][iqy] * ckp << "   "
-			<< qz_PTdep_pts[ipt][iqz] << "   "
+			<< SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   " << qx_pts[iqx] << "   "
+			<< qy_pts[iqy] << "   " << qz_pts[iqz] << "   "
+			<< qx_pts[iqx] * ckp + qy_pts[iqy] * skp << "   "
+			<< -qx_pts[iqx] * skp + qy_pts[iqy] * ckp << "   "
+			<< qz_pts[iqz] << "   "
 			<< thermalCFvals[ipt][ipphi][iqx][iqy][iqz] << "   " << crosstermCFvals[ipt][ipphi][iqx][iqy][iqz] << "   " << resonancesCFvals[ipt][ipphi][iqx][iqy][iqz] << "   " << CFvals[ipt][ipphi][iqx][iqy][iqz] << endl;
 	}
 
@@ -297,41 +169,6 @@ void CorrelationFunction::Output_fleshed_out_correlationfunction(int ipt, int ip
 	return;
 }
 
-
-/*void CorrelationFunction::Readin_correlationfunction(int folderindex)
-{
-	ostringstream iCorrFunc_stream;
-	string temp_particle_name = particle_name;
-	replace_parentheses(temp_particle_name);
-	iCorrFunc_stream << global_path << "/correlfunct3D" << "_" << temp_particle_name << ".dat";
-	ifstream iCorrFunc;
-	iCorrFunc.open(iCorrFunc_stream.str().c_str());
-
-	double dummy = 0.0;
-
-	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-	for (int iqx = 0; iqx < qxnpts; ++iqx)
-	for (int iqy = 0; iqy < qynpts; ++iqy)
-	for (int iqz = 0; iqz < qznpts; ++iqz)
-	{
-		iCorrFunc 
-			>> dummy
-			>> dummy
-			>> dummy
-			>> dummy
-			>> dummy
-			>> dummy
-			>> dummy
-			>> dummy
-			>> CFvals[ipt][ipphi][iqx][iqy][iqz];
-	}
-
-	iCorrFunc.close();
-				
-	return;
-}*/
-
 void CorrelationFunction::Readin_results(int folderindex)
 {
 	double dummy;
@@ -356,26 +193,6 @@ void CorrelationFunction::Readin_results(int folderindex)
 
 	return;
 }
-
-// **************************************************
-// THIS FUNCTION NEEDS TO BE CHECKED AND DEBUGGED!!!
-// **************************************************
-/*void CorrelationFunction::Output_all_dN_dypTdpTdphi(int folderindex)
-{
-	ostringstream filename_stream_all_dN_dypTdpTdphi;
-	filename_stream_all_dN_dypTdpTdphi << global_path << "/all_res_dN_dypTdpTdphi_ev" << folderindex << no_df_stem << ".dat";
-	ofstream output_all_dN_dypTdpTdphi(filename_stream_all_dN_dypTdpTdphi.str().c_str());
-	for(int ii = 0; ii < Nparticle; ii++)
-	for(int ipphi = 0; ipphi < n_interp_pphi_pts; ipphi++)
-	{
-		for(int ipt = 0; ipt < n_interp_pT_pts; ipt++)
-			output_all_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12) << dN_dypTdpTdphi_moments[ii][ipt][ipphi][0][0][0][0][0] << "   ";
-		output_all_dN_dypTdpTdphi << endl;
-	}
-	output_all_dN_dypTdpTdphi.close();
-
-	return;
-}*/
 
 void CorrelationFunction::Output_total_target_dN_dypTdpTdphi(int folderindex)
 {
@@ -447,12 +264,8 @@ void CorrelationFunction::Output_total_target_eiqx_dN_dypTdpTdphi(int folderinde
 		double cos_transf_spectra = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
 		double sin_transf_spectra = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
 
-		//output_target_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12)
-		//	<< qt_PTdep_pts[ipt][iqt] << "   " << qx_PTdep_pts[ipt][iqx] << "   " << qy_PTdep_pts[ipt][iqy] << "   " << qz_PTdep_pts[ipt][iqz] << "   "
-		//	<< SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   " << nonFTd_spectra << "   " << cos_transf_spectra << "   " << sin_transf_spectra << "   "
-		//	<< CF << "   " << projected_CF << endl;
 		output_target_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12)
-			<< qt_PTdep_pts[ipt][iqt] << "   " << qx_PTdep_pts[ipt][iqx] << "   " << qy_PTdep_pts[ipt][iqy] << "   " << qz_PTdep_pts[ipt][iqz] << "   "
+			<< qt_pts[iqt] << "   " << qx_pts[iqx] << "   " << qy_pts[iqy] << "   " << qz_pts[iqz] << "   "
 			<< SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   "
 			<< nonFTd_spectra << "   "																								//non-thermal + thermal
 			<< cos_transf_spectra << "   "																							//non-thermal + thermal (cos)
@@ -493,10 +306,10 @@ void CorrelationFunction::Readin_total_target_eiqx_dN_dypTdpTdphi(int folderinde
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 	{
-		//input_target_dN_dypTdpTdphi >> qt_PTdep_pts[ipt][iqt];
-		//input_target_dN_dypTdpTdphi >> qx_PTdep_pts[ipt][iqx];
-		//input_target_dN_dypTdpTdphi >> qy_PTdep_pts[ipt][iqy];
-		//input_target_dN_dypTdpTdphi >> qz_PTdep_pts[ipt][iqz];
+		//input_target_dN_dypTdpTdphi >> qt_pts[iqt];
+		//input_target_dN_dypTdpTdphi >> qx_pts[iqx];
+		//input_target_dN_dypTdpTdphi >> qy_pts[iqy];
+		//input_target_dN_dypTdpTdphi >> qz_pts[iqz];
 		//input_target_dN_dypTdpTdphi >> SPinterp_pT[ipt];
 		//input_target_dN_dypTdpTdphi >> SPinterp_pphi[ipphi];
 		input_target_dN_dypTdpTdphi >> dummy;
@@ -510,7 +323,7 @@ void CorrelationFunction::Readin_total_target_eiqx_dN_dypTdpTdphi(int folderinde
 		input_target_dN_dypTdpTdphi >> current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
 		input_target_dN_dypTdpTdphi >> dummy;
 		/*cout << scientific << setprecision(8) << setw(12)
-			<< qt_PTdep_pts[ipt][iqt] << "   " << qx_PTdep_pts[ipt][iqx] << "   " << qy_PTdep_pts[ipt][iqy] << "   " << qz_PTdep_pts[ipt][iqz] << "   "
+			<< qt_pts[iqt] << "   " << qx_pts[iqx] << "   " << qy_pts[iqy] << "   " << qz_pts[iqz] << "   "
 			<< SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   "
 			<< spectra[target_particle_id][ipt][ipphi] << "   "
 			<< current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0] << "   "

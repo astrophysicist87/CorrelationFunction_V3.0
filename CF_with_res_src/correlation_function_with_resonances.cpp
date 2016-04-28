@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
 	int N_stableparticle;
 	ifstream particletable("/home/plumberg.1/HBTPlumberg/EOS/EOS_particletable.dat");
 	particletable >> N_stableparticle;
-	double** particle_mu = new double* [N_stableparticle];
+	double ** particle_mu = new double * [N_stableparticle];
 	for(int i=0; i<N_stableparticle; i++)
 		particle_mu[i] = new double [FO_length];
 	for(int i=0; i<N_stableparticle; i++)
@@ -184,7 +184,6 @@ int main(int argc, char *argv[])
 	correlation_function.Output_total_target_eiqx_dN_dypTdpTdphi(folderindex);
 	correlation_function.Output_chosen_resonances();
 	correlation_function.Output_resonance_fraction();
-	correlation_function.Output_correlationfunction();
 
 	output << "Finished calculating correlation function with all resonance decays..." << endl;
 
@@ -193,6 +192,7 @@ int main(int argc, char *argv[])
 	{
 		output << "Calculating HBT radii via Gaussian fit method..." << endl;
 		correlation_function.Get_GF_HBTradii(folderindex);	//does outputting of results too
+		correlation_function.Output_correlationfunction();
 		correlation_function.Output_results(folderindex);
 		output << "Finished calculating HBT radii via Gaussian fit method" << endl;
 	}
@@ -208,6 +208,15 @@ int main(int argc, char *argv[])
 			//correlation_function.Output_fleshed_out_correlationfunction(ipt, ipphi);
 		}
 	}
+
+	//do some clean up
+	output << "Cleaning up..." << endl;
+	for(int i = 0; i < N_stableparticle; ++i)
+		delete [] particle_mu[i];
+	delete [] particle_mu;
+
+	delete [] FOsurf_ptr;
+	output << "...finished cleaning up." << endl;
 
 	sw.toc();
 	output << "Finished in " << sw.takeTime() << " sec." << endl;

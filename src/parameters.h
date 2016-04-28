@@ -21,7 +21,7 @@ using namespace std;
 #define DO_ALL_DECAY_CHANNELS		false		// duh
 #define UNZIP_HDF5			false		// utilizes HDF5 software to store large arrays
 #define USE_LAMBDA			true		// fit correlation function with adjustable intercept parameter
-#define USE_EXTRAPOLATION		true		// extrapolates results of CF integrals instead of competing them, false just calculates full integrals (slower)
+#define USE_EXTRAPOLATION		false		// extrapolates results of CF integrals instead of competing them, false just calculates full integrals (slower)
 #define EXTRAPOLATION_METHOD		0		// 0 - GSL polynomial fit
 							// 1 - direct calculation of rational function fit using ratint in Arsenal.* files (numerator and denominator
 							// orders chosen automatically to be n+m+1==number of percentage markers)
@@ -42,7 +42,7 @@ using namespace std;
 #define Q_AXES_AND_RAYS_ONLY		false		// true - only do points along q-axes (only works for odd points right now)
 							// false - do full grid
 #define FIT_WITH_PROJECTED_CFVALS	false		// as opposed to unprojected CFvals...
-#define FLESH_OUT_CF			true		// refines grid via interpolation before fitting
+#define FLESH_OUT_CF			false		// refines grid via interpolation before fitting
 #define REGULATE_CF			false		// true (false) means (don't) try to catch spurious values of projected
 							// or regular CF and replace them with median value in that window
 
@@ -98,10 +98,10 @@ const double init_q = 0.0;
 const int new_nqpts = 51;
 
 //all direction-specific q points information here
-const int qtnpts = 9;
-const int qxnpts = 5;
-const int qynpts = 5;
-const int qznpts = 5;
+const int qtnpts = 3;
+const int qxnpts = 3;
+const int qynpts = 3;
+const int qznpts = 3;
 const double delta_qt = 0.02;
 const double delta_qx = 0.0016;
 const double delta_qy = 0.02;
@@ -120,7 +120,7 @@ const double SP_pT_max = 3.0;
 //parameters for interpolation grid
 //  - polar
 const int n_interp_pT_pts = 15;
-const int n_interp_pphi_pts = 48;
+const int n_interp_pphi_pts = 15;
 const double interp_pT_min = 0.01;
 const double interp_pphi_min = 0.0;
 const double interp_pT_max = 6.0005;
