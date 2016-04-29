@@ -60,12 +60,12 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 
 	Allocate_resonance_running_sum_vectors();
 
-	Flatten_dN_dypTdpTdphi_moments();
-
 	//set these for quick look-up in EdNd3p() routine
 	spec_vals_info = spectra[parent_resonance_particle_id];
 	spec_log_info = log_spectra[parent_resonance_particle_id];
 	spec_sign_info = sign_spectra[parent_resonance_particle_id];
+
+	Flatten_dN_dypTdpTdphi_moments(parent_resonance_particle_id);
 
 	int tmp_parent_monval = all_particles[parent_resonance_particle_id].monval;
 	int tmp_daughter_monval = all_particles[daughter_particle_id].monval;
@@ -305,12 +305,23 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 
 	// clean up
 	Delete_resonance_running_sum_vectors();
+	spectra_resonance_grid_approximator.clear();
+	real_resonance_grid_approximator.clear();
+	imag_resonance_grid_approximator.clear();
 
 	return;
 }
 
-void CorrelationFunction::Flatten_dN_dypTdpTdphi_moments()
+void CorrelationFunction::Flatten_dN_dypTdpTdphi_moments(int parent_resonance_particle_id)
 {
+	const int dim_loc = 2;
+	int npts_loc[dim_loc] = { n_interp_pT_pts, n_interp_pphi_pts };
+	int os[dim_loc] = { n_interp_pT_pts-1, n_interp_pphi_pts-1 };
+	double lls[dim_loc] = { interp_pT_min, interp_pphi_min };
+	double uls[dim_loc] = { interp_pT_max, interp_pphi_max };
+
+	int momidx = 0;
+
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 	{
@@ -322,14 +333,38 @@ void CorrelationFunction::Flatten_dN_dypTdpTdphi_moments()
 		for (int iqx = 0; iqx < qxnpts; ++iqx)
 		for (int iqy = 0; iqy < qynpts; ++iqy)
 		for (int iqz = 0; iqz < qznpts; ++iqz)
-		for (int itrig = 0; itrig < 2; ++itrig)
 		{
-			res_sign_info[ipt][ipphi][qpt_cs_idx] = current_sign_of_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][itrig];
-			res_log_info[ipt][ipphi][qpt_cs_idx] = current_ln_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][itrig];
-			res_moments_info[ipt][ipphi][qpt_cs_idx] = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][itrig];
-			++qpt_cs_idx;
+			for (int itrig = 0; itrig < 2; ++itrig)
+			{
+				res_sign_info[ipt][ipphi][qpt_cs_idx] = current_sign_of_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][itrig];
+				res_log_info[ipt][ipphi][qpt_cs_idx] = current_ln_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][itrig];
+				res_moments_info[ipt][ipphi][qpt_cs_idx] = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][itrig];
+				++qpt_cs_idx;
+			}
+
+			tmp_moments_real[iqt][iqx][iqy][iqz][momidx] = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
+			tmp_moments_imag[iqt][iqx][iqy][iqz][momidx] = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
 		}
+
+		flat_spectra[momidx] = spectra[parent_resonance_particle_id][ipt][ipphi];
+
+		momidx++;
 	}
+
+	for (int iqt = 0; iqt < qtnpts; ++iqt)
+	for (int iqx = 0; iqx < qxnpts; ++iqx)
+	for (int iqy = 0; iqy < qynpts; ++iqy)
+	for (int iqz = 0; iqz < qznpts; ++iqz)
+	{
+		double * tmpreal = tmp_moments_real[iqt][iqx][iqy][iqz];
+		double * tmpimag = tmp_moments_imag[iqt][iqx][iqy][iqz];
+		real_resonance_grid_approximator.push_back( new Chebyshev(tmpreal, npts_loc, os, lls, uls, dim_loc) );
+		imag_resonance_grid_approximator.push_back( new Chebyshev(tmpimag, npts_loc, os, lls, uls, dim_loc) );
+	}
+
+	spectra_resonance_grid_approximator.push_back( new Chebyshev(flat_spectra, npts_loc, os, lls, uls, dim_loc) );
+
+	return;
 }
 
 //End of file

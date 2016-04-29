@@ -413,14 +413,14 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
 		//try just gaussian points...
 		//syntax:
 		//int gauss_quadrature(int order, int kind, double alpha, double beta, double a, double b, double x[], double w[]) 
-		//gauss_quadrature(n_interp_pT_pts, 5, 0.0, 0.0, 0.0, 13.0, SPinterp_pT, SPinterp_pT_wts);	//use this one to agree with iS.e
-		//gauss_quadrature(n_interp_pT_pts, 5, 0.0, 0.0, 0.0, 13.0, SPinterp_pT_public, SPinterp_pT_wts);	//use this one to agree with iS.e
-		gauss_quadrature(n_interp_pT_pts, 1, 0.0, 0.0, 0.0, 4.0, SPinterp_pT, SPinterp_pT_wts);
-		gauss_quadrature(n_interp_pT_pts, 1, 0.0, 0.0, 0.0, 4.0, SPinterp_pT_public, SPinterp_pT_wts);
+		gauss_quadrature(n_interp_pT_pts, 5, 0.0, 0.0, 0.0, 13.0, SPinterp_pT, SPinterp_pT_wts);	//use this one to agree with iS.e
+		gauss_quadrature(n_interp_pT_pts, 5, 0.0, 0.0, 0.0, 13.0, SPinterp_pT_public, SPinterp_pT_wts);	//use this one to agree with iS.e
+		gauss_quadrature(n_interp_pT_pts, 1, 0.0, 0.0, interp_pT_min, interp_pT_max, SPinterp_pT, SPinterp_pT_wts);
+		gauss_quadrature(n_interp_pT_pts, 1, 0.0, 0.0, interp_pT_min, interp_pT_max, SPinterp_pT_public, SPinterp_pT_wts);
 		for(int ipt=0; ipt<n_interp_pT_pts; ipt++)
 		{
-			double del = 0.5 * (4.0 - 0.0);
-			double cen = 0.5 * (4.0 + 0.0);
+			double del = 0.5 * (interp_pT_max - interp_pT_min);
+			double cen = 0.5 * (interp_pT_max + interp_pT_min);
 			SPinterp_pT[ipt] = cen - del * cos( M_PI*(2.*(ipt+1.) - 1.) / (2.*n_interp_pT_pts) );
 			//cout << "PointCheck, pT: " << scientific << setprecision(17) << setw(20) << SPinterp_pT[ipt] << "   " << SPinterp_pT_public[ipt] << endl;
 		}
@@ -1551,46 +1551,6 @@ void CorrelationFunction::Delete_fleshed_out_CF()
 	return;
 }
 
-/*void CorrelationFunction::set_axes_and_rays()
-{
-	vector<int> tmpvec (4, 0);
-
-	//set axes
-	for (int iqt = 0; iqt < qtnpts; ++iqt)
-	{
-		tmpvec[0] = iqt;
-		q_axes_and_rays.push_back(tmpvec);
-	}
-	tmpvec.assign(4, 0);
-	//N.B. - range from 1 since (0,0,0,0) already included
-	for (int iqx = 1; iqx < qxnpts; ++iqx)
-	{
-		tmpvec[1] = iqx;
-		q_axes_and_rays.push_back(tmpvec);
-	}
-	tmpvec.assign(4, 0);
-	for (int iqy = 1; iqy < qynpts; ++iqy)
-	{
-		tmpvec[2] = iqy;
-		q_axes_and_rays.push_back(tmpvec);
-	}
-	tmpvec.assign(4, 0);
-	for (int iqz = 1; iqz < qznpts; ++iqz)
-	{
-		tmpvec[3] = iqz;
-		q_axes_and_rays.push_back(tmpvec);
-	}
-
-	//set rays
-}
-
-bool CorrelationFunction::is_on_axis_or_ray(int iqt, int iqx, int iqy, int iqz)
-{
-	//check if this point is on q-axes
-
-	//otherwise, check if it's on a q-ray (e.g., iqx==iqy)
-}*/
-
 void CorrelationFunction::Edndp3(double ptr, double phir, double * result, int loc_verb /*==0*/)
 {
 	double phi0, phi1;
@@ -1655,6 +1615,8 @@ void CorrelationFunction::Edndp3(double ptr, double phir, double * result, int l
 	//double sign_of_f21 = spec_sign_info[npt][nphim1];
 	//double sign_of_f22 = spec_sign_info[npt][nphi];
 
+	double tmp = 0.0;
+
 	/////////////////////////////////////////////////////////////////
 	// interpolate over pT values first
 	/////////////////////////////////////////////////////////////////
@@ -1704,18 +1666,30 @@ void CorrelationFunction::Edndp3(double ptr, double phir, double * result, int l
 			//if ( loc_verb ) *global_out_stream_ptr << "Chose branch 1Cb!" << endl;
 		}
 		//*******************************************************************************************************************
+		tmp = lin_int(phir-phi0, one_by_pphidiff, f1, f2);
 	}
 	else						// if pT is smaller than PTCHANGE, just use linear interpolation, no matter what
 	{
 		f1 = lin_int(ptr-pT0, one_by_pTdiff, f11, f21);
 		f2 = lin_int(ptr-pT0, one_by_pTdiff, f12, f22);
 		//if ( loc_verb ) *global_out_stream_ptr << "Chose branch 2!" << endl;
+		double Zkrc = 0.0, Zkic = 0.0;
+		Cal_dN_dypTdpTdphi_with_weights_function(current_FOsurf_ptr, current_parent_resonance,
+						ptr, phir, 0.0, 0.0, 0.0, 0.0, &Zkrc, &Zkic);
+		
+		double point[2] = { ptr, phir };
+	
+		double Zkrc2 = (*spectra_resonance_grid_approximator[0]).eval(point);
+	
+		cout << "CHECKSPEC(lin): " << current_parent_resonance << "   " << ptr << "   " << phir << "   " << Zkrc << "   " << Zkrc2 << endl;
+
+		tmp = Zkrc2;
 	}
 				
 	// now, interpolate f1 and f2 over the pphi direction
-	*result += lin_int(phir-phi0, one_by_pphidiff, f1, f2);
+	//*result += lin_int(phir-phi0, one_by_pphidiff, f1, f2);
 	//double tmp = lin_int(phir-phi0, one_by_pphidiff, f1, f2);
-	//*result += tmp;
+	*result += tmp;
 
 /*if ( loc_verb )
 		{
@@ -1832,6 +1806,9 @@ void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, 
 			double aki = arg/(1.+arg*arg);
 
 			double Zkr = 0.0, Zki = 0.0;
+			Cal_dN_dypTdpTdphi_with_weights_function(current_FOsurf_ptr, current_parent_resonance,
+							ptr, phir, qt_pts[iqt], qx_pts[iqx], qy_pts[iqy], qz_pts[iqz],
+							&Zkr, &Zki);
 
 			results[qpt_cs_idx] += akr*Zkr-aki*Zki;
 			results[qpt_cs_idx+1] += akr*Zki+aki*Zkr;
@@ -1930,8 +1907,8 @@ void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, 
 			//--> update the imaginary part of weighted daughter spectra
 			results[qpt_cs_idx+1] += akr*Zki+aki*Zkr;
 
-//if ( loc_verb || isinf( results[qpt_cs_idx] ) || isnan( results[qpt_cs_idx] ) || isinf( results[qpt_cs_idx+1] ) || isnan( results[qpt_cs_idx+1] ) )
-//		{
+if ( loc_verb || isinf( results[qpt_cs_idx] ) || isnan( results[qpt_cs_idx] ) || isinf( results[qpt_cs_idx+1] ) || isnan( results[qpt_cs_idx+1] ) )
+		{
 			*global_out_stream_ptr << "ERROR in eiqxEdndp3(double, double, double*): problems encountered!" << endl
 				<< "results(" << iqt << "," << iqx << "," << iqy << "," << iqz << ") = "
 				<< setw(25) << setprecision(20) << results[qpt_cs_idx] << ",   " << results[qpt_cs_idx+1] << endl
@@ -1960,7 +1937,7 @@ void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, 
 				<< "  --> akr*Zkr-aki*Zki = " << akr*Zkr-aki*Zki << endl
 				<< "  --> akr*Zki+aki*Zkr = " << akr*Zki+aki*Zkr << endl;
 							exit(1);
-//		}
+		}
 	
 			qpt_cs_idx += 2;
 			qlist_idx++;
@@ -2001,48 +1978,32 @@ void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, 
 			// now, interpolate f1 and f2 over the pphi direction
 			double Zki = lin_int(del_phir_phi0, one_by_pphidiff, f1, f2);
 
-			/////////////////////////////////////////////////////
-			// Finally, update results vectors appropriately
-			/////////////////////////////////////////////////////
-			//--> update the real part of weighted daughter spectra
-			results[qpt_cs_idx] += akr*Zkr-aki*Zki;
-			//--> update the imaginary part of weighted daughter spectra
-			results[qpt_cs_idx+1] += akr*Zki+aki*Zkr;
-
 			double Zkrc = 0.0, Zkic = 0.0;
 			Cal_dN_dypTdpTdphi_with_weights_function(current_FOsurf_ptr, current_parent_resonance,
 							ptr, phir, qt_pts[iqt], qx_pts[iqx], qy_pts[iqy], qz_pts[iqz],
 							&Zkrc, &Zkic);
-double tmp_moments_real[n_interp_pT_pts*n_interp_pphi_pts];
-double tmp_moments_imag[n_interp_pT_pts*n_interp_pphi_pts];
-int momidx = 0;
-for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-{
-	tmp_moments_real[momidx] = current_dN_dypTdpTdphi_moments[ipt][ipphi][0][0][0][0][0];
-	tmp_moments_imag[momidx] = current_dN_dypTdpTdphi_moments[ipt][ipphi][0][0][0][0][1];
-	cerr << "GRID: " << ipt << "   " << ipphi << "   " << tmp_moments_real[momidx] << "   " << tmp_moments_imag[momidx] << endl;
-	momidx++;
-}
-			const int dim_loc = 2;
-			int npts_loc[dim_loc] = { n_interp_pT_pts, n_interp_pphi_pts };
-			int os[dim_loc] = { n_interp_pT_pts-1, n_interp_pphi_pts-1 };
-			double lls[dim_loc] = { 0.0, 0.0 };
-			double uls[dim_loc] = { 4.0, 2.0*M_PI };
-			double point[dim_loc] = { ptr, phir };
-
-			Chebyshev cfr(tmp_moments_real, npts_loc, os, lls, uls, dim_loc);
-			Chebyshev cfi(tmp_moments_imag, npts_loc, os, lls, uls, dim_loc);
 	
-			double Zkrc2 = cfr.eval(point);
-			double Zkic2 = cfi.eval(point);
+			double point[2] = { ptr, phir };
+
+			double Zkrc2 = (*real_resonance_grid_approximator[qlist_idx]).eval(point);
+			double Zkic2 = (*imag_resonance_grid_approximator[qlist_idx]).eval(point);
 
 			cout << "CHECK(lin): " << current_parent_resonance << "   " << ptr << "   " << phir << "   " << qt_pts[iqt] << "   " << qx_pts[iqx]
 					<< "   " << qy_pts[iqy] << "   " << qz_pts[iqz] << "   "
 					<< Zkr << "   " << Zki << "   " << Zkrc << "   " << Zkic << "   " << Zkrc2 << "   " << Zkic2 << endl;
 
-//if ( loc_verb || isinf( results[qpt_cs_idx] ) || isnan( results[qpt_cs_idx] ) || isinf( results[qpt_cs_idx+1] ) || isnan( results[qpt_cs_idx+1] ) )
-//		{
+			/////////////////////////////////////////////////////
+			// Finally, update results vectors appropriately
+			/////////////////////////////////////////////////////
+			//--> update the real part of weighted daughter spectra
+			//results[qpt_cs_idx] += akr*Zkr-aki*Zki;
+			results[qpt_cs_idx] += akr*Zkrc2-aki*Zkic2;
+			//--> update the imaginary part of weighted daughter spectra
+			//results[qpt_cs_idx+1] += akr*Zki+aki*Zkr;
+			results[qpt_cs_idx+1] += akr*Zkic2+aki*Zkrc2;
+
+if ( loc_verb || isinf( results[qpt_cs_idx] ) || isnan( results[qpt_cs_idx] ) || isinf( results[qpt_cs_idx+1] ) || isnan( results[qpt_cs_idx+1] ) )
+		{
 			*global_out_stream_ptr << "ERROR in eiqxEdndp3(double, double, double*): problems encountered!" << endl
 				<< "results(" << iqt << "," << iqx << "," << iqy << "," << iqz << ") = "
 				<< setw(25) << setprecision(20) << results[qpt_cs_idx] << ",   " << results[qpt_cs_idx+1] << endl
@@ -2071,7 +2032,7 @@ for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 				<< "  --> akr*Zkr-aki*Zki = " << akr*Zkr-aki*Zki << endl
 				<< "  --> akr*Zki+aki*Zkr = " << akr*Zki+aki*Zkr << endl;
 							exit(1);
-//		}
+		}
 	
 			qpt_cs_idx += 2;
 			qlist_idx++;

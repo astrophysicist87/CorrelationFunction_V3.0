@@ -28,6 +28,7 @@
 #include "parameters.h"
 #include "Arsenal.h"
 #include "gauss_quadrature.h"
+#include "chebyshev.h"
 
 using namespace std;
 
@@ -156,6 +157,14 @@ class CorrelationFunction
 		//spatial rapidity grid
 		double * eta_s, * ch_eta_s, * sh_eta_s, * eta_s_weight;
 
+		//NEW grid for doing Chebyshev interpolation of resonance integrals!
+		vector<Chebyshev*> spectra_resonance_grid_approximator;
+		vector<Chebyshev*> real_resonance_grid_approximator;
+		vector<Chebyshev*> imag_resonance_grid_approximator;
+		double flat_spectra[n_interp_pT_pts*n_interp_pphi_pts];
+		double tmp_moments_real[qtnpts][qxnpts][qynpts][qznpts][n_interp_pT_pts*n_interp_pphi_pts];
+		double tmp_moments_imag[qtnpts][qxnpts][qynpts][qznpts][n_interp_pT_pts*n_interp_pphi_pts];
+
 		//points and weights for resonance integrals
 		int n_zeta_pts, n_v_pts, n_s_pts;
 		double v_min, v_max, zeta_min, zeta_max, s_min, s_max;
@@ -265,7 +274,7 @@ class CorrelationFunction
 		void Cal_dN_dypTdpTdphi_with_weights_function(FO_surf* FOsurf_ptr, int local_pid, double pT, double pphi,
 												double qt, double qx, double qy, double qz, double * cosqx_dN_dypTdpTdphi, double * sinqx_dN_dypTdpTdphi);
 		void Do_resonance_integrals(int iKT, int iKphi, int dc_idx);
-		void Flatten_dN_dypTdpTdphi_moments();
+		void Flatten_dN_dypTdpTdphi_moments(int parent_resonance_particle_id);
 		void Set_current_daughter_info(int dc_idx, int daughter_idx);
 		void Set_current_particle_info(int dc_idx);
 		void Set_target_pphiavgd_CFs();
@@ -306,6 +315,8 @@ class CorrelationFunction
 		int list_daughters(int parent_resonance_index, set<int> * daughter_resonance_indices_ptr, particle_info * particle, int Nparticle);
 		void eiqxEdndp3(double ptr, double phir, double * results, int loc_verb = 0);
 		void Edndp3(double ptr, double phir, double * result, int loc_verb = 0);
+		void eiqxEdndp3_v2(double ptr, double phir, double * results, int loc_verb = 0);
+		void Edndp3_v2(double ptr, double phir, double * result, int loc_verb = 0);
 		void Set_correlation_function_q_pts();
 		void Set_q_points();
 		void Set_sorted_q_pts_list();

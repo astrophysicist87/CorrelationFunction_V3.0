@@ -242,12 +242,6 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 	}
 	// end section to compute all decays
 
-//if (1)
-//{
-	//Close_resonance_HDF_array();
-//	return;
-//}
-
 	// section to finally get correlation function
 	correlation_function_calculation:
 		// Now, with all resonance contributions to correlation function computed, do the actual calculation
@@ -1095,14 +1089,14 @@ pc_cutoff_vals.resize( number_of_percentage_markers );
 	}		// end of pt loop
 	*global_out_stream_ptr << "\t\t\t*** Took total of " << sw3.printTime() << " seconds on ordering and copying." << endl;
 
-	int ptpphi_idx = 0;
+	/*int ptpphi_idx = 0;
 	for(int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 	for(int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 	{
 		for (int iptpphi = 0; iptpphi < cutoff_FOcells[0].size(); ++iptpphi)
 			cerr << "cutoff_FOcells[" << ptpphi_idx << "][" << iptpphi << "] = " << cutoff_FOcells[ptpphi_idx][iptpphi] << endl;
 		ptpphi_idx++;
-	}
+	}*/
 
 	cerr << endl << endl;
 	//cerr << "cutoff_FOcells[0].size() = " << cutoff_FOcells[0].size() << endl;

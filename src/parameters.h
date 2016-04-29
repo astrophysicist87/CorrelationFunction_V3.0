@@ -7,7 +7,7 @@
 
 using namespace std;
 
-#define USE_EXACT			false
+#define USE_EXACT			true
 #define SYMMETRIC_PT_PTS 		0		// chooses whether or not to use gaussian spacing or symmetric spacing for pt points
 #define UNIFORM_SPACING			false		// specifies uniform or non-uniform grid spacing for interpolation
 #define ASSUME_ETA_SYMMETRIC 		1		// 1 means integrate only over eta_s = 0..eta_s_max, and multiply by 2 or 0 to speed up calculations
@@ -83,9 +83,9 @@ static double usr_def_pc_markers[UDPMsize] = {
 static double usr_def_pc_markers_thinned[UDPMTsize] = { 0.00, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90 };
 
 //phase space integral info
-const int s_npts = 12;
-const int v_npts = 12;
-const int zeta_npts = 12;
+const int s_npts = 8;
+const int v_npts = 8;
+const int zeta_npts = 8;
 
 //relative momentum information
 const int qonpts = 11;
@@ -98,10 +98,10 @@ const double init_q = 0.0;
 const int new_nqpts = 51;
 
 //all direction-specific q points information here
-const int qtnpts = 3;
-const int qxnpts = 3;
-const int qynpts = 3;
-const int qznpts = 3;
+const int qtnpts = 1;
+const int qxnpts = 1;
+const int qynpts = 1;
+const int qznpts = 1;
 const double delta_qt = 0.02;
 const double delta_qx = 0.0016;
 const double delta_qy = 0.02;
@@ -120,10 +120,10 @@ const double SP_pT_max = 3.0;
 //parameters for interpolation grid
 //  - polar
 const int n_interp_pT_pts = 15;
-const int n_interp_pphi_pts = 15;
-const double interp_pT_min = 0.01;
+const int n_interp_pphi_pts = 48;
+const double interp_pT_min = 0.0;
 const double interp_pphi_min = 0.0;
-const double interp_pT_max = 6.0005;
+const double interp_pT_max = 4.0;
 const double interp_pphi_max = 2.*M_PI;
 const double Del2_pT = (interp_pT_max - interp_pT_min) / (double)(n_interp_pT_pts-1);
 const double Del2_pphi = (interp_pphi_max - interp_pphi_min) / (double)(n_interp_pphi_pts-1);

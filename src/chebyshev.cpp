@@ -20,6 +20,11 @@ Chebyshev::Chebyshev(double * fpts_in, int * numbers_of_points_in, int * orders_
 	{
 		numbers_of_points[idim] = numbers_of_points_in[idim];
 		orders[idim] = orders_in[idim];
+		if (1+orders[idim] != numbers_of_points[idim])	//only order of interpolation currently supported
+		{
+			cerr << "Warning: falling back to orders[" << idim << "] = numbers_of_points[" << idim << "] - 1 = " << numbers_of_points[idim] - 1 << endl;
+			orders[idim] = numbers_of_points[idim] - 1;
+		}
 		lower_limits[idim] = lower_limits_in[idim];
 		upper_limits[idim] = upper_limits_in[idim];
 	}
@@ -51,7 +56,7 @@ Chebyshev::~Chebyshev()
 	delete [] lower_limits;
 	delete [] upper_limits;
 
-	for (int ic = 0; ic <= total_coeffs_length; ++ic)
+	for (int ic = 0; ic < total_coeffs_length; ++ic)
 		delete [] coeffs_indices[ic];
 
 	for (int ifpt = 0; ifpt < total_fpts_length; ++ifpt)
@@ -118,10 +123,10 @@ void Chebyshev::get_indices(int n, int total_dims_size, int * dims, int * indice
 void Chebyshev::set_coeffs_indices(int total_coeffs_length)
 {
     coeffs_indices = new int * [total_coeffs_length];
-    for (int ic = 0; ic <= total_coeffs_length; ++ic)
+	for (int ic = 0; ic < total_coeffs_length; ++ic)
     {
         coeffs_indices[ic] = new int [dimension];
-        get_indices(dimension, total_coeffs_length, orders, coeffs_indices[ic], ic);
+        get_indices(dimension, total_coeffs_length, numbers_of_points, coeffs_indices[ic], ic);
     }
     return;
 }
@@ -141,7 +146,7 @@ void Chebyshev::set_total_coeffs_length()
 {
     total_coeffs_length = 1;
     for (int idim = 0; idim < dimension; ++idim)
-        total_coeffs_length *= orders[idim];
+        total_coeffs_length *= (1 + orders[idim]);
 	return;
 }
 
@@ -162,10 +167,11 @@ void inline debugger(int cln, const char* cfn)
 
 void Chebyshev::get_Chebyshev_coefficients()
 {
-    double ** nodes = new double * [dimension];
-    double ** adjnodes = new double * [dimension];
+    double ** nodes = new double * [dimension];		//x_k, k=1..m
+    double ** adjnodes = new double * [dimension];	//z_k
     double *** Tpts = new double ** [dimension];
 
+	//for each dimension, set number of nodes and order of interpolation in that dimension
     for (int idim = 0; idim < dimension; ++idim)
     {
         int current_number_of_points = numbers_of_points[idim];
@@ -186,7 +192,8 @@ void Chebyshev::get_Chebyshev_coefficients()
     set_coeffs_indices(total_coeffs_length);
     set_ifpt_indices(total_fpts_length);
 
-    for (int ic = 0; ic <= total_coeffs_length; ++ic)
+	//compute the coefficients (a_i) here...
+    for (int ic = 0; ic < total_coeffs_length; ++ic)
     {
         double num = 0.0;
         for (int ifpt = 0; ifpt < total_fpts_length; ++ifpt)
@@ -219,13 +226,14 @@ void Chebyshev::get_Chebyshev_coefficients()
 
 double Chebyshev::eval(double * p)
 {
+
 	//p is point at which to evaluate approximating polynomial
 	double * unadj_p = new double [dimension];	//the unadjusted point
 	for (int idim = 0; idim < dimension; ++idim)
 		unadj_p[idim] = 2.0 * ((p[idim] - lower_limits[idim]) / (upper_limits[idim] - lower_limits[idim])) - 1.0;
 
 	double result = 0.0;
-	for (int ic = 0; ic <= total_coeffs_length; ++ic)
+	for (int ic = 0; ic < total_coeffs_length; ++ic)
 	{
 		double prod = 1.0;
 		for (int idim = 0; idim < dimension; ++idim)
