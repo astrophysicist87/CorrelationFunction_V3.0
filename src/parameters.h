@@ -7,9 +7,7 @@
 
 using namespace std;
 
-#define USE_EXACT			true
-#define SYMMETRIC_PT_PTS 		0		// chooses whether or not to use gaussian spacing or symmetric spacing for pt points
-#define UNIFORM_SPACING			false		// specifies uniform or non-uniform grid spacing for interpolation
+#define USE_EXACT			false
 #define ASSUME_ETA_SYMMETRIC 		1		// 1 means integrate only over eta_s = 0..eta_s_max, and multiply by 2 or 0 to speed up calculations
 							// 0 means just integrate over given range of eta_s without worrying about symmetry
 #define GROUPING_PARTICLES 		0		// set to 1 to perform calculations for similar particles together
@@ -83,9 +81,9 @@ static double usr_def_pc_markers[UDPMsize] = {
 static double usr_def_pc_markers_thinned[UDPMTsize] = { 0.00, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90 };
 
 //phase space integral info
-const int s_npts = 8;
-const int v_npts = 8;
-const int zeta_npts = 8;
+const int s_npts = 12;
+const int v_npts = 12;
+const int zeta_npts = 12;
 
 //relative momentum information
 const int qonpts = 11;
