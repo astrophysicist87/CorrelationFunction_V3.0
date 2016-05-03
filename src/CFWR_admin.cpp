@@ -262,18 +262,14 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
 		}
 	}
 
-	qlist = new double ** [n_interp_pT_pts];
-	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-	{
-		int qidx = 0;
-		qlist[ipt] = new double * [qtnpts*qxnpts*qynpts*qznpts];
-		for (int iqt = 0; iqt < qtnpts; ++iqt)
-		for (int iqx = 0; iqx < qxnpts; ++iqx)
-		for (int iqy = 0; iqy < qynpts; ++iqy)
-		for (int iqz = 0; iqz < qznpts; ++iqz)
-			qlist[ipt][qidx++] = new double [4];
-	}
 	int qidx = 0;
+	qlist = new double * [qtnpts*qxnpts*qynpts*qznpts];
+	for (int iqt = 0; iqt < qtnpts; ++iqt)
+	for (int iqx = 0; iqx < qxnpts; ++iqx)
+	for (int iqy = 0; iqy < qynpts; ++iqy)
+	for (int iqz = 0; iqz < qznpts; ++iqz)
+		qlist[qidx++] = new double [4];
+	qidx = 0;
 	current_qlist_slice = new double * [qtnpts*qxnpts*qynpts*qznpts];
 	for (int iqt = 0; iqt < qtnpts; ++iqt)
 	for (int iqx = 0; iqx < qxnpts; ++iqx)
@@ -347,7 +343,7 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
 		{
 			correlator_minus_one_cutoff_norms[ipT][ipphi] = new int [4];
 			for (int ii = 0; ii < 4; ++ii)
-				correlator_minus_one_cutoff_norms[ipT][ipphi][ii] = qtnpts*qtnpts+qxnpts*qxnpts+qynpts*qynpts+qznpts*qznpts;
+				correlator_minus_one_cutoff_norms[ipT][ipphi][ii] = qtnpts*qtnpts + qxnpts*qxnpts + qynpts*qynpts + qznpts*qznpts;
 				// i.e., something larger than maximum q-array ranges, only made smaller if correlator cutoff threshhold reached, making large q-values redundant
 			number_of_FOcells_above_cutoff_array[ipT][ipphi] = 0;
 			current_q_space_cutoff[ipT][ipphi] = 0.0;
@@ -1030,51 +1026,39 @@ void CorrelationFunction::Set_q_points()
 	qx_pts = new double [qxnpts];
 	qy_pts = new double [qynpts];
 	qz_pts = new double [qznpts];
+
+	Fill_out_pts(qt_pts, qtnpts, -init_qt, QT_POINTS_SPACING);
+	Fill_out_pts(qx_pts, qxnpts, -init_qx, QX_POINTS_SPACING);
+	Fill_out_pts(qy_pts, qynpts, -init_qy, QY_POINTS_SPACING);
+	Fill_out_pts(qz_pts, qznpts, -init_qz, QZ_POINTS_SPACING);
+
 	for (int iqt = 0; iqt < qtnpts; ++iqt)
-	{
-		qt_pts[iqt] = init_qt + (double)iqt * delta_qt;
-		if (abs(qt_pts[iqt]) < 1.e-15)
+		if (abs(qt_pts[iqt]) < 1.e-10)
 			iqt0 = iqt;
-	}
 	for (int iqx = 0; iqx < qxnpts; ++iqx)
-	{
-		qx_pts[iqx] = init_qx + (double)iqx * delta_qx;
-		if (abs(qx_pts[iqx]) < 1.e-15)
+		if (abs(qx_pts[iqx]) < 1.e-10)
 			iqx0 = iqx;
-	}
 	for (int iqy = 0; iqy < qynpts; ++iqy)
-	{
-		qy_pts[iqy] = init_qy + (double)iqy * delta_qy;
-		if (abs(qy_pts[iqy]) < 1.e-15)
+		if (abs(qy_pts[iqy]) < 1.e-10)
 			iqy0 = iqy;
-	}
 	for (int iqz = 0; iqz < qznpts; ++iqz)
-	{
-		qz_pts[iqz] = init_qz + (double)iqz * delta_qz;
-		if (abs(qz_pts[iqz]) < 1.e-15)
+		if (abs(qz_pts[iqz]) < 1.e-10)
 			iqz0 = iqz;
-	}
 
 	cerr << "Output iq*0 = " << iqt0 << "   " << iqx0 << "   " << iqy0 << "   " << iqz0 << endl;
 
-	return;
-}
-
-// returns points in q-space for computing weighted spectra grid corresponding to to given q and K choices
-// weighted spectra grid thus needs to be interpolated at point returned in qgridpts
-void CorrelationFunction::Get_q_points(double q1, double q2, double q3, double pT, double pphi, double * qgridpts)
-{
-	double mtarget = all_particles[target_particle_id].mass;
-	double xi2 = mtarget*mtarget + pT*pT + 0.25*(q1*q1 + q2*q2 + q3*q3);
-	double ckp = cos(pphi), skp = sin(pphi);
-
-	double qo = ckp * q1 + skp * q2;
-		
-	// set qpts at which to interpolate spectra
-	qgridpts[0] = sqrt(xi2 + qo*pT) - sqrt(xi2 - qo*pT);	//set qt component
-	qgridpts[1] = q1;										//set qx component
-	qgridpts[2] = q2;										//set qy component
-	qgridpts[3] = q3;										//set qz component, since qz = ql
+	int qidx = 0;
+	for (int iqt = 0; iqt < qtnpts; ++iqt)
+	for (int iqx = 0; iqx < qxnpts; ++iqx)
+	for (int iqy = 0; iqy < qynpts; ++iqy)
+	for (int iqz = 0; iqz < qznpts; ++iqz)
+	{
+		qlist[qidx][0] = qt_pts[iqt];
+		qlist[qidx][1] = qx_pts[iqx];
+		qlist[qidx][2] = qy_pts[iqy];
+		qlist[qidx][3] = qz_pts[iqz];
+		qidx++;
+	}
 
 	return;
 }
@@ -1117,6 +1101,25 @@ void CorrelationFunction::Set_sorted_q_pts_list()
 			cout << sorted_q_pts_list[iq][iqmu] << "   ";
 		cout << endl;
 	}
+
+	return;
+}
+
+// returns points in q-space for computing weighted spectra grid corresponding to to given q and K choices
+// weighted spectra grid thus needs to be interpolated at point returned in qgridpts
+void CorrelationFunction::Get_q_points(double q1, double q2, double q3, double pT, double pphi, double * qgridpts)
+{
+	double mtarget = all_particles[target_particle_id].mass;
+	double xi2 = mtarget*mtarget + pT*pT + 0.25*(q1*q1 + q2*q2 + q3*q3);
+	double ckp = cos(pphi), skp = sin(pphi);
+
+	double qo = ckp * q1 + skp * q2;
+		
+	// set qpts at which to interpolate spectra
+	qgridpts[0] = sqrt(xi2 + qo*pT) - sqrt(xi2 - qo*pT);	//set qt component
+	qgridpts[1] = q1;										//set qx component
+	qgridpts[2] = q2;										//set qy component
+	qgridpts[3] = q3;										//set qz component, since qz = ql
 
 	return;
 }

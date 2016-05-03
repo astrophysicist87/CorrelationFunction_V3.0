@@ -197,7 +197,7 @@ class CorrelationFunction
 		double * q1_pts, * q2_pts, * q3_pts;
 		int iqt0, iqx0, iqy0, iqz0;
 		vector<vector<int> > sorted_q_pts_list;
-		double *** qlist, ** current_qlist_slice;
+		double ** qlist, ** current_qlist_slice;
 		vector<vector<int> > q_axes_and_rays;
 		
 		//store correlation functions

@@ -1089,21 +1089,6 @@ pc_cutoff_vals.resize( number_of_percentage_markers );
 	}		// end of pt loop
 	*global_out_stream_ptr << "\t\t\t*** Took total of " << sw3.printTime() << " seconds on ordering and copying." << endl;
 
-	/*int ptpphi_idx = 0;
-	for(int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-	for(int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-	{
-		for (int iptpphi = 0; iptpphi < cutoff_FOcells[0].size(); ++iptpphi)
-			cerr << "cutoff_FOcells[" << ptpphi_idx << "][" << iptpphi << "] = " << cutoff_FOcells[ptpphi_idx][iptpphi] << endl;
-		ptpphi_idx++;
-	}*/
-
-	cerr << endl << endl;
-	//cerr << "cutoff_FOcells[0].size() = " << cutoff_FOcells[0].size() << endl;
-	//cerr << "Working with the following %-age cutoffs:" << endl;
-	//for (int ii = 0; ii < number_of_percentage_markers; ++ii)
-	//	cerr << ii << "   " << 100.0 * pc_cutoff_vals[ii] << "   " << cutoff_FOcells[0][ii] << " of " << number_of_FOcells_above_cutoff_array[0][0] << endl;
-
 	pc_fit_vals = pc_cutoff_vals;
 	pc_fit_vals.erase( pc_fit_vals.begin() );	//drop the 0th entry, which isn't used in fitting
 
@@ -1135,7 +1120,7 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 
 	for (int iq = 0; iq < sorted_q_pts_list.size(); ++iq)
 	{	
-//		*global_out_stream_ptr << "Working on (iqt, iqx, iqy, iqz) = (" << iqt << ", " << iqx << ", " << iqy << ", " << iqz << ") DIRECTLY..." << endl;
+		//*global_out_stream_ptr << "Working on (iqt, iqx, iqy, iqz) = (" << iqt << ", " << iqx << ", " << iqy << ", " << iqz << ") DIRECTLY..." << endl;
 		vector<int> SQPL = sorted_q_pts_list[iq];
 		int iqt = SQPL[0];
 		int iqx = SQPL[1];
@@ -1218,6 +1203,7 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 			}	//end of pphi-loop
 		}		//end of pt-loop
 	
+		//update cutoffs for correlation function calculation
 		int iidx = 0;
 		for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)

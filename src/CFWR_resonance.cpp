@@ -73,6 +73,7 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 	int tmp_daughter_monval = all_particles[daughter_particle_id].monval;
 	n_body = current_reso_nbody;
 	current_parent_resonance = parent_resonance_particle_id;
+	current_qlist_slice = qlist;
 
 	local_verbose = 0;
 
@@ -91,7 +92,7 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 			double local_pphi = SPinterp_pphi[ipphi];
 			current_ipt = ipt;
 			current_ipphi = ipphi;
-			current_qlist_slice = qlist[ipt];
+			//current_qlist_slice = qlist[ipt];
 			Zero_resonance_running_sum_vector(ssum_vec);
 			Zero_resonance_running_sum_vector(vsum_vec);
 			Zero_resonance_running_sum_vector(zetasum_vec);
@@ -202,7 +203,7 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 			double local_pphi = SPinterp_pphi[ipphi];
 			current_ipt = ipt;
 			current_ipphi = ipphi;
-			current_qlist_slice = qlist[ipt];
+			//current_qlist_slice = qlist[ipt];
 			Zero_resonance_running_sum_vector(ssum_vec);
 			Zero_resonance_running_sum_vector(vsum_vec);
 			Zero_resonance_running_sum_vector(zetasum_vec);
