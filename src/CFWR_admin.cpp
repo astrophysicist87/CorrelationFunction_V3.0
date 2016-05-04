@@ -989,9 +989,9 @@ void CorrelationFunction::Set_correlation_function_q_pts()
 	q2npts = qynpts;
 	q3npts = qznpts;
 
-	qx_pts = new double [qxnpts];
-	qy_pts = new double [qynpts];
-	qz_pts = new double [qznpts];
+	//qx_pts = new double [qxnpts];
+	//qy_pts = new double [qynpts];
+	//qz_pts = new double [qznpts];
 	
 	// initialize error matrix
 	Correl_3D_err = new double ** [qxnpts];
