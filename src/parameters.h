@@ -19,7 +19,7 @@ using namespace std;
 #define DO_ALL_DECAY_CHANNELS		false		// duh
 #define UNZIP_HDF5			false		// utilizes HDF5 software to store large arrays
 #define USE_LAMBDA			true		// fit correlation function with adjustable intercept parameter
-#define USE_EXTRAPOLATION		false		// extrapolates results of CF integrals instead of competing them, false just calculates full integrals (slower)
+#define USE_EXTRAPOLATION		true		// extrapolates results of CF integrals instead of competing them, false just calculates full integrals (slower)
 #define EXTRAPOLATION_METHOD		0		// 0 - GSL polynomial fit
 							// 1 - direct calculation of rational function fit using ratint in Arsenal.* files (numerator and denominator
 							// orders chosen automatically to be n+m+1==number of percentage markers)
@@ -74,10 +74,22 @@ const int rational_function_numerator_order = 3;
 const int rational_function_denominator_order = 4;
 const int UDPMsize = 15;
 const int UDPMTsize = 10;
+//static double usr_def_pc_markers[UDPMsize] = {
+//					0.00, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90,
+//					0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98
+//				};
 static double usr_def_pc_markers[UDPMsize] = {
-					0.00, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90,
-					0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98
+					0.00, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 
+					0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95
 				};
+//static double usr_def_pc_markers[UDPMsize] = {
+//					0.00, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72,
+//					0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80
+//				};
+//static double usr_def_pc_markers[UDPMsize] = {
+//					0.00, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82,
+//					0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90
+//				};
 static double usr_def_pc_markers_thinned[UDPMTsize] = { 0.00, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90 };
 
 //phase space integral info
@@ -96,14 +108,14 @@ const double init_q = 0.0;
 const int new_nqpts = 51;
 
 //all direction-specific q points information here
-const int qtnpts = 1;
-const int qxnpts = 1;
-const int qynpts = 1;
-const int qznpts = 1;
+const int qtnpts = 9;
+const int qxnpts = 5;
+const int qynpts = 5;
+const int qznpts = 5;
 const double delta_qt = 0.02;
-const double delta_qx = 0.0016;
+const double delta_qx = 0.02;
 const double delta_qy = 0.02;
-const double delta_qz = 0.02;
+const double delta_qz = 0.01;
 const double init_qt = -0.5*double(qtnpts-1)*delta_qt;
 const double init_qx = -0.5*double(qxnpts-1)*delta_qx;
 const double init_qy = -0.5*double(qynpts-1)*delta_qy;
@@ -118,7 +130,7 @@ const double SP_pT_max = 3.0;
 //parameters for interpolation grid
 //  - polar
 const int n_interp_pT_pts = 15;
-const int n_interp_pphi_pts = 48;
+const int n_interp_pphi_pts = 15;
 const double interp_pT_min = 0.0;
 const double interp_pphi_min = 0.0;
 const double interp_pT_max = 4.0;
@@ -128,7 +140,7 @@ const double Del2_pphi = (interp_pphi_max - interp_pphi_min) / (double)(n_interp
 
 //correlation function info
 const int corrfuncdim = 1;
-const bool lambdaflag = true;
+const bool lambdaflag = USE_LAMBDA;
 const double correlator_minus_one_cutoff = 0.0;		//zero means all calculations happen as usual
 
 //pair momentum info

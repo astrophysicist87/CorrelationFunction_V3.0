@@ -210,7 +210,6 @@ void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
 					continue;
 
 				Set_current_daughter_info(idc, idc_DI);
-				//Load_daughter_spectra_for_decay_channel(decay_channels[idc-1].resonance_particle_id);
 				Do_resonance_integrals(current_resonance_particle_id, daughter_resonance_particle_id, idc);
 			}
 	

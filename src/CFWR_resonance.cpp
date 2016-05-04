@@ -73,7 +73,6 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 	int tmp_daughter_monval = all_particles[daughter_particle_id].monval;
 	n_body = current_reso_nbody;
 	current_parent_resonance = parent_resonance_particle_id;
-	current_qlist_slice = qlist;
 
 	local_verbose = 0;
 
@@ -92,7 +91,6 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 			double local_pphi = SPinterp_pphi[ipphi];
 			current_ipt = ipt;
 			current_ipphi = ipphi;
-			//current_qlist_slice = qlist[ipt];
 			Zero_resonance_running_sum_vector(ssum_vec);
 			Zero_resonance_running_sum_vector(vsum_vec);
 			Zero_resonance_running_sum_vector(zetasum_vec);
@@ -203,7 +201,6 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 			double local_pphi = SPinterp_pphi[ipphi];
 			current_ipt = ipt;
 			current_ipphi = ipphi;
-			//current_qlist_slice = qlist[ipt];
 			Zero_resonance_running_sum_vector(ssum_vec);
 			Zero_resonance_running_sum_vector(vsum_vec);
 			Zero_resonance_running_sum_vector(zetasum_vec);
@@ -308,6 +305,14 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 
 	// clean up
 	Delete_resonance_running_sum_vectors();
+
+	for (int it = 0; it < (int)spectra_resonance_grid_approximator.size(); ++it)
+		delete [] spectra_resonance_grid_approximator[it];
+	for (int it = 0; it < (int)real_resonance_grid_approximator.size(); ++it)
+		delete [] real_resonance_grid_approximator[it];
+	for (int it = 0; it < (int)imag_resonance_grid_approximator.size(); ++it)
+		delete [] imag_resonance_grid_approximator[it];
+
 	spectra_resonance_grid_approximator.clear();
 	real_resonance_grid_approximator.clear();
 	imag_resonance_grid_approximator.clear();
@@ -494,7 +499,7 @@ void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, 
 		for (int iqy = 0; iqy < qynpts; ++iqy)
 		for (int iqz = 0; iqz < qznpts; ++iqz)
 		{
-			double arg = one_by_Gamma_Mres * dot_four_vectors(current_qlist_slice[qlist_idx], currentPpm);
+			double arg = one_by_Gamma_Mres * dot_four_vectors(qlist[qlist_idx], currentPpm);
 			double akr = 1./(1.+arg*arg);
 			double aki = arg/(1.+arg*arg);
 
@@ -580,7 +585,7 @@ void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, 
 		for (int iqy = 0; iqy < qynpts; ++iqy)
 		for (int iqz = 0; iqz < qznpts; ++iqz)
 		{
-			double arg = one_by_Gamma_Mres * dot_four_vectors(current_qlist_slice[qlist_idx], currentPpm);
+			double arg = one_by_Gamma_Mres * dot_four_vectors(qlist[qlist_idx], currentPpm);
 			double akr = 1./(1.+arg*arg);
 			double aki = arg/(1.+arg*arg);
 
@@ -711,7 +716,7 @@ void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, 
 		for (int iqy = 0; iqy < qynpts; ++iqy)
 		for (int iqz = 0; iqz < qznpts; ++iqz)
 		{
-			double arg = one_by_Gamma_Mres * dot_four_vectors(current_qlist_slice[qlist_idx], currentPpm);
+			double arg = one_by_Gamma_Mres * dot_four_vectors(qlist[qlist_idx], currentPpm);
 			double akr = 1./(1.+arg*arg);
 			double aki = arg/(1.+arg*arg);
 

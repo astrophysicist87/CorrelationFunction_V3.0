@@ -268,17 +268,12 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
 	for (int iqx = 0; iqx < qxnpts; ++iqx)
 	for (int iqy = 0; iqy < qynpts; ++iqy)
 	for (int iqz = 0; iqz < qznpts; ++iqz)
-		qlist[qidx++] = new double [4];
-	qidx = 0;
-	current_qlist_slice = new double * [qtnpts*qxnpts*qynpts*qznpts];
-	for (int iqt = 0; iqt < qtnpts; ++iqt)
-	for (int iqx = 0; iqx < qxnpts; ++iqx)
-	for (int iqy = 0; iqy < qynpts; ++iqy)
-	for (int iqz = 0; iqz < qznpts; ++iqz)
 	{
-		current_qlist_slice[qidx] = new double [4];
-		for (int i = 0; i < 4; ++i)
-			current_qlist_slice[qidx][i] = 0.0;
+		qlist[qidx] = new double [4];
+		qlist[qidx][0] = qt_pts[iqt];
+		qlist[qidx][1] = qx_pts[iqx];
+		qlist[qidx][2] = qy_pts[iqy];
+		qlist[qidx][3] = qz_pts[iqz];
 		qidx++;
 	}
 
@@ -1046,19 +1041,6 @@ void CorrelationFunction::Set_q_points()
 			iqz0 = iqz;
 
 	cerr << "Output iq*0 = " << iqt0 << "   " << iqx0 << "   " << iqy0 << "   " << iqz0 << endl;
-
-	int qidx = 0;
-	for (int iqt = 0; iqt < qtnpts; ++iqt)
-	for (int iqx = 0; iqx < qxnpts; ++iqx)
-	for (int iqy = 0; iqy < qynpts; ++iqy)
-	for (int iqz = 0; iqz < qznpts; ++iqz)
-	{
-		qlist[qidx][0] = qt_pts[iqt];
-		qlist[qidx][1] = qx_pts[iqx];
-		qlist[qidx][2] = qy_pts[iqy];
-		qlist[qidx][3] = qz_pts[iqz];
-		qidx++;
-	}
 
 	return;
 }
