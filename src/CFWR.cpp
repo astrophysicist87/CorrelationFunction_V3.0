@@ -794,12 +794,6 @@ void CorrelationFunction::Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int lo
 		exit;
 	}
 
-//double tmp1 = 0.0, tmp2 = 0.0;
-//Cal_dN_dypTdpTdphi_with_weights_function(FOsurf_ptr, local_pid, SPinterp_pT[0], SPinterp_pphi[0],
-//							qt_PTdep_pts[0][0], qx_PTdep_pts[0][0], qy_PTdep_pts[0][0], qz_PTdep_pts[0][0], &tmp1, &tmp2);
-
-//if (local_pid == 12) exit(1);
-
 	return;
 }
 
@@ -1004,10 +998,10 @@ pc_cutoff_vals.resize( number_of_percentage_markers );
 			//cutoff_FOcells[ptphi_index].push_back(0);		//always use sum over zero FO cells as trivial point
 
 			//set the cutoff %-age values here...
-			//just makes them equally spaced from 0% to cutoff
 			switch(PC_MARKER_SPACING)
 			{
 				case 0:
+					//just makes them equally spaced from 0% to cutoff
 					linspace(pc_cutoff_vals, 0.0, cutoff);
 					break;
 				case 1:
@@ -1191,8 +1185,8 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 					cutoff_FOcell_vals_cos.erase( cutoff_FOcell_vals_cos.begin() );	//drop the 0th entry, which isn't used in fitting
 					cutoff_FOcell_vals_sin.erase( cutoff_FOcell_vals_sin.begin() );	//drop the 0th entry, which isn't used in fitting
 					runsumvals.erase( runsumvals.begin() );	//drop the 0th entry, which isn't used in fitting
-					proj_tmla_C = gsl_polynomial_fit(pc_cutoff_vals, cutoff_FOcell_vals_cos, polynomial_fit_order, chisqC);
-					proj_tmla_S = gsl_polynomial_fit(pc_cutoff_vals, cutoff_FOcell_vals_sin, polynomial_fit_order, chisqS);
+					proj_tmla_C = gsl_polynomial_fit(pc_fit_vals, cutoff_FOcell_vals_cos, polynomial_fit_order, chisqC);
+					proj_tmla_S = gsl_polynomial_fit(pc_fit_vals, cutoff_FOcell_vals_sin, polynomial_fit_order, chisqS);
 				}
 
 				temp_moms_linear_array[ntrig * ptphi_index + 0] = proj_tmla_C;

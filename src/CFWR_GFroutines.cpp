@@ -58,18 +58,23 @@ void CorrelationFunction::Get_GF_HBTradii(int folderindex)
 
 //to save time, don't bother making grid large enough to interpolate to OSL
 //this function leaves open the option of just interpolating over the qt-direction
-void CorrelationFunction::Cal_correlationfunction()
+void CorrelationFunction::Cal_correlationfunction(bool read_in_FTd_spectra /*==false*/)
 {
 	// Can't interpolate if there's only one point in qt-direction!
 	if (qtnpts == 1)
 		return;
 
-	// store in HDF5 file
-	int getHDFresonanceSpectra = Get_resonance_from_HDF_array(target_particle_id, current_dN_dypTdpTdphi_moments);
-	if (getHDFresonanceSpectra < 0)
+	if (read_in_FTd_spectra)
+		Readin_total_target_eiqx_dN_dypTdpTdphi(1);
+	else
 	{
-		cerr << "Failed to set this resonance in HDF array!  Exiting..." << endl;
-		exit;
+		// store in HDF5 file
+		int getHDFresonanceSpectra = Get_resonance_from_HDF_array(target_particle_id, current_dN_dypTdpTdphi_moments);
+		if (getHDFresonanceSpectra < 0)
+		{
+			cerr << "Failed to set this resonance in HDF array!  Exiting..." << endl;
+			exit;
+		}
 	}
 
 	// chooses the qo, qs, ql (or qx, qy, ql) points at which to evaluate correlation function,

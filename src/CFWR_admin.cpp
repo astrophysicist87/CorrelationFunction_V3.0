@@ -1022,7 +1022,12 @@ void CorrelationFunction::Set_q_points()
 	qy_pts = new double [qynpts];
 	qz_pts = new double [qznpts];
 
-	Fill_out_pts(qt_pts, qtnpts, -init_qt, QT_POINTS_SPACING);
+	double mpion = all_particles[target_particle_id].mass;
+	double qxmax = -init_qx;
+	double xi2 = mpion*mpion + interp_pT_max*interp_pT_max + 2.0*0.25*qxmax*qxmax;	//pretend that Kphi == 0, qx == qo and qs == ql == 0, to maximize qtmax
+	double qtmax = sqrt(xi2 + sqrt(2.0)*interp_pT_max*qxmax) - sqrt(xi2 - sqrt(2.0)*interp_pT_max*qxmax) + 1.e-10;
+
+	Fill_out_pts(qt_pts, qtnpts, qtmax, QT_POINTS_SPACING);
 	Fill_out_pts(qx_pts, qxnpts, -init_qx, QX_POINTS_SPACING);
 	Fill_out_pts(qy_pts, qynpts, -init_qy, QY_POINTS_SPACING);
 	Fill_out_pts(qz_pts, qznpts, -init_qz, QZ_POINTS_SPACING);

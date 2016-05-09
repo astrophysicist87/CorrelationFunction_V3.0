@@ -184,6 +184,8 @@ int main(int argc, char *argv[])
 	correlation_function.Output_total_target_eiqx_dN_dypTdpTdphi(folderindex);
 	correlation_function.Output_chosen_resonances();
 	correlation_function.Output_resonance_fraction();
+	//correlation_function.Cal_correlationfunction(true);
+	correlation_function.Output_correlationfunction();
 
 	output << "Finished calculating correlation function with all resonance decays..." << endl;
 
@@ -192,7 +194,6 @@ int main(int argc, char *argv[])
 	{
 		output << "Calculating HBT radii via Gaussian fit method..." << endl;
 		correlation_function.Get_GF_HBTradii(folderindex);	//does outputting of results too
-		correlation_function.Output_correlationfunction();
 		correlation_function.Output_results(folderindex);
 		output << "Finished calculating HBT radii via Gaussian fit method" << endl;
 	}

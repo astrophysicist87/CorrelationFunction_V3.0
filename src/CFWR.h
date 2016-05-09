@@ -347,7 +347,7 @@ class CorrelationFunction
 									int ipt, int ipphi, int iqt, int iqx, int iqy, int iqz, bool return_projected_value);
 		void Compute_correlationfunction(double * totalresult, double * thermalresult, double * crosstermresult, double * resonanceresult,
 										int ipt, int ipphi, int iqx, int iqy, int iqz, double qt_interp, int interp_flag = 0);
-		void Cal_correlationfunction();
+		void Cal_correlationfunction(bool read_in_FTd_spectra = false);
 		void Fit_Correlationfunction3D(double *** Correl_3D, int ipt, int ipphi, bool fleshing_out_CF = true);
 		int print_fit_state_3D (size_t iteration, gsl_multifit_fdfsolver * solver_ptr);
 		void Fit_Correlationfunction3D_withlambda(double *** Correl_3D, int ipt, int ipphi, bool fleshing_out_CF = true);

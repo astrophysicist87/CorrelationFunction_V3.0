@@ -307,11 +307,11 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 	Delete_resonance_running_sum_vectors();
 
 	for (int it = 0; it < (int)spectra_resonance_grid_approximator.size(); ++it)
-		delete [] spectra_resonance_grid_approximator[it];
+		delete spectra_resonance_grid_approximator[it];
 	for (int it = 0; it < (int)real_resonance_grid_approximator.size(); ++it)
-		delete [] real_resonance_grid_approximator[it];
+		delete real_resonance_grid_approximator[it];
 	for (int it = 0; it < (int)imag_resonance_grid_approximator.size(); ++it)
-		delete [] imag_resonance_grid_approximator[it];
+		delete imag_resonance_grid_approximator[it];
 
 	spectra_resonance_grid_approximator.clear();
 	real_resonance_grid_approximator.clear();

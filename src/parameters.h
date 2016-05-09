@@ -39,7 +39,7 @@ using namespace std;
 //#define VARY_ALPHA			false		// (not yet implemented) feature to treat power in exponential as a fit variable (alpha == 2 <==> traditional Gaussian)
 #define Q_AXES_AND_RAYS_ONLY		false		// true - only do points along q-axes (only works for odd points right now)
 							// false - do full grid
-#define FIT_WITH_PROJECTED_CFVALS	false		// as opposed to unprojected CFvals...
+#define FIT_WITH_PROJECTED_CFVALS	true		// as opposed to unprojected CFvals...
 #define FLESH_OUT_CF			false		// refines grid via interpolation before fitting
 #define REGULATE_CF			false		// true (false) means (don't) try to catch spurious values of projected
 							// or regular CF and replace them with median value in that window
@@ -78,14 +78,14 @@ const int UDPMTsize = 10;
 //					0.00, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90,
 //					0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98
 //				};
-static double usr_def_pc_markers[UDPMsize] = {
-					0.00, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 
-					0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95
-				};
 //static double usr_def_pc_markers[UDPMsize] = {
-//					0.00, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72,
-//					0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80
+//					0.00, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 
+//					0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95
 //				};
+static double usr_def_pc_markers[UDPMsize] = {
+					0.00, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72,
+					0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80
+				};
 //static double usr_def_pc_markers[UDPMsize] = {
 //					0.00, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82,
 //					0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90

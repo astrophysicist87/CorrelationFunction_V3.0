@@ -321,6 +321,13 @@ void CorrelationFunction::Readin_total_target_eiqx_dN_dypTdpTdphi(int folderinde
 		input_target_dN_dypTdpTdphi >> spectra[target_particle_id][ipt][ipphi];
 		input_target_dN_dypTdpTdphi >> current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
 		input_target_dN_dypTdpTdphi >> current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
+		input_target_dN_dypTdpTdphi >> thermal_spectra[target_particle_id][ipt][ipphi];
+		input_target_dN_dypTdpTdphi >> thermal_target_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
+		input_target_dN_dypTdpTdphi >> thermal_target_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
+		input_target_dN_dypTdpTdphi >> dummy;
+		input_target_dN_dypTdpTdphi >> dummy;
+		input_target_dN_dypTdpTdphi >> dummy;
+		input_target_dN_dypTdpTdphi >> dummy;
 		input_target_dN_dypTdpTdphi >> dummy;
 		/*cout << scientific << setprecision(8) << setw(12)
 			<< qt_pts[iqt] << "   " << qx_pts[iqx] << "   " << qy_pts[iqy] << "   " << qz_pts[iqz] << "   "
