@@ -10,6 +10,11 @@ using namespace std;
 #include "plumberglib.h"
 #include "parameters.h"
 
+string truestring = "true";
+string falsestring = "false";
+
+inline string return_boolean_string(bool test){return (test ? truestring : falsestring);}
+
 void initialize_PRfile(string currentworkingdirectory, string PRfilename = "Processing_record.txt")
 {
 	ostringstream filename_stream;
@@ -18,10 +23,37 @@ void initialize_PRfile(string currentworkingdirectory, string PRfilename = "Proc
 
 	string lambdaflagstring = lambdaflag ? truestring : falsestring;
 
+	time_t now = time(0);
+	tm *ltm = localtime(&now);
+
+	char* dt = ctime(&now);
+
 	output << "/***************************************************/" << endl;
 	output << "/****************" << PRfilename << "**************/" << endl;
 	output << "/***************************************************/" << endl;
 
+	output << "Beginning timestamp: " << dt << endl << endl;
+
+	output << "Presets:" << endl;
+	output << "   - ASSUME_ETA_SYMMETRIC: " << return_boolean_string(ASSUME_ETA_SYMMETRIC) << endl;
+	output << "   - GROUPING_PARTICLES: " << return_boolean_string(GROUPING_PARTICLES) << endl;
+	output << "   - PARTICLE_DIFF_TOLERANCE: " << PARTICLE_DIFF_TOLERANCE << endl;
+	output << "   - SPACETIME_MOMENTS_ONLY: " << return_boolean_string(SPACETIME_MOMENTS_ONLY) << endl;
+	//output << "   - INCLUDE_DELTA_F: " << return_boolean_string(INCLUDE_DELTA_F) << endl;
+	output << "   - DO_ALL_DECAY_CHANNELS: " << return_boolean_string(DO_ALL_DECAY_CHANNELS) << endl;
+	output << "   - USE_EXACT: " << return_boolean_string(USE_EXACT) << endl;
+	output << "   - UNZIP_HDF5: " << return_boolean_string(UNZIP_HDF5) << endl;
+	output << "   - USE_LAMBDA: " << return_boolean_string(USE_LAMBDA) << endl;
+	output << "   - USE_EXTRAPOLATION: " << return_boolean_string(USE_EXTRAPOLATION) << endl;
+	output << "   - EXTRAPOLATION_METHOD: " << EXTRAPOLATION_METHOD << endl;
+	output << "   - PC_MARKER_SPACING: " << PC_MARKER_SPACING << endl;
+	output << "   - COMPUTE_RESONANCE_ARRAYS: " << return_boolean_string(COMPUTE_RESONANCE_ARRAYS) << endl;
+	output << "   - COMPUTE_RESONANCE_DECAYS: " << return_boolean_string(COMPUTE_RESONANCE_DECAYS) << endl;
+	output << "   - IGNORE_LONG_LIVED_RESONANCES: " << return_boolean_string(IGNORE_LONG_LIVED_RESONANCES) << endl;
+	output << "   - FIT_WITH_PROJECTED_CFVALS: " << return_boolean_string(FIT_WITH_PROJECTED_CFVALS) << endl;
+	output << "   - FLESH_OUT_CF: " << return_boolean_string(FLESH_OUT_CF) << endl;
+	output << "   - REGULATE_CF: " << return_boolean_string(REGULATE_CF) << endl;
+	output << endl;
 
 	output << "General initializations:" << endl;
 	output << "   - Spatial rapidity information:" << endl;
@@ -30,9 +62,18 @@ void initialize_PRfile(string currentworkingdirectory, string PRfilename = "Proc
 	output << "      --> eta_s_f: " << eta_s_f << endl;
 
 	output << "   - Relative momentum information:" << endl;
-	output << "      --> qnpts: " << qnpts << endl;
-	output << "      --> delta_q: " << delta_q << endl;
-	output << "      --> init_q: " << init_q << endl;
+	output << "      --> qtnpts: " << qtnpts << endl;
+	output << "      --> qxnpts: " << qxnpts << endl;
+	output << "      --> qynpts: " << qynpts << endl;
+	output << "      --> qznpts: " << qznpts << endl;
+	output << "      --> delta_qt: " << delta_qt << endl;
+	output << "      --> delta_qx: " << delta_qx << endl;
+	output << "      --> delta_qy: " << delta_qy << endl;
+	output << "      --> delta_qz: " << delta_qz << endl;
+	output << "      --> init_qt: " << init_qt << endl;
+	output << "      --> init_qx: " << init_qx << endl;
+	output << "      --> init_qy: " << init_qy << endl;
+	output << "      --> init_qz: " << init_qz << endl;
 
 	output << "   - Correlation function information:" << endl;
 	output << "      --> corrfuncdim: " << corrfuncdim << endl;
@@ -115,7 +156,7 @@ void finalize_PRfile(string currentworkingdirectory, string PRfilename = "Proces
 
 	string date = out.str();
 
-	output << "Timestamp: " << dt << endl;
+	output << "Ending timestamp: " << dt << endl;
 
 	output << "/***************************************************/" << endl;
 	output << "/*********End of processing for " << date << "**********/" << endl;

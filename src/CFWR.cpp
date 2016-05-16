@@ -1182,11 +1182,13 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 				if (USE_EXTRAPOLATION)
 				{
 					double chisqC = 0.0, chisqS = 0.0;
-					cutoff_FOcell_vals_cos.erase( cutoff_FOcell_vals_cos.begin() );	//drop the 0th entry, which isn't used in fitting
+					/*cutoff_FOcell_vals_cos.erase( cutoff_FOcell_vals_cos.begin() );	//drop the 0th entry, which isn't used in fitting
 					cutoff_FOcell_vals_sin.erase( cutoff_FOcell_vals_sin.begin() );	//drop the 0th entry, which isn't used in fitting
 					runsumvals.erase( runsumvals.begin() );	//drop the 0th entry, which isn't used in fitting
 					proj_tmla_C = gsl_polynomial_fit(pc_fit_vals, cutoff_FOcell_vals_cos, polynomial_fit_order, chisqC);
-					proj_tmla_S = gsl_polynomial_fit(pc_fit_vals, cutoff_FOcell_vals_sin, polynomial_fit_order, chisqS);
+					proj_tmla_S = gsl_polynomial_fit(pc_fit_vals, cutoff_FOcell_vals_sin, polynomial_fit_order, chisqS);*/
+					proj_tmla_C = gsl_polynomial_fit(pc_cutoff_vals, cutoff_FOcell_vals_cos, polynomial_fit_order, chisqC);
+					proj_tmla_S = gsl_polynomial_fit(pc_cutoff_vals, cutoff_FOcell_vals_sin, polynomial_fit_order, chisqS);
 				}
 
 				temp_moms_linear_array[ntrig * ptphi_index + 0] = proj_tmla_C;

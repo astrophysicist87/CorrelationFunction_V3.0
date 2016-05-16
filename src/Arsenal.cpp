@@ -934,81 +934,10 @@ double interpCubicNonDirect(double * x, double * y, double xi, long size, bool r
 
 /////////////////////////////////////////////////////////////////////////////////////////
 //**********************************************************************
-double interpBiCubicDirect(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size)
+double interpBiCubicDirect(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size, bool returnflag /*= false*/, double default_return_value /* = 0*/)
 {
 	//long size = x->size();
-	if (x_size==1 && y_size) {cout<<"interpLinearDirect warning: table size = 1"<<endl; return z[0][0];}
-	double dx = x[1]-x[0]; // increment in x
-	double dy = y[1]-y[0]; // increment in y
-	// find x's integer index
-	long xidx = floor((x0-x[0])/dx);
-	long yidx = floor((y0-y[0])/dy);
-
-	// check for out-of-bounds points
-	if (xidx<0 || xidx>=x_size-1 || yidx<0 || yidx>=y_size-1)
-	{
-		cout << "interpBiCubicDirect: point out of bounds." << endl
-			<< "x ranges from " << x[0] << " to " << x[x_size-1] << ", "
-			<< "x0=" << x0 << ", " << "dx=" << dx << ", " << "xidx=" << xidx << endl
-			<< "y ranges from " << y[0] << " to " << y[y_size-1] << ", "
-			<< "y0=" << y0 << ", " << "dy=" << dy << ", " << "yidx=" << yidx << endl;
-    	exit(1);
-	}
-
-	// compute all derivatives
-	double ** grad1 = new double * [x_size];
-	double ** grad2 = new double * [x_size];
-	double ** grad12 = new double * [x_size];
-	for (int ix = 0; ix < x_size; ix++)
-	{
-		grad1[ix] = new double [y_size];
-		grad2[ix] = new double [y_size];
-		grad12[ix] = new double [y_size];
-	}
-	get_2D_derivatives(x, y, z, grad1, grad2, grad12, x_size, y_size, 0.0);
-
-	// set vectors of function values, gradients, and cross-derivative for input into bcuint
-	double * SLICEvals = new double [4];
-	double * SLICEgrad1 = new double [4];
-	double * SLICEgrad2 = new double [4];
-	double * SLICEgrad12 = new double [4];
-
-	// loops counter-clockwise through 4 points surrounding point at which interpolation
-	// is to be performed, and sets function values, gradients, and cross-derivative
-	for (int ypt = 0; ypt <=1; ypt++)
-	for (int xpt = 0; xpt <=1; xpt++)
-	{
-		double tmp_x = x[xidx+xpt];
-		double tmp_y = y[yidx+ypt];
-		SLICEvals[xpt+2*ypt] = z[xidx+xpt][yidx+ypt];
-		SLICEgrad1[xpt+2*ypt] = grad1[xidx+xpt][yidx+ypt];
-		SLICEgrad2[xpt+2*ypt] = grad2[xidx+xpt][yidx+ypt];
-		SLICEgrad12[xpt+2*ypt] = grad12[xidx+xpt][yidx+ypt];
-		//exact derivatives to debug...
-		//SLICEgrad1[xpt+2*ypt] = exp(-tmp_x*(-2. + tmp_y))*(1. - tmp_x*(-2. + tmp_y))*tmp_y;
-		//SLICEgrad2[xpt+2*ypt] = -exp(-tmp_x*(-2. + tmp_y))*tmp_x*(-1. + tmp_x*tmp_y);
-		//SLICEgrad12[xpt+2*ypt] = exp(-tmp_x*(-2. + tmp_y))*(1. + tmp_x*(2. + (-3. + tmp_x*(-2. + tmp_y))*tmp_y));
-		//cout << "DEBUG: g(" << x[xidx+xpt] << "," << y[yidx+ypt] << ") = " << SLICEvals[xpt+2*ypt] << endl;
-		//cout << "DEBUG: g_{,x}(" << x[xidx+xpt] << "," << y[yidx+ypt] << ") = " << SLICEgrad1[xpt+2*ypt] << endl;
-		//cout << "DEBUG: g_{,y}(" << x[xidx+xpt] << "," << y[yidx+ypt] << ") = " << SLICEgrad2[xpt+2*ypt] << endl;
-		//cout << "DEBUG: g_{,xy}(" << x[xidx+xpt] << "," << y[yidx+ypt] << ") = " << SLICEgrad12[xpt+2*ypt] << endl;
-	}
-
-	double resultvalue, resultgrad1, resultgrad2;
-	bcuint(SLICEvals, SLICEgrad1, SLICEgrad2, SLICEgrad12,
-			x[xidx], x[xidx+1], y[yidx], y[yidx+1], x0, y0,
-			resultvalue, resultgrad1, resultgrad2);
-
-	return resultvalue;
-}
-
-
-/////////////////////////////////////////////////////////////////////////////////////////
-//**********************************************************************
-double interpBiCubicDirectALT(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size, bool returnflag /*= false*/, double default_return_value /* = 0*/)
-{
-	//long size = x->size();
-	if (x_size==1 && y_size) {cout<<"interpBiCubicDirectALT warning: table size = 1"<<endl; return z[0][0];}
+	if (x_size==1 && y_size==1) {cout<<"interpBiCubicDirect warning: table size = 1"<<endl; return z[0][0];}
 	double dx = x[1]-x[0]; // increment in x
 	double dy = y[1]-y[0]; // increment in y
 	// find x's integer index
@@ -1020,7 +949,7 @@ double interpBiCubicDirectALT(double * x, double * y, double ** z, double x0, do
 	{
 		if (!returnflag)	//i.e., if returnflag is false, exit
 		{
-			cout << "interpBiCubicDirectALT: point out of bounds." << endl
+			cout << "interpBiCubicDirect: point out of bounds." << endl
 				<< "x ranges from " << x[0] << " to " << x[x_size-1] << ", "
 				<< "x0=" << x0 << ", " << "dx=" << dx << ", " << "xidx=" << xidx << endl
 				<< "y ranges from " << y[0] << " to " << y[y_size-1] << ", "
@@ -1064,6 +993,72 @@ double interpBiCubicDirectALT(double * x, double * y, double ** z, double x0, do
   }
 }
 
+
+/////////////////////////////////////////////////////////////////////////////////////////
+//**********************************************************************
+double interpTriCubicDirect(double * x, double * y, double * z, double *** f, double x0, double y0, double z0,
+							long x_size, long y_size, long z_size, bool returnflag /*= false*/, double default_return_value /* = 0*/)
+{
+	//long size = x->size();
+	if (x_size==1 && y_size==1 && z_size==1) {cout << "interpTriCubicDirect warning: table size = 1" << endl; return f[0][0][0];}
+	double dx = x[1]-x[0]; // increment in x
+	double dy = y[1]-y[0]; // increment in y
+	double dz = z[1]-z[0]; // increment in z
+	// find x's integer index
+	long xidx = floor((x0-x[0])/dx);
+	long yidx = floor((y0-y[0])/dy);
+	long zidx = floor((z0-z[0])/dz);
+	
+	// check for out-of-bounds points
+	if (xidx<0 || xidx>=x_size-1 || yidx<0 || yidx>=y_size-1 || zidx<0 || zidx>=z_size-1)
+	{
+		if (!returnflag)	//i.e., if returnflag is false, exit
+		{
+			cout << "interpTriCubicDirect: point out of bounds." << endl
+				<< "x ranges from " << x[0] << " to " << x[x_size-1] << ", "
+				<< "x0=" << x0 << ", " << "dx=" << dx << ", " << "xidx=" << xidx << endl
+				<< "y ranges from " << y[0] << " to " << y[y_size-1] << ", "
+				<< "y0=" << y0 << ", " << "dy=" << dy << ", " << "yidx=" << yidx << endl
+				<< "z ranges from " << z[0] << " to " << z[z_size-1] << ", "
+				<< "z0=" << z0 << ", " << "dz=" << dz << ", " << "zidx=" << zidx << endl;
+    			exit(1);
+		}
+		else return (default_return_value);
+	}
+
+  if (xidx==0)
+  {
+    // use quadratic interpolation at left end
+    double A0 = interpBiCubicDirect(y, z, f[0], y0, z0, y_size, z_size);
+	double A1 = interpBiCubicDirect(y, z, f[1], y0, z0, y_size, z_size);
+	double A2 = interpBiCubicDirect(y, z, f[2], y0, z0, y_size, z_size);
+	double deltaX = x0 - x[0]; // deltaX is the increment of x0 compared to the closest lattice point
+    return (A0-2.0*A1+A2)/(2.0*dx*dx)*deltaX*deltaX - (3.0*A0-4.0*A1+A2)/(2.0*dx)*deltaX + A0;
+  }
+  else if (xidx==x_size-2)
+  {
+    // use quadratic interpolation at right end
+    double A0 = interpBiCubicDirect(y, z, f[x_size-3], y0, z0, y_size, z_size);
+	double A1 = interpBiCubicDirect(y, z, f[x_size-2], y0, z0, y_size, z_size);
+	double A2 = interpBiCubicDirect(y, z, f[x_size-1], y0, z0, y_size, z_size);
+	double deltaX = x0 - (x[0] + (xidx-1)*dx);
+    return (A0-2.0*A1+A2)/(2.0*dx*dx)*deltaX*deltaX - (3.0*A0-4.0*A1+A2)/(2.0*dx)*deltaX + A0;
+  }
+  else
+  {
+    // use cubic interpolation
+    double A0 = interpBiCubicDirect(y, z, f[xidx-1], y0, z0, y_size, z_size);
+	double A1 = interpBiCubicDirect(y, z, f[xidx], y0, z0, y_size, z_size);
+	double A2 = interpBiCubicDirect(y, z, f[xidx+1], y0, z0, y_size, z_size);
+	double A3 = interpBiCubicDirect(y, z, f[xidx+2], y0, z0, y_size, z_size);
+	double deltaX = x0 - (x[0] + xidx*dx);
+    //cout << A0 << "  " << A1 << "  " << A2 << "  " << A3 << endl;
+    return (-A0+3.0*A1-3.0*A2+A3)/(6.0*dx*dx*dx)*deltaX*deltaX*deltaX
+            + (A0-2.0*A1+A2)/(2.0*dx*dx)*deltaX*deltaX
+            - (2.0*A0+3.0*A1-6.0*A2+A3)/(6.0*dx)*deltaX
+            + A1;
+  }
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////
 //**********************************************************************
@@ -1375,8 +1370,7 @@ double interpolate2D(double * x, double * y, double ** z, double x0, double y0, 
 		case 1:
 		{
 			if (uniform_spacing)
-				return interpBiCubicDirectALT(x, y, z, x0, y0, x_size, y_size, returnflag, default_return_value);
-				//return interpBiCubicDirect(x, y, z, x0, y0, x_size, y_size);
+				return interpBiCubicDirect(x, y, z, x0, y0, x_size, y_size, returnflag, default_return_value);
 			else
 				return interpBiCubicNonDirectALT(x, y, z, x0, y0, x_size, y_size, returnflag, default_return_value);
 				//cerr << "Error (interpolate2D): cubic interpolation with non-uniform spacing not supported!" << endl;
@@ -1421,8 +1415,13 @@ double interpolate3D(double * x, double * y, double * z, double *** f, double x0
 		}
 		case 1:
 		{
-			cerr << "Error (interpolate3D): cubic interpolation not supported!" << endl;
-			exit(1);
+			if (uniform_spacing)
+				return interpTriCubicDirect(x, y, z, f, x0, y0, z0, x_size, y_size, z_size, returnflag, default_return_value);
+			else
+			{
+				cerr << "Error (interpolate3D): cubic interpolation not supported!" << endl;
+				exit(1);
+			}
 			break;
 		}
 		case 2:

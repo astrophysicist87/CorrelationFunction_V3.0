@@ -66,6 +66,7 @@ void CorrelationFunction::Load_spectra_array(string input_filename, double *** a
 
 void CorrelationFunction::Output_results(int folderindex)
 {
+//debugger(__LINE__, __FILE__);
 	ostringstream filename_stream_HBT;
 	filename_stream_HBT << global_path << "/HBTradii_GF_ev" << folderindex << no_df_stem << ".dat";
 	ofstream outputHBT;
@@ -73,17 +74,28 @@ void CorrelationFunction::Output_results(int folderindex)
 	ostringstream filename_stream_HBTcfs;
 	filename_stream_HBTcfs << global_path << "/HBTradii_GF_cfs_ev" << folderindex << no_df_stem << ".dat";
 	ofstream outputHBTcfs;
-	outputHBT.open(filename_stream_HBTcfs.str().c_str());
+	outputHBTcfs.open(filename_stream_HBTcfs.str().c_str());
 
+//debugger(__LINE__, __FILE__);
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 	{
+//debugger(__LINE__, __FILE__);
 		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 		{
+//debugger(__LINE__, __FILE__);
 			outputHBT << SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi]
 				<< "   " << R2_side[ipt][ipphi] << "   " << R2_out[ipt][ipphi]
 				<< "   " << R2_outside[ipt][ipphi] << "   " << R2_long[ipt][ipphi]
 				<< "   " << R2_sidelong[ipt][ipphi] << "   " << R2_outlong[ipt][ipphi] << endl;
+			//ostringstream local_cmd;
+			//local_cmd << "wc -l " << global_path << "/HBTradii_GF_ev" << folderindex << no_df_stem << ".dat >> plumberg.out";
+			//int cmd_result = system(local_cmd.str().c_str());
+//cout << filename_stream_HBT.str() << ": " << SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi]
+//				<< "   " << R2_side[ipt][ipphi] << "   " << R2_out[ipt][ipphi]
+//				<< "   " << R2_outside[ipt][ipphi] << "   " << R2_long[ipt][ipphi]
+//				<< "   " << R2_sidelong[ipt][ipphi] << "   " << R2_outlong[ipt][ipphi] << endl;
 		}
+//debugger(__LINE__, __FILE__);
 
 		//do Fourier transforming here for now...
 		double plane_psi = 0.0;
@@ -95,8 +107,10 @@ void CorrelationFunction::Output_results(int folderindex)
 				<< "  " << R2_outside_C[ipt][Morder] << "   " << R2_outside_S[ipt][Morder] << "  " << R2_long_C[ipt][Morder] << "  " << R2_long_S[ipt][Morder]
 				<< "  " << R2_sidelong_C[ipt][Morder] << "   " << R2_sidelong_S[ipt][Morder] << "  " << R2_outlong_C[ipt][Morder] << "  " << R2_outlong_S[ipt][Morder] << endl;
 		}
+//debugger(__LINE__, __FILE__);
 	}
 
+//debugger(__LINE__, __FILE__);
 	outputHBT.close();
 	outputHBTcfs.close();
 

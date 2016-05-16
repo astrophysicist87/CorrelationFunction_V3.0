@@ -13,7 +13,7 @@ using namespace std;
 #define GROUPING_PARTICLES 		0		// set to 1 to perform calculations for similar particles together
 #define PARTICLE_DIFF_TOLERANCE 	0.00		// particles with mass and chemical potential (for each FO-cell) difference less than this value
 							// will be considered to be identical (b/c Cooper-Frye)
-#define VERBOSE 			2		// specifies level of output - 0 is lowest (no output)
+#define VERBOSE 			3		// specifies level of output - 0 is lowest (no output)
 #define DEBUG				false		// flag for output of debugging statements
 #define SPACETIME_MOMENTS_ONLY		false		// duh
 #define DO_ALL_DECAY_CHANNELS		false		// duh
@@ -82,14 +82,14 @@ const int UDPMTsize = 10;
 //					0.00, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 
 //					0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95
 //				};
-static double usr_def_pc_markers[UDPMsize] = {
-					0.00, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72,
-					0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80
-				};
 //static double usr_def_pc_markers[UDPMsize] = {
-//					0.00, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82,
-//					0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90
+//					0.00, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72,
+//					0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80
 //				};
+static double usr_def_pc_markers[UDPMsize] = {
+					0.00, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82,
+					0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90
+				};
 static double usr_def_pc_markers_thinned[UDPMTsize] = { 0.00, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90 };
 
 //phase space integral info
@@ -109,13 +109,16 @@ const int new_nqpts = 51;
 
 //all direction-specific q points information here
 const int qtnpts = 9;
-const int qxnpts = 5;
-const int qynpts = 5;
-const int qznpts = 5;
-const double delta_qt = 0.02;
-const double delta_qx = 0.02;
-const double delta_qy = 0.02;
-const double delta_qz = 0.01;
+const int qxnpts = 7;
+const int qynpts = 7;
+const int qznpts = 7;
+//try to make max. sqrt(q dot q) ~ 0.025 GeV or so
+const double delta_qt = 0.01;
+const double delta_qx = 0.008;
+const double delta_qy = 0.008;
+//const double delta_qx = 0.0125;
+//const double delta_qy = 0.0125;
+const double delta_qz = 0.008;
 const double init_qt = -0.5*double(qtnpts-1)*delta_qt;
 const double init_qx = -0.5*double(qxnpts-1)*delta_qx;
 const double init_qy = -0.5*double(qynpts-1)*delta_qy;
@@ -129,8 +132,8 @@ const double SP_pT_max = 3.0;
 
 //parameters for interpolation grid
 //  - polar
-const int n_interp_pT_pts = 15;
-const int n_interp_pphi_pts = 15;
+const int n_interp_pT_pts = 11;
+const int n_interp_pphi_pts = 11;
 const double interp_pT_min = 0.0;
 const double interp_pphi_min = 0.0;
 const double interp_pT_max = 4.0;

@@ -204,9 +204,10 @@ int main(int argc, char *argv[])
 		for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 		{
+			if (ipt != 0 || ipphi != 0) continue;
 			output << "Fleshing out ipt = " << ipt << ", ipphi = " << ipphi << "..." << endl;
 			correlation_function.Flesh_out_CF(ipt, ipphi);
-			//correlation_function.Output_fleshed_out_correlationfunction(ipt, ipphi);
+			correlation_function.Output_fleshed_out_correlationfunction(ipt, ipphi);
 		}
 	}
 

@@ -7,9 +7,6 @@
 
 using namespace std;
 
-string truestring = "true";
-string falsestring = "false";
-
 bool fexists(const char *filename)
 {
   ifstream ifile(filename);
