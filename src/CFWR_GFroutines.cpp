@@ -234,22 +234,78 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 	//cout << "(qxmin, qxmax, new_Del_qx) = (" << qxmin << ", " << qxmax << ", " << new_Del_qx << ")" << endl;
 	//cout << "(qymin, qymax, new_Del_qy) = (" << qymin << ", " << qymax << ", " << new_Del_qy << ")" << endl;
 	//cout << "(qzmin, qzmax, new_Del_qz) = (" << qzmin << ", " << qzmax << ", " << new_Del_qz << ")" << endl;
-
-	for (int iqx = 0; iqx < new_nqpts; ++iqx)
-	for (int iqy = 0; iqy < new_nqpts; ++iqy)
-	for (int iqz = 0; iqz < new_nqpts; ++iqz)
+	
+	//if we chose a completely Chebyshev grid, exploit this...
+	if (QX_POINTS_SPACING && QY_POINTS_SPACING && QZ_POINTS_SPACING)
 	{
-		double qx0 = qxmin + double(iqx) * new_Del_qx;
-		double qy0 = qymin + double(iqy) * new_Del_qy;
-		double qz0 = qzmin + double(iqz) * new_Del_qz;
-		qx_fleshed_out_pts[iqx] = qx0;
-		qy_fleshed_out_pts[iqy] = qy0;
-		qz_fleshed_out_pts[iqz] = qz0;
-		//fleshed_out_CF[iqx][iqy][iqz] = interpolate_CF(CFvals[ipt][ipphi], qx0, qy0, qz0, ipt);
-		fleshed_out_thermal[iqx][iqy][iqz] = interpolate_CF(thermalCFvals[ipt][ipphi], qx0, qy0, qz0, ipt, 0);
-		fleshed_out_crossterm[iqx][iqy][iqz] = interpolate_CF(crosstermCFvals[ipt][ipphi], qx0, qy0, qz0, ipt, 1);
-		fleshed_out_resonances[iqx][iqy][iqz] = interpolate_CF(resonancesCFvals[ipt][ipphi], qx0, qy0, qz0, ipt, 2);
-		fleshed_out_CF[iqx][iqy][iqz] = 1.0 + fleshed_out_thermal[iqx][iqy][iqz] + fleshed_out_crossterm[iqx][iqy][iqz] + fleshed_out_resonances[iqx][iqy][iqz];
+		int dim_loc = 3;
+		int npts_loc[dim_loc] = { qxnpts, qynpts, qznpts };
+		int os[dim_loc] = { qxnpts - 1, qynpts - 1, qznpts - 1 };
+		double lls[dim_loc] = { qxpts[0], qypts[0], qzpts[0] };
+		double uls[dim_loc] = { qxpts[qxnpts - 1], qypts[qynpts - 1], qzpts[qznpts - 1] };
+		
+		//double flat_C_at_q[qxnpts*qynpts*qznpts];
+		double flat_Ct_at_q[qxnpts*qynpts*qznpts];
+		double flat_Cct_at_q[qxnpts*qynpts*qznpts];
+		double flat_Cr_at_q[qxnpts*qynpts*qznpts];
+
+		double *** tmp_Ct_at_q = thermalCFvals[ipt][ipphi];
+		double *** tmp_Cct_at_q = crosstermCFvals[ipt][ipphi];
+		double *** tmp_Cr_at_q = resonancesCFvals[ipt][ipphi];
+
+		int qidx = 0;
+		for (int iqx = 0; iqx < qxnpts; ++iqx)
+		for (int iqy = 0; iqy < qynpts; ++iqy)
+		for (int iqz = 0; iqz < qznpts; ++iqz)
+		{
+			flat_Ct_at_q[qidx] = tmp_Ct_at_q[iqx][iqy][iqz];
+			flat_Cct_at_q[qidx] = tmp_Cct_at_q[iqx][iqy][iqz];
+			flat_Cr_at_q[qidx] = tmp_Cr_at_q[iqx][iqy][iqz];
+		}		
+		
+		//Chebyshev cf(flat_C_at_q, npts_loc, os, lls, uls, dim_loc);
+		Chebyshev cft(flat_Ct_at_q, npts_loc, os, lls, uls, dim_loc);
+		Chebyshev cfct(flat_Cct_at_q, npts_loc, os, lls, uls, dim_loc);
+		Chebyshev cfr(flat_Cr_at_q, npts_loc, os, lls, uls, dim_loc);
+
+		for (int iqx = 0; iqx < new_nqpts; ++iqx)
+		for (int iqy = 0; iqy < new_nqpts; ++iqy)
+		for (int iqz = 0; iqz < new_nqpts; ++iqz)
+		{
+			double qx0 = qxmin + double(iqx) * new_Del_qx;
+			double qy0 = qymin + double(iqy) * new_Del_qy;
+			double qz0 = qzmin + double(iqz) * new_Del_qz;
+			qx_fleshed_out_pts[iqx] = qx0;
+			qy_fleshed_out_pts[iqy] = qy0;
+			qz_fleshed_out_pts[iqz] = qz0;
+
+			//set up Chebyshev calculation
+			double point[dim_loc] = { qx0, qy0, qz0 };
+
+			fleshed_out_thermal[iqx][iqy][iqz] = cft.eval(point);
+			fleshed_out_crossterm[iqx][iqy][iqz] = cfct.eval(point);
+			fleshed_out_resonances[iqx][iqy][iqz] = cfr.eval(point);
+			fleshed_out_CF[iqx][iqy][iqz] = 1.0 + fleshed_out_thermal[iqx][iqy][iqz] + fleshed_out_crossterm[iqx][iqy][iqz] + fleshed_out_resonances[iqx][iqy][iqz];
+		}
+	}
+	else
+	{
+		for (int iqx = 0; iqx < new_nqpts; ++iqx)
+		for (int iqy = 0; iqy < new_nqpts; ++iqy)
+		for (int iqz = 0; iqz < new_nqpts; ++iqz)
+		{
+			double qx0 = qxmin + double(iqx) * new_Del_qx;
+			double qy0 = qymin + double(iqy) * new_Del_qy;
+			double qz0 = qzmin + double(iqz) * new_Del_qz;
+			qx_fleshed_out_pts[iqx] = qx0;
+			qy_fleshed_out_pts[iqy] = qy0;
+			qz_fleshed_out_pts[iqz] = qz0;
+			//fleshed_out_CF[iqx][iqy][iqz] = interpolate_CF(CFvals[ipt][ipphi], qx0, qy0, qz0, ipt);
+			fleshed_out_thermal[iqx][iqy][iqz] = interpolate_CF(thermalCFvals[ipt][ipphi], qx0, qy0, qz0, ipt, 0);
+			fleshed_out_crossterm[iqx][iqy][iqz] = interpolate_CF(crosstermCFvals[ipt][ipphi], qx0, qy0, qz0, ipt, 1);
+			fleshed_out_resonances[iqx][iqy][iqz] = interpolate_CF(resonancesCFvals[ipt][ipphi], qx0, qy0, qz0, ipt, 2);
+			fleshed_out_CF[iqx][iqy][iqz] = 1.0 + fleshed_out_thermal[iqx][iqy][iqz] + fleshed_out_crossterm[iqx][iqy][iqz] + fleshed_out_resonances[iqx][iqy][iqz];
+		}
 	}
 
 	return;
