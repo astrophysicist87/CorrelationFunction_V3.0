@@ -161,9 +161,12 @@ class CorrelationFunction
 		vector<Chebyshev*> spectra_resonance_grid_approximator;
 		vector<Chebyshev*> real_resonance_grid_approximator;
 		vector<Chebyshev*> imag_resonance_grid_approximator;
-		double flat_spectra[n_interp_pT_pts*n_interp_pphi_pts];
-		double tmp_moments_real[qtnpts][qxnpts][qynpts][qznpts][n_interp_pT_pts*n_interp_pphi_pts];
-		double tmp_moments_imag[qtnpts][qxnpts][qynpts][qznpts][n_interp_pT_pts*n_interp_pphi_pts];
+		//double flat_spectra[n_interp_pT_pts*n_interp_pphi_pts];
+		//double tmp_moments_real[qtnpts][qxnpts][qynpts][qznpts][n_interp_pT_pts*n_interp_pphi_pts];
+		//double tmp_moments_imag[qtnpts][qxnpts][qynpts][qznpts][n_interp_pT_pts*n_interp_pphi_pts];
+		double * flat_spectra;
+		double ***** tmp_moments_real;
+		double ***** tmp_moments_imag;
 
 		//points and weights for resonance integrals
 		int n_zeta_pts, n_v_pts, n_s_pts;

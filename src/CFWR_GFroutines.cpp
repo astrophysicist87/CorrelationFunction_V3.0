@@ -239,10 +239,10 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 	if (QX_POINTS_SPACING && QY_POINTS_SPACING && QZ_POINTS_SPACING)
 	{
 		const int dim_loc = 3;
-		int npts_loc[dim_loc] = { qxnpts, qynpts, qznpts };
-		int os[dim_loc] = { qxnpts - 1, qynpts - 1, qznpts - 1 };
-		double lls[dim_loc] = { qx_pts[0], qy_pts[0], qz_pts[0] };
-		double uls[dim_loc] = { qx_pts[qxnpts - 1], qy_pts[qynpts - 1], qz_pts[qznpts - 1] };
+		int npts_loc[3] = { qxnpts, qynpts, qznpts };
+		int os[3] = { qxnpts - 1, qynpts - 1, qznpts - 1 };
+		double lls[3] = { qx_pts[0], qy_pts[0], qz_pts[0] };
+		double uls[3] = { qx_pts[qxnpts - 1], qy_pts[qynpts - 1], qz_pts[qznpts - 1] };
 		
 		//double flat_C_at_q[qxnpts*qynpts*qznpts];
 		double flat_Ct_at_q[qxnpts*qynpts*qznpts];
@@ -280,7 +280,7 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 			qz_fleshed_out_pts[iqz] = qz0;
 
 			//set up Chebyshev calculation
-			double point[dim_loc] = { qx0, qy0, qz0 };
+			double point[3] = { qx0, qy0, qz0 };
 
 			fleshed_out_thermal[iqx][iqy][iqz] = cft.eval(point);
 			fleshed_out_crossterm[iqx][iqy][iqz] = cfct.eval(point);

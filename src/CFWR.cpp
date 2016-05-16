@@ -65,7 +65,7 @@ void CorrelationFunction::Unzip_HDF5_arrays()
 	}*/
 	return;
 }
-
+//-mcmodel=large
 // ************************************************************
 // Compute correlation function at all specified q points for all resonances here
 // ************************************************************

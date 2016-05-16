@@ -324,6 +324,38 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
 		}
 	}
 
+	flat_spectra = new double [n_interp_pT_pts*n_interp_pphi_pts];
+	for (int iii = 0; iii < n_interp_pT_pts*n_interp_pphi_pts; ++iii)
+		flat_spectra[iii] = 0.0;
+
+	tmp_moments_real = new double **** [qtnpts];
+	tmp_moments_imag = new double **** [qtnpts];
+	for (int iqt = 0; iqt < qtnpts; ++iqt)
+	{
+		tmp_moments_real[iqt] = new double *** [qxnpts];
+		tmp_moments_imag[iqt] = new double *** [qxnpts];
+		for (int iqx = 0; iqx < qxnpts; ++iqx)
+		{
+			tmp_moments_real[iqt][iqx] = new double ** [qynpts];
+			tmp_moments_imag[iqt][iqx] = new double ** [qynpts];
+			for (int iqy = 0; iqy < qynpts; ++iqy)
+			{
+				tmp_moments_real[iqt][iqx][iqy] = new double * [qznpts];
+				tmp_moments_imag[iqt][iqx][iqy] = new double * [qznpts];
+				for (int iqz = 0; iqz < qznpts; ++iqz)
+				{
+					tmp_moments_real[iqt][iqx][iqy][iqz] = new double [n_interp_pT_pts*n_interp_pphi_pts];
+					tmp_moments_imag[iqt][iqx][iqy][iqz] = new double [n_interp_pT_pts*n_interp_pphi_pts];
+					for (int iii = 0; iii < n_interp_pT_pts*n_interp_pphi_pts; ++iii)
+					{
+						tmp_moments_real[iqt][iqx][iqy][iqz][iii] = 0.0;
+						tmp_moments_imag[iqt][iqx][iqy][iqz][iii] = 0.0;	
+					}
+				}
+			}
+		}
+	}
+
 	// used for keeping track of how many FO cells are important for given pT, pphi
 	// also set up q-space cutoffs array
 	number_of_FOcells_above_cutoff_array = new int * [n_interp_pT_pts];
