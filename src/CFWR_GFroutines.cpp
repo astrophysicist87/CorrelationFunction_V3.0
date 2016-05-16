@@ -238,11 +238,11 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 	//if we chose a completely Chebyshev grid, exploit this...
 	if (QX_POINTS_SPACING && QY_POINTS_SPACING && QZ_POINTS_SPACING)
 	{
-		int dim_loc = 3;
+		const int dim_loc = 3;
 		int npts_loc[dim_loc] = { qxnpts, qynpts, qznpts };
 		int os[dim_loc] = { qxnpts - 1, qynpts - 1, qznpts - 1 };
-		double lls[dim_loc] = { qxpts[0], qypts[0], qzpts[0] };
-		double uls[dim_loc] = { qxpts[qxnpts - 1], qypts[qynpts - 1], qzpts[qznpts - 1] };
+		double lls[dim_loc] = { qx_pts[0], qy_pts[0], qz_pts[0] };
+		double uls[dim_loc] = { qx_pts[qxnpts - 1], qy_pts[qynpts - 1], qz_pts[qznpts - 1] };
 		
 		//double flat_C_at_q[qxnpts*qynpts*qznpts];
 		double flat_Ct_at_q[qxnpts*qynpts*qznpts];

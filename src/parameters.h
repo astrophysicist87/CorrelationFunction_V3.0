@@ -33,9 +33,9 @@ using namespace std;
 							// true means C(q=0) ~ 1 + \lambda
 #define QT_POINTS_SPACING		1		// 0 - uniform from -qmax to +qmax
 							// 1 - Chebyshev nodes from -qmax to +qmax
-#define QX_POINTS_SPACING		0
-#define QY_POINTS_SPACING		0
-#define QZ_POINTS_SPACING		0
+#define QX_POINTS_SPACING		1
+#define QY_POINTS_SPACING		1
+#define QZ_POINTS_SPACING		1
 //#define VARY_ALPHA			false		// (not yet implemented) feature to treat power in exponential as a fit variable (alpha == 2 <==> traditional Gaussian)
 #define Q_AXES_AND_RAYS_ONLY		false		// true - only do points along q-axes (only works for odd points right now)
 							// false - do full grid
@@ -109,16 +109,16 @@ const int new_nqpts = 51;
 
 //all direction-specific q points information here
 const int qtnpts = 9;
-const int qxnpts = 7;
-const int qynpts = 7;
-const int qznpts = 7;
+const int qxnpts = 9;
+const int qynpts = 9;
+const int qznpts = 9;
 //try to make max. sqrt(q dot q) ~ 0.025 GeV or so
 const double delta_qt = 0.01;
-const double delta_qx = 0.008;
-const double delta_qy = 0.008;
+const double delta_qx = 0.01;
+const double delta_qy = 0.01;
 //const double delta_qx = 0.0125;
 //const double delta_qy = 0.0125;
-const double delta_qz = 0.008;
+const double delta_qz = 0.01;
 const double init_qt = -0.5*double(qtnpts-1)*delta_qt;
 const double init_qx = -0.5*double(qxnpts-1)*delta_qx;
 const double init_qy = -0.5*double(qynpts-1)*delta_qy;
