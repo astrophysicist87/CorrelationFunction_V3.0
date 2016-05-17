@@ -113,12 +113,12 @@ const int qxnpts = 9;
 const int qynpts = 9;
 const int qznpts = 9;
 //try to make max. sqrt(q dot q) ~ 0.025 GeV or so
-const double delta_qt = 0.01;
-const double delta_qx = 0.01;
-const double delta_qy = 0.01;
+const double delta_qt = 0.0125;
+const double delta_qx = 0.0125;
+const double delta_qy = 0.0125;
 //const double delta_qx = 0.0125;
 //const double delta_qy = 0.0125;
-const double delta_qz = 0.01;
+const double delta_qz = 0.0125;
 const double init_qt = -0.5*double(qtnpts-1)*delta_qt;
 const double init_qx = -0.5*double(qxnpts-1)*delta_qx;
 const double init_qy = -0.5*double(qynpts-1)*delta_qy;
