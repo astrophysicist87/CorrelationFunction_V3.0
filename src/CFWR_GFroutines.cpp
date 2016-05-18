@@ -502,6 +502,38 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 					break;
 			}
 		}
+
+		for (int it = 0; it < cf_XY.size(); ++it)
+			delete cf_XY[it];
+		for (int it = 0; it < cf_XZ.size(); ++it)
+			delete cf_XZ[it];
+		for (int it = 0; it < cf_YZ.size(); ++it)
+			delete cf_YZ[it];
+		cf_XY.clear();
+		cf_XZ.clear();
+		cf_YZ.clear();
+
+		for (int it = 0; it < cf_X.size(); ++it)
+		{
+			for (int it2 = 0; it2 < cf_X[it].size(); ++it2)
+				delete cf_X[it][it2];
+			cf_X[it].clear();
+		}
+		for (int it = 0; it < cf_Y.size(); ++it)
+		{
+			for (int it2 = 0; it2 < cf_Y[it].size(); ++it2)
+				delete cf_Y[it][it2];
+			cf_Y[it].clear();
+		}
+		for (int it = 0; it < cf_Z.size(); ++it)
+		{
+			for (int it2 = 0; it2 < cf_Z[it].size(); ++it2)
+				delete cf_Z[it][it2];
+			cf_Z[it].clear();
+		}
+		cf_X.clear();
+		cf_Y.clear();
+		cf_Z.clear();
 	}
 	else
 	{

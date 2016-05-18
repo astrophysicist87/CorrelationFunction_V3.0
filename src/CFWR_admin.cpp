@@ -1052,15 +1052,17 @@ void CorrelationFunction::Set_q_points()
 
 	double mpion = all_particles[target_particle_id].mass;
 	double qxmax = -init_qx;
-	double xi2 = mpion*mpion + interp_pT_max*interp_pT_max + 2.0*0.25*qxmax*qxmax;	//pretend that Kphi == 0, qx == qo and qs == ql == 0, to maximize qtmax
-	double qtmax = sqrt(xi2 + sqrt(2.0)*interp_pT_max*qxmax) - sqrt(xi2 - sqrt(2.0)*interp_pT_max*qxmax) + 1.e-10;
+	double qymax = -init_qy;
+	double qxymax = ( qxmax > qymax ) ? qxmax : qymax;
+	double xi2 = mpion*mpion + interp_pT_max*interp_pT_max + 2.0*0.25*qxymax*qxymax;	//pretend that Kphi == 0, qx == qo and qs == ql == 0, to maximize qtmax
+	double qtmax = sqrt(xi2 + sqrt(2.0)*interp_pT_max*qxymax) - sqrt(xi2 - sqrt(2.0)*interp_pT_max*qxymax) + 1.e-10;
 
 	Fill_out_pts(qt_pts, qtnpts, qtmax, QT_POINTS_SPACING);
 	Fill_out_pts(qx_pts, qxnpts, -init_qx, QX_POINTS_SPACING);
 	Fill_out_pts(qy_pts, qynpts, -init_qy, QY_POINTS_SPACING);
 	Fill_out_pts(qz_pts, qznpts, -init_qz, QZ_POINTS_SPACING);
 
-	for (int iqt = 0; iqt < qtnpts; ++iqt)
+	/*for (int iqt = 0; iqt < qtnpts; ++iqt)
 		if (abs(qt_pts[iqt]) < 1.e-10)
 			iqt0 = iqt;
 	for (int iqx = 0; iqx < qxnpts; ++iqx)
@@ -1071,7 +1073,12 @@ void CorrelationFunction::Set_q_points()
 			iqy0 = iqy;
 	for (int iqz = 0; iqz < qznpts; ++iqz)
 		if (abs(qz_pts[iqz]) < 1.e-10)
-			iqz0 = iqz;
+			iqz0 = iqz;*/
+
+	iqt0 = (qtnpts - 1) / 2;
+	iqx0 = (qxnpts - 1) / 2;
+	iqy0 = (qynpts - 1) / 2;
+	iqz0 = (qznpts - 1) / 2;
 
 	cerr << "Output iq*0 = " << iqt0 << "   " << iqx0 << "   " << iqy0 << "   " << iqz0 << endl;
 
