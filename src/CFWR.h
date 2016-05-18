@@ -336,6 +336,9 @@ class CorrelationFunction
 		void Delete_osc_arrays();
 		void test_interpolator();
 		void R2_Fourier_transform(int ipt, double plane_psi);
+		double Extrapolate_Gaussian_1D(double q0, double qi0, double qi1, double f1, double f2);
+		double Extrapolate_Gaussian_2D(double * q0, double * qi0, double * qi1, double (*vals) [2]);
+		double Extrapolate_Gaussian_3D(double * q0, double * qi0, double * qi1, double (*vals) [2][2]);
 
 		// Gaussian fit / correlation function routines
 		void Allocate_CFvals();

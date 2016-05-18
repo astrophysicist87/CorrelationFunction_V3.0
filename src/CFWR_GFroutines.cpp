@@ -216,6 +216,7 @@ void CorrelationFunction::Compute_correlationfunction(double * totalresult, doub
 	return;
 }
 
+
 //******************************************************************
 // Routines for refining correlation function grid via interpolation
 //******************************************************************
@@ -231,6 +232,13 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 	double new_Del_qy = (qymax - qymin)/(double(new_nqpts-1)+1.e-100);
 	double new_Del_qz = (qzmax - qzmin)/(double(new_nqpts-1)+1.e-100);
 
+	//vector<double*> all_q_pts;		//convenient for later
+	//all_q_pts.push_back(qx_pts);
+	//all_q_pts.push_back(qy_pts);
+	//all_q_pts.push_back(qz_pts);
+
+	double *** current_C_slice = CFvals[ipt][ipphi];
+
 	//cout << "(qxmin, qxmax, new_Del_qx) = (" << qxmin << ", " << qxmax << ", " << new_Del_qx << ")" << endl;
 	//cout << "(qymin, qymax, new_Del_qy) = (" << qymin << ", " << qymax << ", " << new_Del_qy << ")" << endl;
 	//cout << "(qzmin, qzmax, new_Del_qz) = (" << qzmin << ", " << qzmax << ", " << new_Del_qz << ")" << endl;
@@ -238,36 +246,128 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 	//if we chose a completely Chebyshev grid, exploit this...
 	if (QX_POINTS_SPACING && QY_POINTS_SPACING && QZ_POINTS_SPACING)
 	{
+		/////////////////////////////////////////////////////////////////////////////////////////////////
+		// INITIALIZE CHEBYSHEV STUFF HERE
+		/////////////////////////////////////////////////////////////////////////////////////////////////
+		//for 3D Chebyshev
+		//X-Y-Z
 		const int dim_loc = 3;
 		int npts_loc[3] = { qxnpts, qynpts, qznpts };
 		int os[3] = { qxnpts - 1, qynpts - 1, qznpts - 1 };
 		double lls[3] = { qx_pts[0], qy_pts[0], qz_pts[0] };
 		double uls[3] = { qx_pts[qxnpts - 1], qy_pts[qynpts - 1], qz_pts[qznpts - 1] };
-		
-		//double flat_C_at_q[qxnpts*qynpts*qznpts];
-		double flat_Ct_at_q[qxnpts*qynpts*qznpts];
-		double flat_Cct_at_q[qxnpts*qynpts*qznpts];
-		double flat_Cr_at_q[qxnpts*qynpts*qznpts];
 
-		double *** tmp_Ct_at_q = thermalCFvals[ipt][ipphi];
-		double *** tmp_Cct_at_q = crosstermCFvals[ipt][ipphi];
-		double *** tmp_Cr_at_q = resonancesCFvals[ipt][ipphi];
+		//different combinations of directions for 2D Chebyshev
+		//X-Y
+		int npts_loc_XY[2] = { qxnpts, qynpts };
+		int os_XY[2] = { qxnpts - 1, qynpts - 1 };
+		double lls_XY[2] = { qx_pts[0], qy_pts[0] };
+		double uls_XY[2] = { qx_pts[qxnpts - 1], qy_pts[qynpts - 1] };
+		//X-Z
+		int npts_loc_XZ[2] = { qxnpts, qznpts };
+		int os_XZ[2] = { qxnpts - 1, qznpts - 1 };
+		double lls_XZ[2] = { qx_pts[0], qz_pts[0] };
+		double uls_XZ[2] = { qx_pts[qxnpts - 1], qz_pts[qznpts - 1] };
+		//Y-Z
+		int npts_loc_YZ[2] = { qynpts, qznpts };
+		int os_YZ[2] = { qynpts - 1, qznpts - 1 };
+		double lls_YZ[2] = { qy_pts[0], qz_pts[0] };
+		double uls_YZ[2] = { qy_pts[qynpts - 1], qz_pts[qznpts - 1] };
+		//different combinations of directions for 1D Chebyshev
+		//X
+		int npts_loc_X[1] = { qxnpts };
+		int os_X[1] = { qxnpts - 1 };
+		double lls_X[1] = { qx_pts[0] };
+		double uls_X[1] = { qx_pts[qxnpts - 1] };
+		//Y
+		int npts_loc_Y[1] = { qynpts };
+		int os_Y[1] = { qynpts - 1 };
+		double lls_Y[1] = { qy_pts[0] };
+		double uls_Y[1] = { qy_pts[qynpts - 1] };
+		//Z
+		int npts_loc_Z[1] = { qznpts };
+		int os_Z[1] = { qznpts - 1 };
+		double lls_Z[1] = { qz_pts[0] };
+		double uls_Z[1] = { qz_pts[qznpts - 1] };
+
+		double flat_C_at_q[qxnpts*qynpts*qznpts];
+		double flat2D_C_at_q_XY[qxnpts*qynpts], flat2D_C_at_q_XZ[qxnpts*qznpts], flat2D_C_at_q_YZ[qynpts*qznpts];
+		double flat1D_C_at_q_X[qxnpts], flat1D_C_at_q_Y[qynpts], flat1D_C_at_q_Z[qznpts];
 
 		int qidx = 0;
 		for (int iqx = 0; iqx < qxnpts; ++iqx)
 		for (int iqy = 0; iqy < qynpts; ++iqy)
 		for (int iqz = 0; iqz < qznpts; ++iqz)
-		{
-			flat_Ct_at_q[qidx] = tmp_Ct_at_q[iqx][iqy][iqz];
-			flat_Cct_at_q[qidx] = tmp_Cct_at_q[iqx][iqy][iqz];
-			flat_Cr_at_q[qidx] = tmp_Cr_at_q[iqx][iqy][iqz];
-		}		
-		
-		//Chebyshev cf(flat_C_at_q, npts_loc, os, lls, uls, dim_loc);
-		Chebyshev cft(flat_Ct_at_q, npts_loc, os, lls, uls, dim_loc);
-		Chebyshev cfct(flat_Cct_at_q, npts_loc, os, lls, uls, dim_loc);
-		Chebyshev cfr(flat_Cr_at_q, npts_loc, os, lls, uls, dim_loc);
+			flat_C_at_q[qidx++] = current_C_slice[iqx][iqy][iqz];
 
+		Chebyshev cf(flat_C_at_q, npts_loc, os, lls, uls, 3);
+
+		vector<Chebyshev*> cf_XY;
+		for (int iqz = 0; iqz < qznpts; ++iqz)
+		{
+			int iqXY = 0;
+			for (int iqx = 0; iqx < qxnpts; ++iqx)
+			for (int iqy = 0; iqy < qynpts; ++iqy)
+				flat2D_C_at_q_XY[iqXY++] = current_C_slice[iqx][iqy][iqz];
+			cf_XY.push_back(new Chebyshev(flat2D_C_at_q_XY, npts_loc_XY, os_XY, lls_XY, uls_XY, 2) );
+		}
+		
+		vector<Chebyshev*> cf_XZ;
+		for (int iqy = 0; iqy < qynpts; ++iqy)
+		{
+			int iqXZ = 0;
+			for (int iqx = 0; iqx < qxnpts; ++iqx)
+			for (int iqz = 0; iqz < qznpts; ++iqz)
+				flat2D_C_at_q_XZ[iqXZ++] = current_C_slice[iqx][iqy][iqz];
+			cf_XZ.push_back(new Chebyshev(flat2D_C_at_q_XZ, npts_loc_XZ, os_XZ, lls_XZ, uls_XZ, 2) );
+		}
+
+		vector<Chebyshev*> cf_YZ;
+		for (int iqx = 0; iqx < qxnpts; ++iqx)
+		{
+			int iqYZ = 0;
+			for (int iqy = 0; iqy < qynpts; ++iqy)
+			for (int iqz = 0; iqz < qznpts; ++iqz)
+				flat2D_C_at_q_YZ[iqYZ++] = current_C_slice[iqx][iqy][iqz];
+			cf_YZ.push_back(new Chebyshev(flat2D_C_at_q_YZ, npts_loc_YZ, os_YZ, lls_YZ, uls_YZ, 2) );
+		}
+
+		vector< vector<Chebyshev*> > cf_X (qynpts);
+		for (int iqy = 0; iqy < qynpts; ++iqy)
+		for (int iqz = 0; iqz < qznpts; ++iqz)
+		{
+			int iqX = 0;
+			for (int iqx = 0; iqx < qxnpts; ++iqx)
+				flat1D_C_at_q_X[iqX++] = current_C_slice[iqx][iqy][iqz];
+			cf_X[iqy].push_back(new Chebyshev(flat1D_C_at_q_X, npts_loc_X, os_X, lls_X, uls_X, 2) );
+		}
+		
+		vector< vector<Chebyshev*> > cf_Y (qxnpts);
+		for (int iqx = 0; iqx < qxnpts; ++iqx)
+		for (int iqz = 0; iqz < qznpts; ++iqz)
+		{
+			int iqY = 0;
+			for (int iqy = 0; iqy < qynpts; ++iqy)
+				flat1D_C_at_q_Y[iqY++] = current_C_slice[iqx][iqy][iqz];
+			cf_Y[iqx].push_back(new Chebyshev(flat1D_C_at_q_Y, npts_loc_Y, os_Y, lls_Y, uls_Y, 2) );
+		}
+
+		vector< vector<Chebyshev*> > cf_Z (qxnpts);
+		for (int iqx = 0; iqx < qxnpts; ++iqx)
+		for (int iqy = 0; iqy < qynpts; ++iqy)
+		{
+			int iqZ = 0;
+			for (int iqz = 0; iqz < qznpts; ++iqz)
+				flat1D_C_at_q_Z[iqZ++] = current_C_slice[iqx][iqy][iqz];
+			cf_Z[iqx].push_back(new Chebyshev(flat1D_C_at_q_Z, npts_loc_Z, os_Z, lls_Z, uls_Z, 2) );
+		}
+
+		/////////////////////////////////////////////////////////////////////////////////////////////////
+		// END ALL CHEBYSHEV INITIALIZATION
+		/////////////////////////////////////////////////////////////////////////////////////////////////
+
+		//first, enumerate various regions by region index
+		int region_index[new_nqpts][new_nqpts][new_nqpts];
 		for (int iqx = 0; iqx < new_nqpts; ++iqx)
 		for (int iqy = 0; iqy < new_nqpts; ++iqy)
 		for (int iqz = 0; iqz < new_nqpts; ++iqz)
@@ -275,17 +375,132 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 			double qx0 = qxmin + double(iqx) * new_Del_qx;
 			double qy0 = qymin + double(iqy) * new_Del_qy;
 			double qz0 = qzmin + double(iqz) * new_Del_qz;
+
 			qx_fleshed_out_pts[iqx] = qx0;
 			qy_fleshed_out_pts[iqy] = qy0;
 			qz_fleshed_out_pts[iqz] = qz0;
 
-			//set up Chebyshev calculation
-			double point[3] = { qx0, qy0, qz0 };
+			if (abs(qx0) <= qxmax)
+			{
+				if (abs(qy0) <= qymax)
+				{
+					if (abs(qz0) <= qzmax)
+						region_index[iqx][iqy][iqz] = 0;	//XYZ-Cheb, no Gauss
+					else
+						region_index[iqx][iqy][iqz] = 1;	//XY-Cheb, Z-Gauss
+				}
+				else
+				{
+					if (abs(qz0) <= qzmax)
+						region_index[iqx][iqy][iqz] = 2;	//XZ-Cheb, Y-Gauss
+					else
+						region_index[iqx][iqy][iqz] = 3;	//X-Cheb, YZ-Gauss
+				}
+			}
+			else
+			{
+				if (abs(qy0) <= qymax)
+				{
+					if (abs(qz0) <= qzmax)
+						region_index[iqx][iqy][iqz] = 4;	//YZ-Cheb, X-Gauss
+					else
+						region_index[iqx][iqy][iqz] = 5;	//Y-Cheb, XZ-Gauss
+				}
+				else
+				{
+					if (abs(qz0) <= qzmax)
+						region_index[iqx][iqy][iqz] = 6;	//Z-Cheb, XY-Gauss
+					else
+						region_index[iqx][iqy][iqz] = 7;	//No Cheb, XYZ-Gauss
+				}
+			}
+		}
 
-			fleshed_out_thermal[iqx][iqy][iqz] = cft.eval(point);
-			fleshed_out_crossterm[iqx][iqy][iqz] = cfct.eval(point);
-			fleshed_out_resonances[iqx][iqy][iqz] = cfr.eval(point);
-			fleshed_out_CF[iqx][iqy][iqz] = 1.0 + fleshed_out_thermal[iqx][iqy][iqz] + fleshed_out_crossterm[iqx][iqy][iqz] + fleshed_out_resonances[iqx][iqy][iqz];
+		//next, use switch statement on region_index to decide how to interpolate
+		for (int iqx = 0; iqx < new_nqpts; ++iqx)
+		for (int iqy = 0; iqy < new_nqpts; ++iqy)
+		for (int iqz = 0; iqz < new_nqpts; ++iqz)
+		{
+			double qx0 = qx_fleshed_out_pts[iqx];
+			double qy0 = qy_fleshed_out_pts[iqy];
+			double qz0 = qz_fleshed_out_pts[iqz];
+			int iqx0_loc = ( qx0 <= qx_pts[0]) ? 0 : qxnpts - 2;
+			int iqy0_loc = ( qy0 <= qy_pts[0]) ? 0 : qynpts - 2;
+			int iqz0_loc = ( qz0 <= qz_pts[0]) ? 0 : qznpts - 2;
+
+			switch(region_index[iqx][iqy][iqz])
+			{
+				case 0:	//X-Y-Z in range
+					double point_XYZ[3] = { qx0, qy0, qz0 };
+					cf.eval(point_XYZ);
+					break;
+				case 1:	//X-Y in range, Z out of range
+					double point_XY[2] = { qx0, qy0 };
+					double fZ1 = (*cf_XY[iqz0_loc]).eval(point_XY);
+					double fZ2 = (*cf_XY[iqz0_loc+1]).eval(point_XY);
+					fleshed_out_CF[iqx][iqy][iqz] = Extrapolate_Gaussian_1D(qz0, qz_pts[iqz0_loc], qz_pts[iqz0_loc+1], fZ1, fZ2);
+					break;
+				case 2:	//X-Z in range, Y out of range
+					double point_XZ[2] = { qx0, qz0 };
+					double fY1 = (*cf_XZ[iqy0_loc]).eval(point_XZ);
+					double fY2 = (*cf_XZ[iqy0_loc+1]).eval(point_XZ);
+					fleshed_out_CF[iqx][iqy][iqz] = Extrapolate_Gaussian_1D(qy0, qy_pts[iqy0_loc], qy_pts[iqy0_loc+1], fY1, fY2);
+					break;
+				case 3:	//X in range, Y-Z out of range
+					double point_X[1] = { qx0 };
+					double Gpoint_YZ[2] = { qy0, qz0 };
+					double Glower_YZ[2] = { qy_pts[iqy0_loc], qz_pts[iqz0_loc] };
+					double Gupper_YZ[2] = { qy_pts[iqy0_loc+1], qz_pts[iqz0_loc+1] };
+					double Gvals_YZ[2][2];
+					for (int i1 = 0; i1 < 2; ++i1)
+					for (int i2 = 0; i2 < 2; ++i2)
+						Gvals_YZ[i1][i2] = (*cf_X[iqy0_loc+i1][iqz0_loc+i2]).eval(point_X);
+					fleshed_out_CF[iqx][iqy][iqz] = Extrapolate_Gaussian_2D(Gpoint_YZ, Glower_YZ, Gupper_YZ, Gvals_YZ);
+					break;
+				case 4:	//Y-Z in range, X out of range
+					double point_YZ[2] = { qy0, qz0 };
+					double fX1 = (*cf_YZ[iqx0_loc]).eval(point_YZ);
+					double fX2 = (*cf_YZ[iqx0_loc+1]).eval(point_YZ);
+					fleshed_out_CF[iqx][iqy][iqz] = Extrapolate_Gaussian_1D(qx0, qx_pts[iqx0_loc], qx_pts[iqx0_loc+1], fX1, fX2);
+					break;
+				case 5:	//Y in range, X-Z out of range
+					double point_Y[1] = { qy0 };
+					double Gpoint_XZ[2] = { qx0, qz0 };
+					double Glower_XZ[2] = { qx_pts[iqx0_loc], qz_pts[iqz0_loc] };
+					double Gupper_XZ[2] = { qx_pts[iqx0_loc+1], qz_pts[iqz0_loc+1] };
+					double Gvals_XZ[2][2];
+					for (int i1 = 0; i1 < 2; ++i1)
+					for (int i2 = 0; i2 < 2; ++i2)
+						Gvals_XZ[i1][i2] = (*cf_Y[iqx0_loc+i1][iqz0_loc+i2]).eval(point_Y);
+					fleshed_out_CF[iqx][iqy][iqz] = Extrapolate_Gaussian_2D(Gpoint_XZ, Glower_XZ, Gupper_XZ, Gvals_XZ);
+					break;
+				case 6:	//Z in range, X-Y out of range
+					double point_Z[1] = { qz0 };
+					double Gpoint_XY[2] = { qx0, qy0 };
+					double Glower_XY[2] = { qx_pts[iqx0_loc], qy_pts[iqy0_loc] };
+					double Gupper_XY[2] = { qx_pts[iqx0_loc+1], qy_pts[iqy0_loc+1] };
+					double Gvals_XY[2][2];
+					for (int i1 = 0; i1 < 2; ++i1)
+					for (int i2 = 0; i2 < 2; ++i2)
+						Gvals_XY[i1][i2] = (*cf_Z[iqx0_loc+i1][iqy0_loc+i2]).eval(point_Z);
+					fleshed_out_CF[iqx][iqy][iqz] = Extrapolate_Gaussian_2D(Gpoint_XY, Glower_XY, Gupper_XY, Gvals_XY);
+					break;
+				case 7:	//X-Y-Z out of range
+					double Gpoint_XYZ[3] = { qx0, qy0, qz0 };
+					double Glower_XYZ[3] = { qx_pts[iqx0_loc], qy_pts[iqy0_loc], qz_pts[iqz0_loc] };
+					double Gupper_XYZ[3] = { qx_pts[iqx0_loc+1], qy_pts[iqy0_loc+1], qz_pts[iqz0_loc+1] };
+					double Gvals_XYZ[2][2][2];
+					for (int i1 = 0; i1 < 2; ++i1)
+					for (int i2 = 0; i2 < 2; ++i2)
+					for (int i3 = 0; i3 < 2; ++i3)
+						Gvals_XYZ[i1][i2][i3] = current_C_slice[iqx0_loc+i1][iqy0_loc+i2][iqz0_loc+i3];
+					fleshed_out_CF[iqx][iqy][iqz] = Extrapolate_Gaussian_3D(Gpoint_XYZ, Glower_XYZ, Gupper_XYZ, Gvals_XYZ);
+					break;
+				default:
+					cerr << "CorrelationFunction::Flesh_out_CF(" << ipt << ", " << ipphi << "): shouldn't have made it to this point!  Exiting..." << endl;
+					exit(1);
+					break;
+			}
 		}
 	}
 	else
@@ -297,10 +512,11 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 			double qx0 = qxmin + double(iqx) * new_Del_qx;
 			double qy0 = qymin + double(iqy) * new_Del_qy;
 			double qz0 = qzmin + double(iqz) * new_Del_qz;
+
 			qx_fleshed_out_pts[iqx] = qx0;
 			qy_fleshed_out_pts[iqy] = qy0;
 			qz_fleshed_out_pts[iqz] = qz0;
-			//fleshed_out_CF[iqx][iqy][iqz] = interpolate_CF(CFvals[ipt][ipphi], qx0, qy0, qz0, ipt);
+
 			fleshed_out_thermal[iqx][iqy][iqz] = interpolate_CF(thermalCFvals[ipt][ipphi], qx0, qy0, qz0, ipt, 0);
 			fleshed_out_crossterm[iqx][iqy][iqz] = interpolate_CF(crosstermCFvals[ipt][ipphi], qx0, qy0, qz0, ipt, 1);
 			fleshed_out_resonances[iqx][iqy][iqz] = interpolate_CF(resonancesCFvals[ipt][ipphi], qx0, qy0, qz0, ipt, 2);
@@ -309,6 +525,94 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 	}
 
 	return;
+}
+
+double CorrelationFunction::Extrapolate_Gaussian_1D(double q0, double qi0, double qi1, double f1, double f2)
+{
+	//as a safeguard for the timebeing...
+	if (f1 < 0.0 || f2 < 0.0)
+		return lin_int(q0 - qi0, 1./(qi1-qi0), f1, f2);
+	else	//this is what *should* execute
+		return ( exp( lin_int( sgn(q0)*q0*q0 - sgn(qi0)*qi0*qi0, 1./( sgn(qi1)*qi1*qi1 - sgn(qi0)*qi0*qi0 ), log(f1), log(f2) ) ) );
+}
+
+double CorrelationFunction::Extrapolate_Gaussian_2D(double * q0, double * qi0, double * qi1, double (*vals) [2])
+{
+	double total = 0.0;
+	double slopes[2][2];
+
+	if (vals[0][0] <= 0.0 || vals[0][1] <= 0.0 || vals[1][0] <= 0.0 || vals[1][1] <= 0.0)
+	{
+		for (int i = 0; i < 2; ++i)
+		{
+			slopes[i][0] = (qi1[i] - q0[i]) / (qi1[i] - qi0[i]);
+			slopes[i][1] = 1.0 - slopes[i][0];
+		}
+	
+		for (int i = 0; i < 2; ++i)
+		for (int j = 0; j < 2; ++j)
+			total += vals[i][j] * slopes[0][i] * slopes[1][j];
+	}
+	else
+	{
+		for (int i = 0; i < 2; ++i)
+		{
+			double sqi1 = sgn(qi1[i])*qi1[i]*qi1[i];
+			double sq0 = sgn(q0[i])*q0[i]*q0[i];
+			double sqi0 = sgn(qi0[i])*qi0[i]*qi0[i];
+			slopes[i][0] = (sqi1 - sq0) / (sqi1 - sqi0);
+			slopes[i][1] = 1.0 - slopes[i][0];
+		}
+	
+		for (int i = 0; i < 2; ++i)
+		for (int j = 0; j < 2; ++j)
+			total += log(vals[i][j]) * slopes[0][i] * slopes[1][j];
+
+		total = exp(total);
+	}
+	
+	return (total);
+}
+
+double CorrelationFunction::Extrapolate_Gaussian_3D(double * q0, double * qi0, double * qi1, double (*vals) [2][2])
+{
+	double total = 0.0;
+	double slopes[3][2];
+
+	if (vals[0][0][0] <= 0.0 || vals[0][0][1] <= 0.0 || vals[0][1][0] <= 0.0 || vals[0][1][1] <= 0.0
+			|| vals[1][0][0] <= 0.0 || vals[1][0][1] <= 0.0 || vals[1][1][0] <= 0.0 || vals[1][1][1] <= 0.0)
+	{
+		for (int i = 0; i < 2; ++i)
+		{
+			slopes[i][0] = (qi1[i] - q0[i]) / (qi1[i] - qi0[i]);
+			slopes[i][1] = 1.0 - slopes[i][0];
+		}
+	
+		for (int i = 0; i < 2; ++i)
+		for (int j = 0; j < 2; ++j)
+		for (int k = 0; k < 2; ++k)
+			total += vals[i][j][k] * slopes[0][i] * slopes[1][j] * slopes[2][k];
+	}
+	else
+	{
+		for (int i = 0; i < 2; ++i)
+		{
+			double sqi1 = sgn(qi1[i])*qi1[i]*qi1[i];
+			double sq0 = sgn(q0[i])*q0[i]*q0[i];
+			double sqi0 = sgn(qi0[i])*qi0[i]*qi0[i];
+			slopes[i][0] = (sqi1 - sq0) / (sqi1 - sqi0);
+			slopes[i][1] = 1.0 - slopes[i][0];
+		}
+	
+		for (int i = 0; i < 2; ++i)
+		for (int j = 0; j < 2; ++j)
+		for (int k = 0; k < 2; ++k)
+			total += log(vals[i][j][k]) * slopes[0][i] * slopes[1][j] * slopes[2][k];
+
+		total = exp(total);
+	}
+	
+	return (total);
 }
 
 double CorrelationFunction::interpolate_CF(double *** current_C_slice, double qx0, double qy0, double qz0, int ipt, int thermal_or_resonances)

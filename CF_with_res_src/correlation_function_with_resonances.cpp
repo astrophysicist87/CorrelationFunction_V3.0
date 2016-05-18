@@ -23,20 +23,20 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-	cout << "Made it to #1" << endl;
+	//cout << "Made it to #1" << endl;
 	Stopwatch sw;
 	Stopwatch sw_total;
 	sw_total.tic();
 	sw.tic();
-	cout << "Made it to #2" << endl;
+	//cout << "Made it to #2" << endl;
 
 	bool generatedcorrfuncs = false;
-	cout << "Made it to #3" << endl;
+	//cout << "Made it to #3" << endl;
 	string currentworkingdirectory = get_selfpath();
 
-	cout << "Made it to #4" << endl;
+	//cout << "Made it to #4" << endl;
 	int folderindex = get_folder_index(currentworkingdirectory);
-	cout << "Made it to #5" << endl;
+	//cout << "Made it to #5" << endl;
 	initialize_PRfile(currentworkingdirectory);
 
 	ostringstream filename_stream;
