@@ -298,6 +298,52 @@ void CorrelationFunction::Output_total_target_eiqx_dN_dypTdpTdphi(int folderinde
 	return;
 }
 
+void CorrelationFunction::Output_total_eiqx_dN_dypTdpTdphi(int local_pid, int folderindex)
+{
+	string local_name = all_particles[local_pid].name;
+	replace_parentheses(local_name);
+	ostringstream filename_stream_dN_dypTdpTdphi;
+	filename_stream_dN_dypTdpTdphi << global_path << "/total_" << local_name << "_eiqx_dN_dypTdpTdphi_ev" << folderindex << no_df_stem << ".dat";
+	ofstream output_dN_dypTdpTdphi(filename_stream_dN_dypTdpTdphi.str().c_str());
+
+	int HDFloadTargetSuccess = Get_resonance_from_HDF_array(local_pid, current_dN_dypTdpTdphi_moments);
+
+	// addresses NaN issue in sin component when all q^{\mu} == 0
+	if (qtnpts%2==1 && qxnpts%2==1 && qynpts%2==1 && qznpts%2==1)
+	{	//if all q-ranges are odd and centered on q=0 ==> q=0 is included!
+		int iqt0 = (qtnpts-1)/2;
+		int iqx0 = (qxnpts-1)/2;
+		int iqy0 = (qynpts-1)/2;
+		int iqz0 = (qznpts-1)/2;
+		for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+			current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt0][iqx0][iqy0][iqz0][1] = 0.0;
+	}
+
+	for (int iqt = 0; iqt < qtnpts; ++iqt)
+	for (int iqx = 0; iqx < qxnpts; ++iqx)
+	for (int iqy = 0; iqy < qynpts; ++iqy)
+	for (int iqz = 0; iqz < qznpts; ++iqz)
+	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+	{
+		double nonFTd_spectra = spectra[local_pid][ipt][ipphi];
+		double cos_transf_spectra = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
+		double sin_transf_spectra = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
+
+		output_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12)
+			<< qt_pts[iqt] << "   " << qx_pts[iqx] << "   " << qy_pts[iqy] << "   " << qz_pts[iqz] << "   "
+			<< SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   "
+			<< nonFTd_spectra << "   "																								//non-thermal + thermal
+			<< cos_transf_spectra << "   "																							//non-thermal + thermal (cos)
+			<< sin_transf_spectra << endl;
+	}
+
+	output_dN_dypTdpTdphi.close();
+
+	return;
+}
+
 void CorrelationFunction::Readin_total_target_eiqx_dN_dypTdpTdphi(int folderindex)
 {
 	string local_name = all_particles[target_particle_id].name;

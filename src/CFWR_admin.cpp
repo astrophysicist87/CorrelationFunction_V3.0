@@ -389,20 +389,30 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
 
 	//set pT and pphi points
 	SPinterp_pT = new double [n_interp_pT_pts];
+	SPinterp_pT_wts = new double [n_interp_pT_pts];
 	SPinterp_pphi = new double [n_interp_pphi_pts];
+	SPinterp_pphi_wts = new double [n_interp_pphi_pts];
 	sin_SPinterp_pphi = new double [n_interp_pphi_pts];
 	cos_SPinterp_pphi = new double [n_interp_pphi_pts];
-	for(int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+	if (USE_OLD_INTERP)
 	{
-		double del = 0.5 * (interp_pT_max - interp_pT_min);
-		double cen = 0.5 * (interp_pT_max + interp_pT_min);
-		SPinterp_pT[ipt] = cen - del * cos( M_PI*(2.*(ipt+1.) - 1.) / (2.*n_interp_pT_pts) );
+		gauss_quadrature(n_interp_pT_pts, 5, 0.0, 0.0, 0.0, 13.0, SPinterp_pT, SPinterp_pT_wts);
+		gauss_quadrature(n_interp_pphi_pts, 1, 0.0, 0.0, interp_pphi_min, interp_pphi_max, SPinterp_pphi, SPinterp_pphi_wts);
 	}
-	for(int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+	else
 	{
-		double del = 0.5 * (interp_pphi_max - interp_pphi_min);
-		double cen = 0.5 * (interp_pphi_max + interp_pphi_min);
-		SPinterp_pphi[ipphi] = cen - del * cos( M_PI*(2.*(ipphi+1.) - 1.) / (2.*n_interp_pphi_pts) );
+		for(int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+		{
+			double del = 0.5 * (interp_pT_max - interp_pT_min);
+			double cen = 0.5 * (interp_pT_max + interp_pT_min);
+			SPinterp_pT[ipt] = cen - del * cos( M_PI*(2.*(ipt+1.) - 1.) / (2.*n_interp_pT_pts) );
+		}
+		for(int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		{
+			double del = 0.5 * (interp_pphi_max - interp_pphi_min);
+			double cen = 0.5 * (interp_pphi_max + interp_pphi_min);
+			SPinterp_pphi[ipphi] = cen - del * cos( M_PI*(2.*(ipphi+1.) - 1.) / (2.*n_interp_pphi_pts) );
+		}
 	}
 	for(int ipphi=0; ipphi<n_interp_pphi_pts; ipphi++)
 	{
@@ -1053,7 +1063,7 @@ void CorrelationFunction::Set_q_points()
 	double mpion = all_particles[target_particle_id].mass;
 	double qxmax = -init_qx;
 	double qymax = -init_qy;
-	double qxymax = ( qxmax > qymax ) ? qxmax : qymax;
+	double qxymax = sqrt(qxmax*qxmax+qymax*qymax);
 	double xi2 = mpion*mpion + interp_pT_max*interp_pT_max + 2.0*0.25*qxymax*qxymax;	//pretend that Kphi == 0, qx == qo and qs == ql == 0, to maximize qtmax
 	double qtmax = sqrt(xi2 + sqrt(2.0)*interp_pT_max*qxymax) - sqrt(xi2 - sqrt(2.0)*interp_pT_max*qxymax) + 1.e-10;
 

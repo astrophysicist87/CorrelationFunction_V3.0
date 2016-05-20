@@ -1228,9 +1228,9 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 		delete [] giant_array_S;
 
 		debug_sw2.Stop();
-		*global_out_stream_ptr << "   --> Finished (iqt, iqx, iqy, iqz) = ("
-								<< iqt << ", " << iqx << ", " << iqy << ", " << iqz
-								<< ") in " << debug_sw2.printTime() << " seconds." << endl;
+		//*global_out_stream_ptr << "   --> Finished (iqt, iqx, iqy, iqz) = ("
+		//						<< iqt << ", " << iqx << ", " << iqy << ", " << iqz
+		//						<< ") in " << debug_sw2.printTime() << " seconds." << endl;
 	}		//end of first set of q-loops
 
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

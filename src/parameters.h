@@ -39,10 +39,11 @@ using namespace std;
 //#define VARY_ALPHA			false		// (not yet implemented) feature to treat power in exponential as a fit variable (alpha == 2 <==> traditional Gaussian)
 #define Q_AXES_AND_RAYS_ONLY		false		// true - only do points along q-axes (only works for odd points right now)
 							// false - do full grid
-#define FIT_WITH_PROJECTED_CFVALS	true		// as opposed to unprojected CFvals...
+#define FIT_WITH_PROJECTED_CFVALS	false		// as opposed to unprojected CFvals...
 #define FLESH_OUT_CF			false		// refines grid via interpolation before fitting
 #define REGULATE_CF			false		// true (false) means (don't) try to catch spurious values of projected
 							// or regular CF and replace them with median value in that window
+#define USE_OLD_INTERP			true		// for switching easily between different ways of computing resonance integrals
 
 #ifndef H5_NO_NAMESPACE
     using namespace H5;
@@ -109,14 +110,14 @@ const int new_nqpts = 51;
 
 //all direction-specific q points information here
 const int qtnpts = 9;
-const int qxnpts = 1;
-const int qynpts = 101;
+const int qxnpts = 5;
+const int qynpts = 1;
 const int qznpts = 1;
 //try to make max. sqrt(q dot q) ~ 0.025 GeV or so
-const double delta_qt = 0.00125;
-const double delta_qx = 0.00125;
-const double delta_qy = 0.00125;
-const double delta_qz = 0.00125;
+const double delta_qt = 0.0075;
+const double delta_qx = 0.0075;
+const double delta_qy = 0.0075;
+const double delta_qz = 0.0075;
 const double init_qt = -0.5*double(qtnpts-1)*delta_qt;
 const double init_qx = -0.5*double(qxnpts-1)*delta_qx;
 const double init_qy = -0.5*double(qynpts-1)*delta_qy;
@@ -130,8 +131,8 @@ const double SP_pT_max = 3.0;
 
 //parameters for interpolation grid
 //  - polar
-const int n_interp_pT_pts = 11;
-const int n_interp_pphi_pts = 11;
+const int n_interp_pT_pts = 15;
+const int n_interp_pphi_pts = 48;
 const double interp_pT_min = 0.0;
 const double interp_pphi_min = 0.0;
 const double interp_pT_max = 4.0;

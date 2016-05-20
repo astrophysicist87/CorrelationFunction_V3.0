@@ -193,6 +193,12 @@ int main(int argc, char *argv[])
 	//correlation_function.Cal_correlationfunction(true);
 	correlation_function.Output_correlationfunction();
 
+	for (int icr = 0; icr < (int)chosen_resonance_indices.size(); icr++)
+	{
+		output << "Outputting pid = " << chosen_resonance_indices[icr] << "..." << endl;
+		correlation_function.Output_total_eiqx_dN_dypTdpTdphi(chosen_resonance_indices[icr], folderindex);
+	}
+
 	output << "Finished calculating correlation function with all resonance decays..." << endl;
 
 	//if there's a full 3D grid to fit over, do the Gaussian fit and get the HBT radii too

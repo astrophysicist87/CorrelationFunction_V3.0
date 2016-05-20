@@ -200,7 +200,7 @@ class CorrelationFunction
 		double * q1_pts, * q2_pts, * q3_pts;
 		int iqt0, iqx0, iqy0, iqz0;
 		vector<vector<int> > sorted_q_pts_list;
-		double ** qlist, ** current_qlist_slice;
+		double ** qlist, * current_qlist_slice;
 		vector<vector<int> > q_axes_and_rays;
 		
 		//store correlation functions
@@ -318,8 +318,8 @@ class CorrelationFunction
 		int list_daughters(int parent_resonance_index, set<int> * daughter_resonance_indices_ptr, particle_info * particle, int Nparticle);
 		void eiqxEdndp3(double ptr, double phir, double * results, int loc_verb = 0);
 		void Edndp3(double ptr, double phir, double * result, int loc_verb = 0);
-		void eiqxEdndp3_v2(double ptr, double phir, double * results, int loc_verb = 0);
-		void Edndp3_v2(double ptr, double phir, double * result, int loc_verb = 0);
+		void eiqxEdndp3_OLD(double ptr, double phir, double * results, int loc_verb = 0);
+		void Edndp3_OLD(double ptr, double phir, double * result, int loc_verb = 0);
 		void Set_correlation_function_q_pts();
 		void Set_q_points();
 		void Set_sorted_q_pts_list();
@@ -371,6 +371,7 @@ class CorrelationFunction
 		void Output_total_target_dN_dypTdpTdphi(int folderindex);
 		void Output_total_target_eiqx_dN_dypTdpTdphi(int folderindex, double current_fraction = -1.0);
 		void Readin_total_target_eiqx_dN_dypTdpTdphi(int folderindex);
+		void Output_total_eiqx_dN_dypTdpTdphi(int local_pid, int folderindex);
 		void Output_results(int folderindex);
 		void Readin_results(int folderindex);
 		void Read_in_all_dN_dypTdpTdphi(int folderindex);
