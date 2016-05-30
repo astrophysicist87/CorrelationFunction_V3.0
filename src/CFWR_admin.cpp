@@ -467,19 +467,19 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
 	R2_sidelong = new double * [n_interp_pT_pts];
 	R2_outlong = new double * [n_interp_pT_pts];
 
-	R2_side_C = new double * [n_interp_pT_pts];
-	R2_out_C = new double * [n_interp_pT_pts];
-	R2_long_C = new double * [n_interp_pT_pts];
-	R2_outside_C = new double * [n_interp_pT_pts];
-	R2_sidelong_C = new double * [n_interp_pT_pts];
-	R2_outlong_C = new double * [n_interp_pT_pts];
+	R2_side_C = new double * [n_localp_T];
+	R2_out_C = new double * [n_localp_T];
+	R2_long_C = new double * [n_localp_T];
+	R2_outside_C = new double * [n_localp_T];
+	R2_sidelong_C = new double * [n_localp_T];
+	R2_outlong_C = new double * [n_localp_T];
 
-	R2_side_S = new double * [n_interp_pT_pts];
-	R2_out_S = new double * [n_interp_pT_pts];
-	R2_long_S = new double * [n_interp_pT_pts];
-	R2_outside_S = new double * [n_interp_pT_pts];
-	R2_sidelong_S = new double * [n_interp_pT_pts];
-	R2_outlong_S = new double * [n_interp_pT_pts];
+	R2_side_S = new double * [n_localp_T];
+	R2_out_S = new double * [n_localp_T];
+	R2_long_S = new double * [n_localp_T];
+	R2_outside_S = new double * [n_localp_T];
+	R2_sidelong_S = new double * [n_localp_T];
+	R2_outlong_S = new double * [n_localp_T];
 
 	R2_side_err = new double * [n_interp_pT_pts];
 	R2_out_err = new double * [n_interp_pT_pts];
@@ -500,20 +500,6 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
 		R2_sidelong[ipt] = new double [n_interp_pphi_pts];
 		R2_outlong[ipt] = new double [n_interp_pphi_pts];
 
-		R2_side_C[ipt] = new double [n_order];
-		R2_out_C[ipt] = new double [n_order];
-		R2_outside_C[ipt] = new double [n_order];
-		R2_long_C[ipt] = new double [n_order];
-		R2_sidelong_C[ipt] = new double [n_order];
-		R2_outlong_C[ipt] = new double [n_order];
-
-		R2_side_S[ipt] = new double [n_order];
-		R2_out_S[ipt] = new double [n_order];
-		R2_outside_S[ipt] = new double [n_order];
-		R2_long_S[ipt] = new double [n_order];
-		R2_sidelong_S[ipt] = new double [n_order];
-		R2_outlong_S[ipt] = new double [n_order];
-
 		R2_side_err[ipt] = new double [n_interp_pphi_pts];
 		R2_out_err[ipt] = new double [n_interp_pphi_pts];
 		R2_long_err[ipt] = new double [n_interp_pphi_pts];
@@ -523,6 +509,23 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
 
 		lambda_Correl[ipt] = new double [n_interp_pphi_pts];
 		lambda_Correl_err[ipt] = new double [n_interp_pphi_pts];
+	}
+
+	for (int iKT = 0; iKT < n_localp_T; ++iKT)
+	{
+		R2_side_C[iKT] = new double [n_order];
+		R2_out_C[iKT] = new double [n_order];
+		R2_outside_C[iKT] = new double [n_order];
+		R2_long_C[iKT] = new double [n_order];
+		R2_sidelong_C[iKT] = new double [n_order];
+		R2_outlong_C[iKT] = new double [n_order];
+
+		R2_side_S[iKT] = new double [n_order];
+		R2_out_S[iKT] = new double [n_order];
+		R2_outside_S[iKT] = new double [n_order];
+		R2_long_S[iKT] = new double [n_order];
+		R2_sidelong_S[iKT] = new double [n_order];
+		R2_outlong_S[iKT] = new double [n_order];
 	}
 
 	//initialize all HBT radii/coeffs

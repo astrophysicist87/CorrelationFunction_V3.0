@@ -162,9 +162,7 @@ class CorrelationFunction
 		vector<Chebyshev*> spectra_resonance_grid_approximator;
 		vector<Chebyshev*> real_resonance_grid_approximator;
 		vector<Chebyshev*> imag_resonance_grid_approximator;
-		//double flat_spectra[n_interp_pT_pts*n_interp_pphi_pts];
-		//double tmp_moments_real[qtnpts][qxnpts][qynpts][qznpts][n_interp_pT_pts*n_interp_pphi_pts];
-		//double tmp_moments_imag[qtnpts][qxnpts][qynpts][qznpts][n_interp_pT_pts*n_interp_pphi_pts];
+		Chebyshev * approx_R2s, * approx_R2o, * approx_R2l, * approx_R2os, * approx_R2sl, * approx_R2ol;
 		double * flat_spectra;
 		double ***** tmp_moments_real;
 		double ***** tmp_moments_imag;
@@ -386,7 +384,7 @@ class CorrelationFunction
 		void Read_in_all_dN_dypTdpTdphi(int folderindex);
 		void Output_chosen_resonances();
 		void Output_resonance_fraction();
-		void Output_correlationfunction(bool regulated_CF = true);
+		void Output_correlationfunction();
 		void Output_fleshed_out_correlationfunction(int ipt, int ipphi);
 		void Dump_spectra_array(string output_filename, double *** array_to_dump);
 		void Load_spectra_array(string output_filename, double *** array_to_read);

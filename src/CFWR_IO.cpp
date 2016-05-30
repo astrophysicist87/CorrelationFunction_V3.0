@@ -66,7 +66,10 @@ void CorrelationFunction::Load_spectra_array(string input_filename, double *** a
 
 void CorrelationFunction::Output_results(int folderindex)
 {
-//debugger(__LINE__, __FILE__);
+	ostringstream filename_stream_HBT_g0;
+	filename_stream_HBT_g0 << global_path << "/HBTradii_GF_ev" << folderindex << no_df_stem << "_grid0.dat";
+	ofstream outputHBT_g0;
+	outputHBT_g0.open(filename_stream_HBT_g0.str().c_str());
 	ostringstream filename_stream_HBT;
 	filename_stream_HBT << global_path << "/HBTradii_GF_ev" << folderindex << no_df_stem << ".dat";
 	ofstream outputHBT;
@@ -76,58 +79,99 @@ void CorrelationFunction::Output_results(int folderindex)
 	ofstream outputHBTcfs;
 	outputHBTcfs.open(filename_stream_HBTcfs.str().c_str());
 
-//debugger(__LINE__, __FILE__);
+	//at this point, take Chebyshev-spaced pT-pphi grid of R2ij and use to compute R2ij at the KT-Kphi points we want to study
+	double flat_R2s[n_interp_pT_pts*n_interp_pphi_pts];
+	double flat_R2o[n_interp_pT_pts*n_interp_pphi_pts];
+	double flat_R2l[n_interp_pT_pts*n_interp_pphi_pts];
+	double flat_R2os[n_interp_pT_pts*n_interp_pphi_pts];
+	double flat_R2sl[n_interp_pT_pts*n_interp_pphi_pts];
+	double flat_R2ol[n_interp_pT_pts*n_interp_pphi_pts];
+
+	int npts_loc[2] = { n_interp_pT_pts, n_interp_pphi_pts };
+	int os[2] = { n_interp_pT_pts-1, n_interp_pphi_pts-1 };
+	double lls[2] = { interp_pT_min, interp_pphi_min };
+	double uls[2] = { interp_pT_max, interp_pphi_max };
+	int modes_loc[2] = { 0, 0 };
+
+	int iptipphi = 0;
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 	{
-//debugger(__LINE__, __FILE__);
-		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		flat_R2s[iptipphi] = R2_side[ipt][ipphi];
+		flat_R2o[iptipphi] = R2_out[ipt][ipphi];
+		flat_R2l[iptipphi] = R2_long[ipt][ipphi];
+		flat_R2os[iptipphi] = R2_outside[ipt][ipphi];
+		flat_R2sl[iptipphi] = R2_sidelong[ipt][ipphi];
+		flat_R2ol[iptipphi] = R2_outlong[ipt][ipphi];
+		iptipphi++;
+	}
+
+	approx_R2s = new Chebyshev (flat_R2s, npts_loc, os, lls, uls, 2, modes_loc);
+	approx_R2o = new Chebyshev (flat_R2o, npts_loc, os, lls, uls, 2, modes_loc);
+	approx_R2l = new Chebyshev (flat_R2l, npts_loc, os, lls, uls, 2, modes_loc);
+	approx_R2os = new Chebyshev (flat_R2os, npts_loc, os, lls, uls, 2, modes_loc);
+	approx_R2sl = new Chebyshev (flat_R2sl, npts_loc, os, lls, uls, 2, modes_loc);
+	approx_R2ol = new Chebyshev (flat_R2ol, npts_loc, os, lls, uls, 2, modes_loc);
+
+	//output R2ij on original pT-pphi grid first
+	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+	{
+		outputHBT_g0 << SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi]
+			<< "   " << R2_side[ipt][ipphi] << "   " << R2_out[ipt][ipphi]
+			<< "   " << R2_outside[ipt][ipphi] << "   " << R2_long[ipt][ipphi]
+			<< "   " << R2_sidelong[ipt][ipphi] << "   " << R2_outlong[ipt][ipphi] << endl;
+	}
+
+	//then output them on the desired KT-Kphi grid, and Fourier transform
+	for (int iKT = 0; iKT < n_localp_T; ++iKT)
+	{
+		//output actual extracted R2ij
+		for (int iKphi = 0; iKphi < n_localp_phi; ++iKphi)
 		{
-//debugger(__LINE__, __FILE__);
-			outputHBT << SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi]
-				<< "   " << R2_side[ipt][ipphi] << "   " << R2_out[ipt][ipphi]
-				<< "   " << R2_outside[ipt][ipphi] << "   " << R2_long[ipt][ipphi]
-				<< "   " << R2_sidelong[ipt][ipphi] << "   " << R2_outlong[ipt][ipphi] << endl;
-			//ostringstream local_cmd;
-			//local_cmd << "wc -l " << global_path << "/HBTradii_GF_ev" << folderindex << no_df_stem << ".dat >> plumberg.out";
-			//int cmd_result = system(local_cmd.str().c_str());
-//cout << filename_stream_HBT.str() << ": " << SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi]
-//				<< "   " << R2_side[ipt][ipphi] << "   " << R2_out[ipt][ipphi]
-//				<< "   " << R2_outside[ipt][ipphi] << "   " << R2_long[ipt][ipphi]
-//				<< "   " << R2_sidelong[ipt][ipphi] << "   " << R2_outlong[ipt][ipphi] << endl;
+			double point[2] = {K_T[iKT], K_phi[iKphi]};
+			outputHBT << K_T[iKT] << "   " << K_phi[iKphi]
+				<< "   " << (*approx_R2s).eval(point) << "   " << (*approx_R2o).eval(point)
+				<< "   " << (*approx_R2os).eval(point) << "   " << (*approx_R2l).eval(point)
+				<< "   " << (*approx_R2sl).eval(point) << "   " << (*approx_R2ol).eval(point) << endl;
 		}
-//debugger(__LINE__, __FILE__);
 
 		//do Fourier transforming here for now...
 		double plane_psi = 0.0;
-		R2_Fourier_transform(ipt, plane_psi);
+		R2_Fourier_transform(iKT, plane_psi);
+
+		//output Fourier coefficients
 		for (int Morder = 0; Morder < n_order; Morder++)
 		{
-			outputHBTcfs << folderindex << "  " << SPinterp_pT[ipt] << "  " << Morder
-				<< "  " << R2_side_C[ipt][Morder] << "   " << R2_side_S[ipt][Morder] << "  " << R2_out_C[ipt][Morder] << "  " << R2_out_S[ipt][Morder]
-				<< "  " << R2_outside_C[ipt][Morder] << "   " << R2_outside_S[ipt][Morder] << "  " << R2_long_C[ipt][Morder] << "  " << R2_long_S[ipt][Morder]
-				<< "  " << R2_sidelong_C[ipt][Morder] << "   " << R2_sidelong_S[ipt][Morder] << "  " << R2_outlong_C[ipt][Morder] << "  " << R2_outlong_S[ipt][Morder] << endl;
+			outputHBTcfs << folderindex << "  " << SPinterp_pT[iKT] << "  " << Morder
+				<< "  " << R2_side_C[iKT][Morder] << "   " << R2_side_S[iKT][Morder] << "  " << R2_out_C[iKT][Morder] << "  " << R2_out_S[iKT][Morder]
+				<< "  " << R2_outside_C[iKT][Morder] << "   " << R2_outside_S[iKT][Morder] << "  " << R2_long_C[iKT][Morder] << "  " << R2_long_S[iKT][Morder]
+				<< "  " << R2_sidelong_C[iKT][Morder] << "   " << R2_sidelong_S[iKT][Morder] << "  " << R2_outlong_C[iKT][Morder] << "  " << R2_outlong_S[iKT][Morder] << endl;
 		}
-//debugger(__LINE__, __FILE__);
 	}
 
-//debugger(__LINE__, __FILE__);
+	outputHBT_g0.close();
 	outputHBT.close();
 	outputHBTcfs.close();
 
 	return;
 }
 
-void CorrelationFunction::Output_correlationfunction(bool regulated_CF /*==true*/)
+void CorrelationFunction::Output_correlationfunction()
 {
 	ostringstream oCorrFunc_stream;
 	string temp_particle_name = particle_name;
 	replace_parentheses(temp_particle_name);
 
 	string CF_reg_string = "";
-	if (!regulated_CF)
-		CF_reg_string = "unregulated_";
+	if (REGULATE_CF)
+		CF_reg_string = "regulated_";
 
-	oCorrFunc_stream << global_path << "/correlfunct3D_" << CF_reg_string << temp_particle_name << ".dat";
+	string CF_proj_string = "";
+	if (!FIT_WITH_PROJECTED_CFVALS)
+		CF_reg_string = "unprojected_";
+
+	oCorrFunc_stream << global_path << "/correlfunct3D_" << CF_reg_string << CF_proj_string << temp_particle_name << ".dat";
 	ofstream oCorrFunc;
 	oCorrFunc.open(oCorrFunc_stream.str().c_str());
 

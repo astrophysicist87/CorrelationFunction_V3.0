@@ -104,7 +104,7 @@ void CorrelationFunction::Cal_correlationfunction()
 	*global_out_stream_ptr << "Finished computing correlator in " << sw.printTime() << " seconds." << endl;
 
 	//output the un-regulated correlation function to separate file for debugging purposes
-	Output_correlationfunction(false);
+	Output_correlationfunction();
 
 	if (REGULATE_CF)
 	{
