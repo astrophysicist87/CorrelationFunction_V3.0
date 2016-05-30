@@ -406,6 +406,8 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
 			double del = 0.5 * (interp_pT_max - interp_pT_min);
 			double cen = 0.5 * (interp_pT_max + interp_pT_min);
 			SPinterp_pT[ipt] = cen - del * cos( M_PI*(2.*(ipt+1.) - 1.) / (2.*n_interp_pT_pts) );
+			//double tmp = - cos( M_PI*(2.*(ipt+1.) - 1.) / (2.*n_interp_pT_pts) );
+			//SPinterp_pT[ipt] = ( (1.-sin(M_PI/n_interp_pT_pts))/(1.+sin(M_PI/n_interp_pT_pts)) ) * ( 1. + tmp ) / ( 1. - tmp );
 		}
 		for(int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 		{
@@ -843,6 +845,45 @@ void CorrelationFunction::Allocate_CFvals()
 	return;
 }
 
+void CorrelationFunction::Delete_CFvals()
+{
+	for (int ipT = 0; ipT < n_interp_pT_pts; ++ipT)
+	{
+		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		{
+			for (int iqx = 0; iqx < qxnpts; ++iqx)
+			{
+				for (int iqy = 0; iqy < qynpts; ++iqy)
+				{
+					delete [] CFvals[ipT][ipphi][iqx][iqy];
+					delete [] thermalCFvals[ipT][ipphi][iqx][iqy];
+					delete [] crosstermCFvals[ipT][ipphi][iqx][iqy];
+					delete [] resonancesCFvals[ipT][ipphi][iqx][iqy];
+				}
+				delete [] CFvals[ipT][ipphi][iqx];
+				delete [] thermalCFvals[ipT][ipphi][iqx];
+				delete [] crosstermCFvals[ipT][ipphi][iqx];
+				delete [] resonancesCFvals[ipT][ipphi][iqx];
+			}
+			delete [] CFvals[ipT][ipphi];
+			delete [] thermalCFvals[ipT][ipphi];
+			delete [] crosstermCFvals[ipT][ipphi];
+			delete [] resonancesCFvals[ipT][ipphi];
+		}
+		delete [] CFvals[ipT];
+		delete [] thermalCFvals[ipT];
+		delete [] crosstermCFvals[ipT];
+		delete [] resonancesCFvals[ipT];
+	}
+	delete [] CFvals;
+	delete [] thermalCFvals;
+	delete [] crosstermCFvals;
+	delete [] resonancesCFvals;
+
+	return;
+}
+
+
 void CorrelationFunction::Delete_S_p_withweight_array()
 {
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
@@ -1060,17 +1101,20 @@ void CorrelationFunction::Set_q_points()
 	qy_pts = new double [qynpts];
 	qz_pts = new double [qznpts];
 
+	double local_pT_max = SPinterp_pT[n_interp_pT_pts-1];	//max pT value
+
+	//q0 maximized by maximizing pT, maximizing qo, and setting qs==ql==0
 	double mpion = all_particles[target_particle_id].mass;
-	double qxmax = -init_qx;
-	double qymax = -init_qy;
+	double qxmax = abs(init_qx);
+	double qymax = abs(init_qy);
 	double qxymax = sqrt(qxmax*qxmax+qymax*qymax);
-	double xi2 = mpion*mpion + interp_pT_max*interp_pT_max + 2.0*0.25*qxymax*qxymax;	//pretend that Kphi == 0, qx == qo and qs == ql == 0, to maximize qtmax
-	double qtmax = sqrt(xi2 + sqrt(2.0)*interp_pT_max*qxymax) - sqrt(xi2 - sqrt(2.0)*interp_pT_max*qxymax) + 1.e-10;
+	double xi2 = mpion*mpion + interp_pT_max*interp_pT_max + 0.25*qxymax*qxymax;	//pretend that Kphi == 0, qx == qo and qs == ql == 0, to maximize qtmax
+	double qtmax = sqrt(xi2 + interp_pT_max*qxymax) - sqrt(xi2 - interp_pT_max*qxymax) + 1.e-10;
 
 	Fill_out_pts(qt_pts, qtnpts, qtmax, QT_POINTS_SPACING);
-	Fill_out_pts(qx_pts, qxnpts, -init_qx, QX_POINTS_SPACING);
-	Fill_out_pts(qy_pts, qynpts, -init_qy, QY_POINTS_SPACING);
-	Fill_out_pts(qz_pts, qznpts, -init_qz, QZ_POINTS_SPACING);
+	Fill_out_pts(qx_pts, qxnpts, abs(init_qx), QX_POINTS_SPACING);
+	Fill_out_pts(qy_pts, qynpts, abs(init_qy), QY_POINTS_SPACING);
+	Fill_out_pts(qz_pts, qznpts, abs(init_qz), QZ_POINTS_SPACING);
 
 	/*for (int iqt = 0; iqt < qtnpts; ++iqt)
 		if (abs(qt_pts[iqt]) < 1.e-10)

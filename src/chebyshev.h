@@ -9,6 +9,7 @@ using namespace std;
 class Chebyshev
 {
 	private:
+		int * modes;
 		//double ** Tpts;
         double * lower_limits, * upper_limits, * coeffs, * fpts;
         int dimension, total_coeffs_length, total_fpts_length, * numbers_of_points, * orders;
@@ -28,6 +29,7 @@ class Chebyshev
 
 	public:
 		Chebyshev(double * fpts_in, int * numbers_of_points_in, int * orders_in, double * lower_limits_in, double * upper_limits_in, int dimension_in);
+		Chebyshev(double * fpts_in, int * numbers_of_points_in, int * orders_in, double * lower_limits_in, double * upper_limits_in, int dimension_in, int * modes_in);
 		~Chebyshev();
 
 		void get_nodes(double a, double b, int number_of_points, double * nodes, double * adjnodes);

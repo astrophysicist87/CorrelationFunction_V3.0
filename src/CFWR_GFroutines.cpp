@@ -10,6 +10,7 @@
 #include "CFWR.h"
 #include "CFWR_lib.h"
 #include "CPStopwatch.h"
+#include "Stopwatch.h"
 #include "Arsenal.h"
 #include "gauss_quadrature.h"
 #include "chebyshev.h"
@@ -58,24 +59,19 @@ void CorrelationFunction::Get_GF_HBTradii(int folderindex)
 
 //to save time, don't bother making grid large enough to interpolate to OSL
 //this function leaves open the option of just interpolating over the qt-direction
-void CorrelationFunction::Cal_correlationfunction(bool read_in_FTd_spectra /*==false*/)
+void CorrelationFunction::Cal_correlationfunction()
 {
+	*global_out_stream_ptr << "Calculating the correlation function..." << endl;
+
 	// Can't interpolate if there's only one point in qt-direction!
 	if (qtnpts == 1)
 		return;
 
-	if (read_in_FTd_spectra)
-		Readin_total_target_eiqx_dN_dypTdpTdphi(1);
-	else
-	{
-		// store in HDF5 file
-		int getHDFresonanceSpectra = Get_resonance_from_HDF_array(target_particle_id, current_dN_dypTdpTdphi_moments);
-		if (getHDFresonanceSpectra < 0)
-		{
-			cerr << "Failed to set this resonance in HDF array!  Exiting..." << endl;
-			exit;
-		}
-	}
+	//load thermal information
+	Set_thermal_target_moments();	//thermal pion moments
+
+	//load full resonance calculation information
+	Set_full_target_moments();		//full pion moments
 
 	// chooses the qo, qs, ql (or qx, qy, ql) points at which to evaluate correlation function,
 	// and allocates the array to hold correlation function values
@@ -199,8 +195,6 @@ void CorrelationFunction::Compute_correlationfunction(double * totalresult, doub
 		}
 		else	//if not using Chebyshev nodes in qt-direction, just use straight-up linear(0) or cubic(1) interpolation
 		{
-			*global_out_stream_ptr << "Using cubic interpolation" << endl;
-			//interpolated_result = interpolate1D(qt_pts, C_at_q, qt_interp, qtnpts, 0, true);
 			*totalresult = interpolate1D(qt_pts, C_at_q, qt_interp, qtnpts, 1, false);
 			*thermalresult = interpolate1D(qt_pts, Ct_at_q, qt_interp, qtnpts, 1, false);
 			*CTresult = interpolate1D(qt_pts, Cct_at_q, qt_interp, qtnpts, 1, false);
@@ -232,11 +226,6 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 	double new_Del_qy = (qymax - qymin)/(double(new_nqpts-1)+1.e-100);
 	double new_Del_qz = (qzmax - qzmin)/(double(new_nqpts-1)+1.e-100);
 
-	//vector<double*> all_q_pts;		//convenient for later
-	//all_q_pts.push_back(qx_pts);
-	//all_q_pts.push_back(qy_pts);
-	//all_q_pts.push_back(qz_pts);
-
 	double *** current_C_slice = CFvals[ipt][ipphi];
 
 	//cout << "(qxmin, qxmax, new_Del_qx) = (" << qxmin << ", " << qxmax << ", " << new_Del_qx << ")" << endl;
@@ -246,6 +235,10 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 	//if we chose a completely Chebyshev grid, exploit this...
 	if (QX_POINTS_SPACING && QY_POINTS_SPACING && QZ_POINTS_SPACING)
 	{
+		double qx_rescale = 1./(cos(M_PI / (2.*qxnpts)));
+		double qy_rescale = 1./(cos(M_PI / (2.*qynpts)));
+		double qz_rescale = 1./(cos(M_PI / (2.*qznpts)));
+
 		/////////////////////////////////////////////////////////////////////////////////////////////////
 		// INITIALIZE CHEBYSHEV STUFF HERE
 		/////////////////////////////////////////////////////////////////////////////////////////////////
@@ -254,41 +247,41 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 		const int dim_loc = 3;
 		int npts_loc[3] = { qxnpts, qynpts, qznpts };
 		int os[3] = { qxnpts - 1, qynpts - 1, qznpts - 1 };
-		double lls[3] = { qx_pts[0], qy_pts[0], qz_pts[0] };
-		double uls[3] = { qx_pts[qxnpts - 1], qy_pts[qynpts - 1], qz_pts[qznpts - 1] };
+		double lls[3] = { qx_rescale*qx_pts[0], qy_rescale*qy_pts[0], qz_rescale*qz_pts[0] };
+		double uls[3] = { qx_rescale*qx_pts[qxnpts - 1], qy_rescale*qy_pts[qynpts - 1], qz_rescale*qz_pts[qznpts - 1] };
 
 		//different combinations of directions for 2D Chebyshev
 		//X-Y
 		int npts_loc_XY[2] = { qxnpts, qynpts };
 		int os_XY[2] = { qxnpts - 1, qynpts - 1 };
-		double lls_XY[2] = { qx_pts[0], qy_pts[0] };
-		double uls_XY[2] = { qx_pts[qxnpts - 1], qy_pts[qynpts - 1] };
+		double lls_XY[2] = { qx_rescale*qx_pts[0], qy_rescale*qy_pts[0] };
+		double uls_XY[2] = { qx_rescale*qx_pts[qxnpts - 1], qy_rescale*qy_pts[qynpts - 1] };
 		//X-Z
 		int npts_loc_XZ[2] = { qxnpts, qznpts };
 		int os_XZ[2] = { qxnpts - 1, qznpts - 1 };
-		double lls_XZ[2] = { qx_pts[0], qz_pts[0] };
-		double uls_XZ[2] = { qx_pts[qxnpts - 1], qz_pts[qznpts - 1] };
+		double lls_XZ[2] = { qx_rescale*qx_pts[0], qz_rescale*qz_pts[0] };
+		double uls_XZ[2] = { qx_rescale*qx_pts[qxnpts - 1], qz_rescale*qz_pts[qznpts - 1] };
 		//Y-Z
 		int npts_loc_YZ[2] = { qynpts, qznpts };
 		int os_YZ[2] = { qynpts - 1, qznpts - 1 };
-		double lls_YZ[2] = { qy_pts[0], qz_pts[0] };
-		double uls_YZ[2] = { qy_pts[qynpts - 1], qz_pts[qznpts - 1] };
+		double lls_YZ[2] = { qy_rescale*qy_pts[0], qz_rescale*qz_pts[0] };
+		double uls_YZ[2] = { qy_rescale*qy_pts[qynpts - 1], qz_rescale*qz_pts[qznpts - 1] };
 		//different combinations of directions for 1D Chebyshev
 		//X
 		int npts_loc_X[1] = { qxnpts };
 		int os_X[1] = { qxnpts - 1 };
-		double lls_X[1] = { qx_pts[0] };
-		double uls_X[1] = { qx_pts[qxnpts - 1] };
+		double lls_X[1] = { qx_rescale*qx_pts[0] };
+		double uls_X[1] = { qx_rescale*qx_pts[qxnpts - 1] };
 		//Y
 		int npts_loc_Y[1] = { qynpts };
 		int os_Y[1] = { qynpts - 1 };
-		double lls_Y[1] = { qy_pts[0] };
-		double uls_Y[1] = { qy_pts[qynpts - 1] };
+		double lls_Y[1] = { qy_rescale*qy_pts[0] };
+		double uls_Y[1] = { qy_rescale*qy_pts[qynpts - 1] };
 		//Z
 		int npts_loc_Z[1] = { qznpts };
 		int os_Z[1] = { qznpts - 1 };
-		double lls_Z[1] = { qz_pts[0] };
-		double uls_Z[1] = { qz_pts[qznpts - 1] };
+		double lls_Z[1] = { qz_rescale*qz_pts[0] };
+		double uls_Z[1] = { qz_rescale*qz_pts[qznpts - 1] };
 
 		double flat_C_at_q[qxnpts*qynpts*qznpts];
 		double flat2D_C_at_q_XY[qxnpts*qynpts], flat2D_C_at_q_XZ[qxnpts*qznpts], flat2D_C_at_q_YZ[qynpts*qznpts];
@@ -339,7 +332,7 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 			int iqX = 0;
 			for (int iqx = 0; iqx < qxnpts; ++iqx)
 				flat1D_C_at_q_X[iqX++] = current_C_slice[iqx][iqy][iqz];
-			cf_X[iqy].push_back(new Chebyshev(flat1D_C_at_q_X, npts_loc_X, os_X, lls_X, uls_X, 2) );
+			cf_X[iqy].push_back(new Chebyshev(flat1D_C_at_q_X, npts_loc_X, os_X, lls_X, uls_X, 1) );
 		}
 		
 		vector< vector<Chebyshev*> > cf_Y (qxnpts);
@@ -349,7 +342,7 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 			int iqY = 0;
 			for (int iqy = 0; iqy < qynpts; ++iqy)
 				flat1D_C_at_q_Y[iqY++] = current_C_slice[iqx][iqy][iqz];
-			cf_Y[iqx].push_back(new Chebyshev(flat1D_C_at_q_Y, npts_loc_Y, os_Y, lls_Y, uls_Y, 2) );
+			cf_Y[iqx].push_back(new Chebyshev(flat1D_C_at_q_Y, npts_loc_Y, os_Y, lls_Y, uls_Y, 1) );
 		}
 
 		vector< vector<Chebyshev*> > cf_Z (qxnpts);
@@ -359,7 +352,7 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 			int iqZ = 0;
 			for (int iqz = 0; iqz < qznpts; ++iqz)
 				flat1D_C_at_q_Z[iqZ++] = current_C_slice[iqx][iqy][iqz];
-			cf_Z[iqx].push_back(new Chebyshev(flat1D_C_at_q_Z, npts_loc_Z, os_Z, lls_Z, uls_Z, 2) );
+			cf_Z[iqx].push_back(new Chebyshev(flat1D_C_at_q_Z, npts_loc_Z, os_Z, lls_Z, uls_Z, 1) );
 		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////
@@ -424,15 +417,15 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 			double qx0 = qx_fleshed_out_pts[iqx];
 			double qy0 = qy_fleshed_out_pts[iqy];
 			double qz0 = qz_fleshed_out_pts[iqz];
-			int iqx0_loc = ( qx0 <= qx_pts[0]) ? 0 : qxnpts - 2;
-			int iqy0_loc = ( qy0 <= qy_pts[0]) ? 0 : qynpts - 2;
-			int iqz0_loc = ( qz0 <= qz_pts[0]) ? 0 : qznpts - 2;
+			int iqx0_loc = ( qx0 < qx_pts[0]) ? 0 : qxnpts - 2;
+			int iqy0_loc = ( qy0 < qy_pts[0]) ? 0 : qynpts - 2;
+			int iqz0_loc = ( qz0 < qz_pts[0]) ? 0 : qznpts - 2;
 
 			switch(region_index[iqx][iqy][iqz])
 			{
 				case 0:	//X-Y-Z in range
 					double point_XYZ[3] = { qx0, qy0, qz0 };
-					cf.eval(point_XYZ);
+					fleshed_out_CF[iqx][iqy][iqz] = cf.eval(point_XYZ);
 					break;
 				case 1:	//X-Y in range, Z out of range
 					double point_XY[2] = { qx0, qy0 };
@@ -501,6 +494,7 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 					exit(1);
 					break;
 			}
+
 		}
 
 		for (int it = 0; it < cf_XY.size(); ++it)
@@ -966,6 +960,9 @@ void CorrelationFunction::get_CF(double * totalresult, double * thermalresult, d
 	num = cos_transf_spectra*cos_transf_spectra + sin_transf_spectra*sin_transf_spectra;
 	//den = nonFTd_spectra*nonFTd_spectra;
 	*totalresult = num / den;
+
+	//cout << "CHECK (" << ipt << ", " << ipphi << ", " << iqt << ", " << iqx << ", " << iqy << ", " << iqz << "): "
+	//		<< *thermalresult << "   " << *crosstermresult << "   " << *resonanceresult << "   " << *totalresult << endl;
 
 	return;
 }

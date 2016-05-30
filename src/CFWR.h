@@ -115,6 +115,7 @@ class CorrelationFunction
 		double ******** current_daughters_ln_dN_dypTdpTdphi_moments;
 		double ******** current_daughters_sign_of_dN_dypTdpTdphi_moments;
 		double ******* thermal_target_dN_dypTdpTdphi_moments;
+		double ******* full_target_dN_dypTdpTdphi_moments;
 
 		double ***** target_pphiavgd_CFs;
 		double ***** target_pphivar_CFs;
@@ -252,7 +253,8 @@ class CorrelationFunction
 		inline double dot_four_vectors(double * a, double * b);
 
 		void Determine_plane_angle(FO_surf* FOsurf_ptr, int dc_idx);
-		void Compute_correlation_function(FO_surf* FOsurf_ptr);
+		void Fourier_transform_emission_function(FO_surf* FOsurf_ptr);
+		void Compute_phase_space_integrals(FO_surf* FOsurf_ptr);
 		void Update_sourcefunction(particle_info* particle, int FOarray_length, int particle_idx);
 		bool fexists(const char *filename);
 
@@ -265,9 +267,15 @@ class CorrelationFunction
 		int Copy_chunk(int current_resonance_index, int reso_idx_to_be_copied);
 		int Dump_resonance_HDF_array_spectra(string output_filename, double ******* resonance_array_to_use);
 		void Unzip_HDF5_arrays();
+		int Initialize_target_thermal_HDF_array();
+		int Open_target_thermal_HDF_array();
+		int Close_target_thermal_HDF_array();
+		int Get_target_thermal_from_HDF_array(double ******* target_thermal_array_to_fill);
+		int Set_target_thermal_in_HDF_array(double ******* tta_array_to_use);
 
 		void Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int dc_idx);
 		void Set_thermal_target_moments();
+		void Set_full_target_moments();
 		void form_trig_sign_z(int isurf, int ieta, int iqt, int iqx, int iqy, int iqz, int ii, double * results);
 		void Set_giant_arrays(int iqt, int iqx, int iqy, int iqz);
 		void Cal_dN_dypTdpTdphi(double** SP_p0, double** SP_px, double** SP_py, double** SP_pz, FO_surf* FOsurf_ptr);
@@ -342,6 +350,7 @@ class CorrelationFunction
 
 		// Gaussian fit / correlation function routines
 		void Allocate_CFvals();
+		void Delete_CFvals();
 		void Allocate_fleshed_out_CF();
 		void Delete_fleshed_out_CF();
 		void Flesh_out_CF(int ipt, int ipphi);
@@ -353,7 +362,7 @@ class CorrelationFunction
 									int ipt, int ipphi, int iqt, int iqx, int iqy, int iqz, bool return_projected_value);
 		void Compute_correlationfunction(double * totalresult, double * thermalresult, double * crosstermresult, double * resonanceresult,
 										int ipt, int ipphi, int iqx, int iqy, int iqz, double qt_interp, int interp_flag = 0);
-		void Cal_correlationfunction(bool read_in_FTd_spectra = false);
+		void Cal_correlationfunction();
 		void Fit_Correlationfunction3D(double *** Correl_3D, int ipt, int ipphi, bool fleshing_out_CF = true);
 		int print_fit_state_3D (size_t iteration, gsl_multifit_fdfsolver * solver_ptr);
 		void Fit_Correlationfunction3D_withlambda(double *** Correl_3D, int ipt, int ipphi, bool fleshing_out_CF = true);
@@ -394,12 +403,9 @@ class CorrelationFunction
 		double * SPinterp_pT_public, * pTdep_fractions_of_resonances;
 
 		// need to hold giant array stuff
-		H5::DataSpace * dataspace, * memspace;
-		H5::H5File * file;
-		H5::DataSet * dataset;
-		H5::DataSpace * SPAdataspace, * SPAmemspace;
-		H5::H5File * SPAfile;
-		H5::DataSet * SPAdataset;
+		H5::DataSpace * tta_dataspace, * tta_memspace;
+		H5::H5File * tta_file;
+		H5::DataSet * tta_dataset;
 		H5::DataSpace * resonance_dataspace, * resonance_memspace;
 		H5::H5File * resonance_file;
 		H5::DataSet * resonance_dataset;

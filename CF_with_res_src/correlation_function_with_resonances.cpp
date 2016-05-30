@@ -23,20 +23,15 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-	//cout << "Made it to #1" << endl;
 	Stopwatch sw;
 	Stopwatch sw_total;
 	sw_total.tic();
 	sw.tic();
-	//cout << "Made it to #2" << endl;
 
 	bool generatedcorrfuncs = false;
-	//cout << "Made it to #3" << endl;
 	string currentworkingdirectory = get_selfpath();
 
-	//cout << "Made it to #4" << endl;
 	int folderindex = get_folder_index(currentworkingdirectory);
-	//cout << "Made it to #5" << endl;
 	initialize_PRfile(currentworkingdirectory);
 
 	ostringstream filename_stream;
@@ -183,21 +178,26 @@ int main(int argc, char *argv[])
 
 	output << "Calculating correlation function with all resonance decays..." << endl;
 	//do calculations
-	correlation_function.Compute_correlation_function(FOsurf_ptr);
+	if (COMPUTE_RESONANCE_DECAYS)
+	{
+		correlation_function.Fourier_transform_emission_function(FOsurf_ptr);
+		correlation_function.Compute_phase_space_integrals(FOsurf_ptr);
+	}
+
+	correlation_function.Cal_correlationfunction();	//if we didn't compute resonance decays, must read them in from files
 
 	//output results
 	correlation_function.Output_total_target_dN_dypTdpTdphi(folderindex);
 	correlation_function.Output_total_target_eiqx_dN_dypTdpTdphi(folderindex);
 	correlation_function.Output_chosen_resonances();
 	correlation_function.Output_resonance_fraction();
-	//correlation_function.Cal_correlationfunction(true);
 	correlation_function.Output_correlationfunction();
 
-	for (int icr = 0; icr < (int)chosen_resonance_indices.size(); icr++)
-	{
-		output << "Outputting pid = " << chosen_resonance_indices[icr] << "..." << endl;
-		correlation_function.Output_total_eiqx_dN_dypTdpTdphi(chosen_resonance_indices[icr], folderindex);
-	}
+	//for (int icr = 0; icr < (int)chosen_resonance_indices.size(); icr++)
+	//{
+	//	output << "Outputting pid = " << chosen_resonance_indices[icr] << "..." << endl;
+	//	correlation_function.Output_total_eiqx_dN_dypTdpTdphi(chosen_resonance_indices[icr], folderindex);
+	//}
 
 	output << "Finished calculating correlation function with all resonance decays..." << endl;
 
@@ -208,19 +208,18 @@ int main(int argc, char *argv[])
 		correlation_function.Get_GF_HBTradii(folderindex);	//does outputting of results too
 		correlation_function.Output_results(folderindex);
 		output << "Finished calculating HBT radii via Gaussian fit method" << endl;
-	}
-	else if (FLESH_OUT_CF)
-	{
-		output << "Allocating fleshed out CFvals..." << endl;
-		correlation_function.Allocate_fleshed_out_CF();
-		for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+	 	if (FLESH_OUT_CF)
 		{
-			if (ipt != 0 || ipphi != 0) continue;
-			output << "Fleshing out ipt = " << ipt << ", ipphi = " << ipphi << "..." << endl;
-			correlation_function.Flesh_out_CF(ipt, ipphi);
-			correlation_function.Output_fleshed_out_correlationfunction(ipt, ipphi);
-		}
+			output << "Allocating fleshed out CFvals..." << endl;
+			correlation_function.Allocate_fleshed_out_CF();
+			for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+			for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+			{
+				output << "Fleshing out ipt = " << ipt << ", ipphi = " << ipphi << "..." << endl;
+				correlation_function.Flesh_out_CF(ipt, ipphi);
+				correlation_function.Output_fleshed_out_correlationfunction(ipt, ipphi);
+			}
+		} 
 	}
 
 	//do some clean up

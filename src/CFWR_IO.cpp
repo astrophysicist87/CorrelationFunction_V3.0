@@ -141,10 +141,14 @@ void CorrelationFunction::Output_correlationfunction(bool regulated_CF /*==true*
 		oCorrFunc << scientific << setprecision(8) << setw(12)
 			<< SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi] << "   " << qx_pts[iqx] << "   "
 			<< qy_pts[iqy] << "   " << qz_pts[iqz] << "   "
-			<< qx_pts[iqx] * ckp + qy_pts[iqy] * skp << "   "
-			<< -qx_pts[iqx] * skp + qy_pts[iqy] * ckp << "   "
-			<< qz_pts[iqz] << "   "
-			<< thermalCFvals[ipt][ipphi][iqx][iqy][iqz] << "   " << crosstermCFvals[ipt][ipphi][iqx][iqy][iqz] << "   " << resonancesCFvals[ipt][ipphi][iqx][iqy][iqz] << "   " << CFvals[ipt][ipphi][iqx][iqy][iqz] << endl;
+			//<< qx_pts[iqx] * ckp + qy_pts[iqy] * skp << "   "
+			//<< -qx_pts[iqx] * skp + qy_pts[iqy] * ckp << "   "
+			//<< qz_pts[iqz] << "   "
+			<< spectra[target_particle_id][ipt][ipphi] << "   "
+			<< thermalCFvals[ipt][ipphi][iqx][iqy][iqz] << "   "
+			<< crosstermCFvals[ipt][ipphi][iqx][iqy][iqz] << "   "
+			<< resonancesCFvals[ipt][ipphi][iqx][iqy][iqz] << "   "
+			<< CFvals[ipt][ipphi][iqx][iqy][iqz] << endl;
 	}
 
 	oCorrFunc.close();
@@ -237,7 +241,8 @@ void CorrelationFunction::Output_total_target_eiqx_dN_dypTdpTdphi(int folderinde
 	filename_stream_target_dN_dypTdpTdphi << global_path << "/total_" << local_name << current_fraction_string << "_eiqx_dN_dypTdpTdphi_ev" << folderindex << no_df_stem << ".dat";
 	ofstream output_target_dN_dypTdpTdphi(filename_stream_target_dN_dypTdpTdphi.str().c_str());
 
-	int HDFloadTargetSuccess = Get_resonance_from_HDF_array(target_particle_id, current_dN_dypTdpTdphi_moments);
+	//int HDFloadTargetSuccess = Get_resonance_from_HDF_array(target_particle_id, current_dN_dypTdpTdphi_moments);
+	Set_full_target_moments();
 
 	// addresses NaN issue in sin component when all q^{\mu} == 0
 	if (qtnpts%2==1 && qxnpts%2==1 && qynpts%2==1 && qznpts%2==1)
@@ -306,7 +311,9 @@ void CorrelationFunction::Output_total_eiqx_dN_dypTdpTdphi(int local_pid, int fo
 	filename_stream_dN_dypTdpTdphi << global_path << "/total_" << local_name << "_eiqx_dN_dypTdpTdphi_ev" << folderindex << no_df_stem << ".dat";
 	ofstream output_dN_dypTdpTdphi(filename_stream_dN_dypTdpTdphi.str().c_str());
 
+	int HDFOpenSuccess = Open_resonance_HDF_array("resonance_spectra.h5");
 	int HDFloadTargetSuccess = Get_resonance_from_HDF_array(local_pid, current_dN_dypTdpTdphi_moments);
+	int HDFCloseSuccess = Close_resonance_HDF_array();
 
 	// addresses NaN issue in sin component when all q^{\mu} == 0
 	if (qtnpts%2==1 && qxnpts%2==1 && qynpts%2==1 && qznpts%2==1)
@@ -353,11 +360,6 @@ void CorrelationFunction::Readin_total_target_eiqx_dN_dypTdpTdphi(int folderinde
 	ifstream input_target_dN_dypTdpTdphi(filename_stream_target_dN_dypTdpTdphi.str().c_str());
 
 	double dummy = 0.0;
-
-	//Need some way to set these guys!  probably write q points out to file and then read them back in as needed...
-	//THIS FUNCTION NOT STABLE UNTIL THIS IS FIXED
-	//for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-	//	Set_q_pTdep_pts(ipt);
 
 	for (int iqt = 0; iqt < qtnpts; ++iqt)
 	for (int iqx = 0; iqx < qxnpts; ++iqx)

@@ -38,7 +38,6 @@ void initialize_PRfile(string currentworkingdirectory, string PRfilename = "Proc
 	output << "   - ASSUME_ETA_SYMMETRIC: " << return_boolean_string(ASSUME_ETA_SYMMETRIC) << endl;
 	output << "   - GROUPING_PARTICLES: " << return_boolean_string(GROUPING_PARTICLES) << endl;
 	output << "   - PARTICLE_DIFF_TOLERANCE: " << PARTICLE_DIFF_TOLERANCE << endl;
-	output << "   - SPACETIME_MOMENTS_ONLY: " << return_boolean_string(SPACETIME_MOMENTS_ONLY) << endl;
 	//output << "   - INCLUDE_DELTA_F: " << return_boolean_string(INCLUDE_DELTA_F) << endl;
 	output << "   - DO_ALL_DECAY_CHANNELS: " << return_boolean_string(DO_ALL_DECAY_CHANNELS) << endl;
 	output << "   - USE_EXACT: " << return_boolean_string(USE_EXACT) << endl;
@@ -47,7 +46,6 @@ void initialize_PRfile(string currentworkingdirectory, string PRfilename = "Proc
 	output << "   - USE_EXTRAPOLATION: " << return_boolean_string(USE_EXTRAPOLATION) << endl;
 	output << "   - EXTRAPOLATION_METHOD: " << EXTRAPOLATION_METHOD << endl;
 	output << "   - PC_MARKER_SPACING: " << PC_MARKER_SPACING << endl;
-	output << "   - COMPUTE_RESONANCE_ARRAYS: " << return_boolean_string(COMPUTE_RESONANCE_ARRAYS) << endl;
 	output << "   - COMPUTE_RESONANCE_DECAYS: " << return_boolean_string(COMPUTE_RESONANCE_DECAYS) << endl;
 	output << "   - IGNORE_LONG_LIVED_RESONANCES: " << return_boolean_string(IGNORE_LONG_LIVED_RESONANCES) << endl;
 	output << "   - FIT_WITH_PROJECTED_CFVALS: " << return_boolean_string(FIT_WITH_PROJECTED_CFVALS) << endl;

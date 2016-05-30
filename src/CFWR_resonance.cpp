@@ -166,12 +166,12 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 			//if (IGNORE_LONG_LIVED_RESONANCES && qtnpts%2==1 && qxnpts%2==1 && qynpts%2==1 && qznpts%2==1 && Gamma < 0.00425 /*&& daughter_particle_id == target_particle_id*/)
 			if (IGNORE_LONG_LIVED_RESONANCES && qtnpts%2==1 && qxnpts%2==1 && qynpts%2==1 && qznpts%2==1 && Gamma < 0.0002 /*&& daughter_particle_id == target_particle_id*/)
 			{	//i.e., the eta and eta'(958) mesons, and possibly a few others
-				*global_out_stream_ptr << "RESONANCES: Leaving out long-lived resonance " << all_particles[parent_resonance_particle_id].name << " from q=0!" << endl;
+				//*global_out_stream_ptr << "RESONANCES: Leaving out long-lived resonance " << all_particles[parent_resonance_particle_id].name << " from q=0!" << endl;
 				current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0] -= ssum_vec[tmp_qpt_cs_idx];
-				*global_out_stream_ptr << "RESONANCES2 (" << all_particles[parent_resonance_particle_id].name << " --> " << all_particles[daughter_particle_id].name
-										<< ", nbody = " << n_body << "): (pt, pphi) = (" << SPinterp_pT[ipt] << "," << SPinterp_pphi[ipphi] << "): "
-										<< ssum_vec[tmp_qpt_cs_idx] << "   " << ssum << "   " << spectra[daughter_particle_id][ipt][ipphi]
-										<< "   " << current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0] << endl;
+				//*global_out_stream_ptr << "RESONANCES2 (" << all_particles[parent_resonance_particle_id].name << " --> " << all_particles[daughter_particle_id].name
+				//						<< ", nbody = " << n_body << "): (pt, pphi) = (" << SPinterp_pT[ipt] << "," << SPinterp_pphi[ipphi] << "): "
+				//						<< ssum_vec[tmp_qpt_cs_idx] << "   " << ssum << "   " << spectra[daughter_particle_id][ipt][ipphi]
+				//						<< "   " << current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0] << endl;
 			}
 	
 			if (isnan(current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][0][0][0][0][0]
@@ -285,12 +285,12 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 			//if (IGNORE_LONG_LIVED_RESONANCES && qtnpts%2==1 && qxnpts%2==1 && qynpts%2==1 && qznpts%2==1 && Gamma < 0.00425 /*&& daughter_particle_id == target_particle_id*/)
 			if (IGNORE_LONG_LIVED_RESONANCES && qtnpts%2==1 && qxnpts%2==1 && qynpts%2==1 && qznpts%2==1 && Gamma < 0.0002 /*&& daughter_particle_id == target_particle_id*/)
 			{	//i.e., the eta and eta'(958) mesons, and possibly a few others
-				*global_out_stream_ptr << "RESONANCES: Leaving out long-lived resonance " << all_particles[parent_resonance_particle_id].name << " from q=0!" << endl;
+				//*global_out_stream_ptr << "RESONANCES: Leaving out long-lived resonance " << all_particles[parent_resonance_particle_id].name << " from q=0!" << endl;
 				current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0] -= ssum_vec[tmp_qpt_cs_idx];
-				*global_out_stream_ptr << "RESONANCES2 (" << all_particles[parent_resonance_particle_id].name << " --> " << all_particles[daughter_particle_id].name
-										<< ", nbody = " << n_body << "): (pt, pphi) = (" << SPinterp_pT[ipt] << "," << SPinterp_pphi[ipphi] << "): "
-										<< ssum_vec[tmp_qpt_cs_idx] << "   " << ssum << "   " << spectra[daughter_particle_id][ipt][ipphi]
-										<< "   " << current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0] << endl;
+				//*global_out_stream_ptr << "RESONANCES2 (" << all_particles[parent_resonance_particle_id].name << " --> " << all_particles[daughter_particle_id].name
+				//						<< ", nbody = " << n_body << "): (pt, pphi) = (" << SPinterp_pT[ipt] << "," << SPinterp_pphi[ipphi] << "): "
+				//						<< ssum_vec[tmp_qpt_cs_idx] << "   " << ssum << "   " << spectra[daughter_particle_id][ipt][ipphi]
+				//						<< "   " << current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0] << endl;
 			}
 
 			if (isnan(current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][0][0][0][0][0]
@@ -345,6 +345,10 @@ void CorrelationFunction::Flatten_dN_dypTdpTdphi_moments(int parent_resonance_pa
 	int os[dim_loc] = { n_interp_pT_pts-1, n_interp_pphi_pts-1 };
 	double lls[dim_loc] = { interp_pT_min, interp_pphi_min };
 	double uls[dim_loc] = { interp_pT_max, interp_pphi_max };
+	int modes_loc[dim_loc] = { 0, 0 };
+	//double lls[dim_loc] = { 0.0, interp_pphi_min };
+	//double uls[dim_loc] = { (1.-sin(M_PI/n_interp_pT_pts))/(1.+sin(M_PI/n_interp_pT_pts)), interp_pphi_max };
+	//int modes_loc[dim_loc] = { 1, 0 };
 
 	int momidx = 0;
 
@@ -384,11 +388,11 @@ void CorrelationFunction::Flatten_dN_dypTdpTdphi_moments(int parent_resonance_pa
 	{
 		double * tmpreal = tmp_moments_real[iqt][iqx][iqy][iqz];
 		double * tmpimag = tmp_moments_imag[iqt][iqx][iqy][iqz];
-		real_resonance_grid_approximator.push_back( new Chebyshev(tmpreal, npts_loc, os, lls, uls, dim_loc) );
-		imag_resonance_grid_approximator.push_back( new Chebyshev(tmpimag, npts_loc, os, lls, uls, dim_loc) );
+		real_resonance_grid_approximator.push_back( new Chebyshev(tmpreal, npts_loc, os, lls, uls, dim_loc, modes_loc) );
+		imag_resonance_grid_approximator.push_back( new Chebyshev(tmpimag, npts_loc, os, lls, uls, dim_loc, modes_loc) );
 	}
 
-	spectra_resonance_grid_approximator.push_back( new Chebyshev(flat_spectra, npts_loc, os, lls, uls, dim_loc) );
+	spectra_resonance_grid_approximator.push_back( new Chebyshev(flat_spectra, npts_loc, os, lls, uls, dim_loc, modes_loc) );
 
 	return;
 }

@@ -15,11 +15,10 @@ using namespace std;
 							// will be considered to be identical (b/c Cooper-Frye)
 #define VERBOSE 			3		// specifies level of output - 0 is lowest (no output)
 #define DEBUG				false		// flag for output of debugging statements
-#define SPACETIME_MOMENTS_ONLY		false		// duh
 #define DO_ALL_DECAY_CHANNELS		false		// duh
 #define UNZIP_HDF5			false		// utilizes HDF5 software to store large arrays
 #define USE_LAMBDA			true		// fit correlation function with adjustable intercept parameter
-#define USE_EXTRAPOLATION		true		// extrapolates results of CF integrals instead of competing them, false just calculates full integrals (slower)
+#define USE_EXTRAPOLATION		false		// extrapolates results of CF integrals instead of competing them, false just calculates full integrals (slower)
 #define EXTRAPOLATION_METHOD		0		// 0 - GSL polynomial fit
 							// 1 - direct calculation of rational function fit using ratint in Arsenal.* files (numerator and denominator
 							// orders chosen automatically to be n+m+1==number of percentage markers)
@@ -27,7 +26,6 @@ using namespace std;
 #define PC_MARKER_SPACING		1		// 0 - automatic
 							// 1 - use usr_def_pc_markers
 							// 2 - use usr_def_pc_markers_thinned
-#define COMPUTE_RESONANCE_ARRAYS	true		// alternative is to read them in from a file
 #define COMPUTE_RESONANCE_DECAYS	true		// alternative is to read them in from a file
 #define IGNORE_LONG_LIVED_RESONANCES	true		// particularly, whether to include eta or eta' in spectra calculations
 							// true means C(q=0) ~ 1 + \lambda
@@ -39,11 +37,11 @@ using namespace std;
 //#define VARY_ALPHA			false		// (not yet implemented) feature to treat power in exponential as a fit variable (alpha == 2 <==> traditional Gaussian)
 #define Q_AXES_AND_RAYS_ONLY		false		// true - only do points along q-axes (only works for odd points right now)
 							// false - do full grid
-#define FIT_WITH_PROJECTED_CFVALS	false		// as opposed to unprojected CFvals...
-#define FLESH_OUT_CF			false		// refines grid via interpolation before fitting
+#define FIT_WITH_PROJECTED_CFVALS	true		// as opposed to unprojected CFvals...
+#define FLESH_OUT_CF			true		// refines grid via interpolation before fitting
 #define REGULATE_CF			false		// true (false) means (don't) try to catch spurious values of projected
 							// or regular CF and replace them with median value in that window
-#define USE_OLD_INTERP			true		// for switching easily between different ways of computing resonance integrals
+#define USE_OLD_INTERP			false		// for switching easily between different ways of computing resonance integrals
 
 #ifndef H5_NO_NAMESPACE
     using namespace H5;
@@ -109,15 +107,18 @@ const double init_q = 0.0;
 const int new_nqpts = 51;
 
 //all direction-specific q points information here
-const int qtnpts = 9;
-const int qxnpts = 5;
+const int qtnpts = 35;
+const int qxnpts = 1;
 const int qynpts = 1;
-const int qznpts = 1;
+const int qznpts = 51;
 //try to make max. sqrt(q dot q) ~ 0.025 GeV or so
-const double delta_qt = 0.0075;
-const double delta_qx = 0.0075;
-const double delta_qy = 0.0075;
-const double delta_qz = 0.0075;
+const double delta_qt = 0.00625;
+//const double delta_qx = 0.025;
+//const double delta_qy = 0.025;
+//const double delta_qz = 0.025;
+const double delta_qx = 0.003;
+const double delta_qy = 0.003;
+const double delta_qz = 0.003;
 const double init_qt = -0.5*double(qtnpts-1)*delta_qt;
 const double init_qx = -0.5*double(qxnpts-1)*delta_qx;
 const double init_qy = -0.5*double(qynpts-1)*delta_qy;
@@ -131,8 +132,8 @@ const double SP_pT_max = 3.0;
 
 //parameters for interpolation grid
 //  - polar
-const int n_interp_pT_pts = 15;
-const int n_interp_pphi_pts = 48;
+const int n_interp_pT_pts = 7;
+const int n_interp_pphi_pts = 11;
 const double interp_pT_min = 0.0;
 const double interp_pphi_min = 0.0;
 const double interp_pT_max = 4.0;

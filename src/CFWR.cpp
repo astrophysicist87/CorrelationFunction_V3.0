@@ -49,228 +49,179 @@ double CorrelationFunction::place_in_range(double phi, double min, double max)
 	return (phi);
 }
 
-void CorrelationFunction::Unzip_HDF5_arrays()
-{
-	/*if (!COMPUTE_RESONANCE_ARRAYS)
-	{
-		ostringstream local_cmd;
-		local_cmd << "cd ..; unzip " << global_path << "/HDF5.zip " << global_path << "/resonance_thermal_spectra.h5; cd " << global_path;
-		int cmd_result = system(local_cmd.str().c_str());
-	}
-	if (!COMPUTE_RESONANCE_DECAYS)
-	{
-		ostringstream local_cmd;
-		local_cmd << "cd ..; unzip " << global_path << "/HDF5.zip " << global_path << "/resonance_spectra.h5; cd " << global_path;
-		int cmd_result = system(local_cmd.str().c_str());
-	}*/
-	return;
-}
 //-mcmodel=large
 // ************************************************************
 // Compute correlation function at all specified q points for all resonances here
 // ************************************************************
-void CorrelationFunction::Compute_correlation_function(FO_surf* FOsurf_ptr)
+void CorrelationFunction::Fourier_transform_emission_function(FO_surf* FOsurf_ptr)
 {
 	Stopwatch BIGsw;
 	int decay_channel_loop_cutoff = n_decay_channels;			//loop over direct pions and decay_channels
 
-	//unzip HDF5 files if necessary
-	if (UNZIP_HDF5)
-		Unzip_HDF5_arrays();
+	*global_out_stream_ptr << "Initializing HDF file of resonance spectra..." << endl;
+	int HDFInitializationSuccess = Initialize_resonance_HDF_array();
+	
+	*global_out_stream_ptr << "Initializing HDF file of target thermal moments..." << endl;
+	HDFInitializationSuccess = Initialize_target_thermal_HDF_array();
+	
+	*global_out_stream_ptr << "Setting spacetime moments grid..." << endl;
+	BIGsw.tic();
 
-	// section to set the space-time moments
-	if (COMPUTE_RESONANCE_ARRAYS)
+	// loop over decay_channels (idc == 0 corresponds to thermal pions)
+	for (int idc = 0; idc <= decay_channel_loop_cutoff; ++idc)
 	{
-		*global_out_stream_ptr << "Initializing HDF file of resonance spectra..." << endl;
-		int HDFInitializationSuccess = Initialize_resonance_HDF_array();
 
-		*global_out_stream_ptr << "Setting spacetime moments grid..." << endl;
-		BIGsw.tic();
-		// ************************************************************
-		// loop over decay_channels (idc == 0 corresponds to thermal pions)
-		// ************************************************************
-		for (int idc = 0; idc <= decay_channel_loop_cutoff; ++idc)				//this is inefficient, but will do the job for now
-		{
-			// ************************************************************
-			// check whether to do this decay channel
-			// ************************************************************
-			if (idc > 0 && thermal_pions_only)
-				break;
-			else if (!Do_this_decay_channel(idc))
-				continue;
-
-			// ************************************************************
-			// if so, set decay channel info
-			// ************************************************************
-			Set_current_particle_info(idc);
+		// check whether to do this decay channel
+		if (idc > 0 && thermal_pions_only)
+			break;
+		else if (!Do_this_decay_channel(idc))
+			continue;
 	
-			// ************************************************************
-			// decide whether to recycle old moments or calculate new moments
-			// ************************************************************
-			Get_spacetime_moments(FOsurf_ptr, idc);
-		}	//computing all resonances' spacetime moments here first
-			//THEN do phase-space integrals
-	
-		// once all spacetime moments have been computed, get rid of weighted S_p array to save space
-		Delete_S_p_withweight_array();
-	
-		if (VERBOSE > 0) *global_out_stream_ptr << endl << "************************************************************"
-												<< endl << "* Computed all (thermal) space-time moments!" << endl
-												<< "************************************************************" << endl << endl;
-		BIGsw.toc();
-		*global_out_stream_ptr << "\t ...finished all (thermal) space-time moments in " << BIGsw.takeTime() << " seconds." << endl;
+		// if so, set decay channel info
+		Set_current_particle_info(idc);
 
-		// Now dump all thermal spectra before continuing with resonance decay calculations
-		Dump_spectra_array("thermal_spectra.dat", thermal_spectra);
+		// decide whether to recycle old moments or calculate new moments
+		Get_spacetime_moments(FOsurf_ptr, idc);
 
-		//also retain pion(+) moments for later use...
-		*global_out_stream_ptr << "Saving all thermal " << all_particles[target_particle_id].name << " moments in thermal_target_dN_dypTdpTdphi_moments..." << endl;
-		int getHDFresonanceSpectra = Get_resonance_from_HDF_array(target_particle_id, thermal_target_dN_dypTdpTdphi_moments);
-
-		//set logs and signs!
-		for (int ipid = 0; ipid < Nparticle; ++ipid)
-			Set_spectra_logs_and_signs(ipid);
-
-		//save thermal moments (without resonance decay feeddown) separately
-		int closeHDFresonanceSpectra = Close_resonance_HDF_array();	//finalize HDF spectra file at this stage, then save, then reopen
-		ostringstream local_cmd;
-		local_cmd << "cp " << global_path << "/resonance_spectra.h5 " << global_path << "/resonance_thermal_moments.h5";
-		int cmd_result = system(local_cmd.str().c_str());
-		int openHDFresonanceSpectra = Open_resonance_HDF_array("resonance_spectra.h5");
-
-		if (SPACETIME_MOMENTS_ONLY)
-			return;
-		else if (thermal_pions_only)
-			goto correlation_function_calculation;
 	}
-	else	// must be a pre-existing resonances*.h5 file to use this option
-	{
-		if (COMPUTE_RESONANCE_DECAYS)	//if we're going to do compute the resonance feeddown, we need to copy the thermal moments back over to resonance_spectra.h5...
-		{
-			ostringstream local_cmd;
-			local_cmd << "\\cp " << global_path << "/resonance_thermal_moments.h5 " << global_path << "/resonance_spectra.h5";
-			int cmd_result = system(local_cmd.str().c_str());
-			Load_spectra_array("thermal_spectra.dat", spectra);
-		}
 
-		*global_out_stream_ptr << "Reading in resonance spectra from file!" << endl;
-		int HDFOpenSuccess = Open_resonance_HDF_array("resonance_spectra.h5");
-		if (HDFOpenSuccess < 0)
-		{
-			cerr << "Failed to open HDF array of resonances (resonance_spectra.h5)!  Exiting..." << endl;
-			exit(1);
-		}
+	// once all spacetime moments have been computed, get rid of weighted S_p array to save space
+	Delete_S_p_withweight_array();
 
-		Load_spectra_array("thermal_spectra.dat", thermal_spectra);
-		Load_spectra_array("thermal_spectra.dat", spectra);		//probably don't need this...
-		for (int ipid = 0; ipid < Nparticle; ++ipid)
-			Set_spectra_logs_and_signs(ipid);
-
-		//also retain pion(+) moments for later use...
-		*global_out_stream_ptr << "Saving all thermal " << all_particles[target_particle_id].name << " moments in thermal_target_dN_dypTdpTdphi_moments..." << endl;
-		int getHDFresonanceSpectra = Get_resonance_from_HDF_array(target_particle_id, thermal_target_dN_dypTdpTdphi_moments);
-	}
-	// end of section to set the space-time moments
-
-	// section to compute all decays
-	if (COMPUTE_RESONANCE_DECAYS)
-	{
-		*global_out_stream_ptr << "Computing all phase-space integrals..." << endl;
-		BIGsw.tic();
-
-		// ************************************************************
-		// Compute feeddown with heaviest resonances first
-		// ************************************************************
-		for (int idc = 1; idc <= decay_channel_loop_cutoff; ++idc)
-		{
-			// ************************************************************
-			// check whether to do this decay channel
-			// ************************************************************
-			if (decay_channels[idc-1].resonance_particle_id == target_particle_id || thermal_pions_only)
-				break;
-			else if (!Do_this_decay_channel(idc))
-				continue;
-
-			// ************************************************************
-			// if so, set decay channel info
-			// ************************************************************
-			Set_current_particle_info(idc);
-			Load_resonance_and_daughter_spectra(decay_channels[idc-1].resonance_particle_id);
-			//Load_resonance_spectra(decay_channels[idc-1].resonance_particle_id);
+	BIGsw.toc();
+	*global_out_stream_ptr << "\t ...finished all (thermal) space-time moments in " << BIGsw.takeTime() << " seconds." << endl;
 	
-			// ************************************************************
-			// begin resonance decay calculations here...
-			// ************************************************************
-			Allocate_decay_channel_info();				// allocate needed memory
+	// Now dump all thermal spectra before continuing with resonance decay calculations
+	Dump_spectra_array("thermal_spectra.dat", thermal_spectra);
+	Dump_spectra_array("full_spectra.dat", spectra);
 
-			for (int idc_DI = 0; idc_DI < current_reso_nbody; ++idc_DI)
-			{
-				int daughter_resonance_particle_id = -1;
-				if (!Do_this_daughter_particle(idc, idc_DI, &daughter_resonance_particle_id))
-					continue;
+	//everything currently in resonance*h5 file
+	//make sure thermal target moments are saved here
+	Get_resonance_from_HDF_array(target_particle_id, thermal_target_dN_dypTdpTdphi_moments);
+	//make sure they are written to separate file here
+	Set_target_thermal_in_HDF_array(thermal_target_dN_dypTdpTdphi_moments);
 
-				Set_current_daughter_info(idc, idc_DI);
-				Do_resonance_integrals(current_resonance_particle_id, daughter_resonance_particle_id, idc);
-			}
-	
-			Update_daughter_spectra(decay_channels[idc-1].resonance_particle_id);
-			Delete_decay_channel_info();				// free up memory
+	//set logs and signs!
+	for (int ipid = 0; ipid < Nparticle; ++ipid)
+		Set_spectra_logs_and_signs(ipid);
 
-		}											// END of decay channel loop
-		BIGsw.toc();
-		*global_out_stream_ptr << "\t ...finished computing all phase-space integrals in " << BIGsw.takeTime() << " seconds." << endl;
-
-		Dump_spectra_array("full_spectra.dat", spectra);
-	}
-	else	// must be a pre-existing resonances*.h5 file to use this option
-	{
-		Set_thermal_target_moments();
-
-		*global_out_stream_ptr << "Reading in resonance spectra from file!" << endl;
-		int HDFOpenSuccess = Open_resonance_HDF_array("resonance_spectra.h5");
-		if (HDFOpenSuccess < 0)
-		{
-			cerr << "Failed to open HDF array of resonances (resonance_spectra.h5)!  Exiting..." << endl;
-			exit(1);
-		}
-
-		Load_spectra_array("thermal_spectra.dat", thermal_spectra);
-		Load_spectra_array("full_spectra.dat", spectra);
-		for (int ipid = 0; ipid < Nparticle; ++ipid)
-			Set_spectra_logs_and_signs(ipid);
-	}
-	// end section to compute all decays
-
-	// section to finally get correlation function
-	correlation_function_calculation:
-		// Now, with all resonance contributions to correlation function computed, do the actual calculation
-		*global_out_stream_ptr << "Calculating the correlation function..." << endl;
-		BIGsw.tic();
-		Cal_correlationfunction();
-		BIGsw.toc();
-		*global_out_stream_ptr << "\t ...finished calculating the correlation function in " << BIGsw.takeTime() << " seconds." << endl;
-
+	//save thermal moments (without resonance decay feeddown) separately
+	int closeHDFresonanceSpectra = Close_target_thermal_HDF_array();
 
    return;
 }
+
+void CorrelationFunction::Compute_phase_space_integrals(FO_surf* FOsurf_ptr)
+{
+	if (thermal_pions_only)
+	{
+		*global_out_stream_ptr << "No phase-space integrals need to be computed." << endl;
+		return;
+	}
+
+	Stopwatch BIGsw;
+	int decay_channel_loop_cutoff = n_decay_channels;			//loop over direct pions and decay_channels
+
+	*global_out_stream_ptr << "Computing all phase-space integrals..." << endl;
+	BIGsw.tic();
+	
+	// ************************************************************
+	// Compute feeddown with heaviest resonances first
+	// ************************************************************
+	for (int idc = 1; idc <= decay_channel_loop_cutoff; ++idc)
+	{
+		// ************************************************************
+		// check whether to do this decay channel
+		// ************************************************************
+		if (decay_channels[idc-1].resonance_particle_id == target_particle_id || thermal_pions_only)
+			break;
+		else if (!Do_this_decay_channel(idc))
+			continue;
+	
+		// ************************************************************
+		// if so, set decay channel info
+		// ************************************************************
+		Set_current_particle_info(idc);
+		Load_resonance_and_daughter_spectra(decay_channels[idc-1].resonance_particle_id);
+
+		// ************************************************************
+		// begin resonance decay calculations here...
+		// ************************************************************
+		Allocate_decay_channel_info();				// allocate needed memory
+
+		for (int idc_DI = 0; idc_DI < current_reso_nbody; ++idc_DI)
+		{
+			int daughter_resonance_particle_id = -1;
+			if (!Do_this_daughter_particle(idc, idc_DI, &daughter_resonance_particle_id))
+				continue;
+			Set_current_daughter_info(idc, idc_DI);
+			Do_resonance_integrals(current_resonance_particle_id, daughter_resonance_particle_id, idc);
+		}
+	
+		Update_daughter_spectra(decay_channels[idc-1].resonance_particle_id);
+		Delete_decay_channel_info();				// free up memory
+	}											// END of decay channel loop
+	BIGsw.toc();
+	*global_out_stream_ptr << "\t ...finished computing all phase-space integrals in " << BIGsw.takeTime() << " seconds." << endl;
+
+	Dump_spectra_array("full_spectra.dat", spectra);
+
+	return;
+}
 //////////////////////////////////////////////////////////////////////////////////
-// End of main routine for computing correlation function
+// End of main routines for setting up computation of correlation function
 
 void CorrelationFunction::Set_thermal_target_moments()
 {
-	*global_out_stream_ptr << "Reading in resonance spectra from file!" << endl;
-	int HDFOpenSuccess = Open_resonance_HDF_array("resonance_thermal_moments.h5");
+	//load just thermal spectra (not just target)
+	Load_spectra_array("thermal_spectra.dat", thermal_spectra);
+
+	//load target thermal moments from HDF5 file
+	int HDFOpenSuccess = Open_target_thermal_HDF_array();
 	if (HDFOpenSuccess < 0)
 	{
-		cerr << "Failed to open HDF array of resonances (resonance_thermal_moments.h5)!  Exiting..." << endl;
+		cerr << "Failed to open resonance_thermal_moments.h5!  Exiting..." << endl;
 		exit(1);
 	}
 
-	*global_out_stream_ptr << "Storing all thermal " << all_particles[target_particle_id].name << " moments in thermal_target_dN_dypTdpTdphi_moments..." << endl;
-	int getHDFresonanceSpectra = Get_resonance_from_HDF_array(target_particle_id, thermal_target_dN_dypTdpTdphi_moments);
+	int getHDFresonanceSpectra = Get_target_thermal_from_HDF_array(thermal_target_dN_dypTdpTdphi_moments);
+	if (getHDFresonanceSpectra < 0)
+	{
+		cerr << "Failed to get this resonance from HDF array!  Exiting..." << endl;
+		exit;
+	}
 
-	int HDFCloseSuccess = Close_resonance_HDF_array();	//finalize HDF spectra file at this stage, then save, then reopen
+	int HDFCloseSuccess = Close_target_thermal_HDF_array();
+	if (HDFCloseSuccess < 0)
+	{
+		cerr << "Failed to close HDF array of resonances (resonance_spectra.h5)!  Exiting..." << endl;
+		exit(1);
+	}
 
+	return;
+}
+
+void CorrelationFunction::Set_full_target_moments()
+{
+	//load just spectra with resonances (not just target)
+	Load_spectra_array("full_spectra.dat", spectra);
+
+	//load full target moments with resonances from HDF5 file
+	int HDFOpenSuccess = Open_resonance_HDF_array("resonance_spectra.h5");
+	if (HDFOpenSuccess < 0)
+	{
+		cerr << "Failed to open HDF array of resonances (resonance_spectra.h5)!  Exiting..." << endl;
+		exit(1);
+	}
+
+	int getHDFresonanceSpectra = Get_resonance_from_HDF_array(target_particle_id, current_dN_dypTdpTdphi_moments);
+	if (getHDFresonanceSpectra < 0)
+	{
+		cerr << "Failed to get this resonance from HDF array!  Exiting..." << endl;
+		exit;
+	}
+
+	int HDFCloseSuccess = Close_resonance_HDF_array();
 	if (HDFCloseSuccess < 0)
 	{
 		cerr << "Failed to close HDF array of resonances (resonance_spectra.h5)!  Exiting..." << endl;

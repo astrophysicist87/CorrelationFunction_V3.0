@@ -15,7 +15,6 @@
 
 using namespace std;
 
-const int SPA_RANK = 2;
 const int RANK2D = 2;
 const int giant_FOslice_array_size = eta_s_npts * qtnpts * qxnpts * qynpts * qznpts * ntrig;
 const int chunk_size = n_interp_pT_pts * n_interp_pphi_pts * qtnpts * qxnpts * qynpts * qznpts * ntrig;
@@ -104,7 +103,81 @@ debugger(__LINE__, __FILE__);
 
 	return (0);
 }
+
+int CorrelationFunction::Initialize_target_thermal_HDF_array()
+{
+	double * tta_chunk = new double [chunk_size];
+
+	ostringstream filename_stream_ra;
+	filename_stream_ra << global_path << "/target_thermal_moments.h5";
+	H5std_string TARGET_THERMAL_FILE_NAME(filename_stream_ra.str().c_str());
+	H5std_string TARGET_THERMAL_DATASET_NAME("tta");
+
+	//bool file_does_not_already_exist = !fexists(filename_stream_ra.str().c_str());
+	bool file_does_not_already_exist = true;	//force full initialization for timebeing...
+
+	try
+    {
+		Exception::dontPrint();
+	
+		tta_file = new H5::H5File(TARGET_THERMAL_FILE_NAME, H5F_ACC_TRUNC);
+
+		DSetCreatPropList cparms;
+		hsize_t chunk_dims[1] = {chunk_size};
+		cparms.setChunk( 1, chunk_dims );
+
+		hsize_t dims[1] = {chunk_size};
+		tta_dataspace = new H5::DataSpace (1, dims);
+
+		tta_dataset = new H5::DataSet( tta_file->createDataSet(TARGET_THERMAL_DATASET_NAME, PredType::NATIVE_DOUBLE, *tta_dataspace, cparms) );
+
+		hsize_t count[1] = {chunk_size};
+		hsize_t dimsm[1] = {chunk_size};
+		hsize_t offset[1] = {0};
+
+		tta_memspace = new H5::DataSpace (1, dimsm, NULL);
+		if (file_does_not_already_exist)
+		{
+			*global_out_stream_ptr << "HDF thermal target moments file doesn't exist!  Initializing to zero..." << endl;
+
+			tta_dataspace->selectHyperslab(H5S_SELECT_SET, count, offset);
+	
+			for (int iidx = 0; iidx < chunk_size; ++iidx)
+				tta_chunk[iidx] = 0.0;
+
+			//initialize everything with zeros
+			tta_dataset->write(tta_chunk, PredType::NATIVE_DOUBLE, *tta_memspace, *tta_dataspace);
+		}
+    }
+
+    catch(FileIException error)
+    {
+		error.printError();
+		cerr << "FileIException error!" << endl;
+		return -1;
+    }
+
+    catch(H5::DataSetIException error)
+    {
+		error.printError();
+		cerr << "DataSetIException error!" << endl;
+		return -2;
+    }
+
+    catch(H5::DataSpaceIException error)
+    {
+		error.printError();
+		cerr << "DataSpaceIException error!" << endl;
+		return -3;
+    }
+
+	delete [] tta_chunk;
+
+	return (0);
+}
+
 /////////////////////////////////////////////
+
 int CorrelationFunction::Open_resonance_HDF_array(string resonance_local_file_name)
 {
 	ostringstream filename_stream_ra;
@@ -149,7 +222,55 @@ int CorrelationFunction::Open_resonance_HDF_array(string resonance_local_file_na
 
 	return (0);
 }
+
 /////////////////////////////////////////////
+
+int CorrelationFunction::Open_target_thermal_HDF_array()
+{
+	ostringstream filename_stream_ra;
+	filename_stream_ra << global_path << "/target_thermal_moments.h5";
+	H5std_string TARGET_THERMAL_FILE_NAME(filename_stream_ra.str().c_str());
+	H5std_string TARGET_THERMAL_DATASET_NAME("tta");
+
+	try
+    {
+		Exception::dontPrint();
+	
+		hsize_t dimsm[1] = {chunk_size};
+		hsize_t dims[1] = {chunk_size};
+
+		tta_dataspace = new H5::DataSpace (1, dims);
+		tta_file = new H5::H5File(TARGET_THERMAL_FILE_NAME, H5F_ACC_RDWR);
+		tta_dataset = new H5::DataSet( tta_file->openDataSet( TARGET_THERMAL_DATASET_NAME ) );
+		tta_memspace = new H5::DataSpace (1, dimsm, NULL);
+    }
+
+    catch(FileIException error)
+    {
+		error.printError();
+		cerr << "FileIException error!" << endl;
+		return -1;
+    }
+
+    catch(H5::DataSetIException error)
+    {
+		error.printError();
+		cerr << "DataSetIException error!" << endl;
+		return -2;
+    }
+
+    catch(H5::DataSpaceIException error)
+    {
+		error.printError();
+		cerr << "DataSpaceIException error!" << endl;
+		return -3;
+    }
+
+	return (0);
+}
+
+/////////////////////////////////////////////
+
 int CorrelationFunction::Close_resonance_HDF_array()
 {
 	try
@@ -187,7 +308,49 @@ int CorrelationFunction::Close_resonance_HDF_array()
 
 	return (0);
 }
+
 /////////////////////////////////////////////
+
+int CorrelationFunction::Close_target_thermal_HDF_array()
+{
+	try
+    {
+		Exception::dontPrint();
+	
+		tta_memspace->close();
+		tta_dataset->close();
+		tta_file->close();
+		delete tta_memspace;
+		delete tta_file;
+		delete tta_dataset;
+    }
+
+    catch(FileIException error)
+    {
+		error.printError();
+		cerr << "FileIException error!" << endl;
+		return -1;
+    }
+
+    catch(H5::DataSetIException error)
+    {
+		error.printError();
+		cerr << "DataSetIException error!" << endl;
+		return -2;
+    }
+
+    catch(H5::DataSpaceIException error)
+    {
+		error.printError();
+		cerr << "DataSpaceIException error!" << endl;
+		return -3;
+    }
+
+	return (0);
+}
+
+/////////////////////////////////////////////
+
 int CorrelationFunction::Set_resonance_in_HDF_array(int local_pid, double ******* resonance_array_to_use)
 {
 	double * resonance_chunk = new double [chunk_size];
@@ -246,7 +409,9 @@ debugger(__LINE__, __FILE__);
 
 	return (0);
 }
+
 /////////////////////////////////////////////
+
 int CorrelationFunction::Get_resonance_from_HDF_array(int local_pid, double ******* resonance_array_to_fill)
 {
 	double * resonance_chunk = new double [chunk_size];
@@ -302,7 +467,124 @@ debugger(__LINE__, __FILE__);
 
 	return (0);
 }
+
 /////////////////////////////////////////////
+
+int CorrelationFunction::Set_target_thermal_in_HDF_array(double ******* tta_array_to_use)
+{
+	double * tta_chunk = new double [chunk_size];
+
+	try
+    {
+		Exception::dontPrint();
+	
+		hsize_t offset[1] = {0};
+		hsize_t count[1] = {chunk_size};				// == chunk_dims
+		tta_dataspace->selectHyperslab(H5S_SELECT_SET, count, offset);
+
+		// use loaded chunk to fill resonance_array_to_fill
+		int iidx = 0;
+		for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		for (int iqt = 0; iqt < qtnpts; ++iqt)
+		for (int iqx = 0; iqx < qxnpts; ++iqx)
+		for (int iqy = 0; iqy < qynpts; ++iqy)
+		for (int iqz = 0; iqz < qznpts; ++iqz)
+		for (int itrig = 0; itrig < ntrig; ++itrig)
+		{
+			double temp = tta_array_to_use[ipt][ipphi][iqt][iqx][iqy][iqz][itrig];
+			tta_chunk[iidx] = temp;
+			++iidx;
+		}
+
+		tta_dataset->write(tta_chunk, PredType::NATIVE_DOUBLE, *tta_memspace, *tta_dataspace);
+   }
+
+    catch(FileIException error)
+    {
+		error.printError();
+		cerr << "FileIException error!" << endl;
+		return -1;
+    }
+
+    catch(H5::DataSetIException error)
+    {
+		error.printError();
+		cerr << "DataSetIException error!" << endl;
+		return -2;
+    }
+
+    catch(H5::DataSpaceIException error)
+    {
+		error.printError();
+		cerr << "DataSpaceIException error!" << endl;
+		return -3;
+    }
+
+	delete [] tta_chunk;
+
+	return (0);
+}
+
+
+/////////////////////////////////////////////
+
+int CorrelationFunction::Get_target_thermal_from_HDF_array(double ******* tta_to_fill)
+{
+	double * tta_chunk = new double [chunk_size];
+
+	try
+    {
+		Exception::dontPrint();
+		hsize_t offset[1] = {0};
+		hsize_t count[1] = {chunk_size};				// == chunk_dims
+		tta_dataspace->selectHyperslab(H5S_SELECT_SET, count, offset);
+		tta_dataset->read(tta_chunk, PredType::NATIVE_DOUBLE, *tta_memspace, *tta_dataspace);
+		// use loaded chunk to fill resonance_array_to_fill
+		int iidx = 0;
+		for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		for (int iqt = 0; iqt < qtnpts; ++iqt)
+		for (int iqx = 0; iqx < qxnpts; ++iqx)
+		for (int iqy = 0; iqy < qynpts; ++iqy)
+		for (int iqz = 0; iqz < qznpts; ++iqz)
+		for (int itrig = 0; itrig < ntrig; ++itrig)
+		{
+			double temp = tta_chunk[iidx];
+			tta_to_fill[ipt][ipphi][iqt][iqx][iqy][iqz][itrig] = temp;
+			++iidx;
+		}
+   }
+
+    catch(FileIException error)
+    {
+		error.printError();
+		cerr << "FileIException error!" << endl;
+		return -1;
+    }
+
+    catch(H5::DataSetIException error)
+    {
+		error.printError();
+		cerr << "DataSetIException error!" << endl;
+		return -2;
+    }
+
+    catch(H5::DataSpaceIException error)
+    {
+		error.printError();
+		cerr << "DataSpaceIException error!" << endl;
+		return -3;
+    }
+
+	delete [] tta_chunk;
+
+	return (0);
+}
+
+
+/////////////////////////////////////////////
+
 int CorrelationFunction::Copy_chunk(int current_resonance_index, int reso_idx_to_be_copied)
 {
 	double * resonance_chunk = new double [chunk_size];
@@ -352,7 +634,9 @@ debugger(__LINE__, __FILE__);
 
 	return (0);
 }
+
 /////////////////////////////////////////////
+
 int CorrelationFunction::Dump_resonance_HDF_array_spectra(string output_filename, double ******* resonance_array_to_use)
 {
 	double * resonance_chunk = new double [chunk_size];

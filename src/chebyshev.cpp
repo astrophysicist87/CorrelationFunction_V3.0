@@ -1,5 +1,6 @@
 #include <cmath>
 #include <iostream>
+#include <stdlib.h>
 
 #include "chebyshev_library.h"
 #include "chebyshev.h"
@@ -10,6 +11,52 @@ using namespace csf;
 Chebyshev::Chebyshev(double * fpts_in, int * numbers_of_points_in, int * orders_in, double * lower_limits_in, double * upper_limits_in, int dimension_in)
 {
 	dimension = dimension_in;
+	modes = new int [dimension];
+	for (int idim = 0; idim < dimension; ++idim)
+		modes[idim] = 0;	//by default, assume standard Chebyshev interpolation in every direction
+
+	numbers_of_points = new int [dimension];
+	orders = new int [dimension];
+	lower_limits = new double [dimension];
+	upper_limits = new double [dimension];
+
+	for (int idim = 0; idim < dimension; ++idim)
+	{
+		numbers_of_points[idim] = numbers_of_points_in[idim];
+		orders[idim] = orders_in[idim];
+		if (1+orders[idim] != numbers_of_points[idim])	//only order of interpolation currently supported
+		{
+			cerr << "Warning: falling back to orders[" << idim << "] = numbers_of_points[" << idim << "] - 1 = " << numbers_of_points[idim] - 1 << endl;
+			orders[idim] = numbers_of_points[idim] - 1;
+		}
+		lower_limits[idim] = lower_limits_in[idim];
+		upper_limits[idim] = upper_limits_in[idim];
+	}
+
+	set_total_coeffs_length();
+	set_total_fpts_length();
+
+	fpts = new double [total_fpts_length];
+	for (int ifpt = 0; ifpt < total_fpts_length; ++ifpt)
+		fpts[ifpt] = fpts_in[ifpt];
+
+	coeffs = new double [total_coeffs_length];
+	for (int ic = 0; ic < total_coeffs_length; ++ic)
+		coeffs[ic] = 0.0;
+
+	//once everything is set, go ahead and do appropriate calculations so that
+	//approximating polynomial is ready to evaluate
+	get_Chebyshev_coefficients();
+
+	return;
+}
+
+Chebyshev::Chebyshev(double * fpts_in, int * numbers_of_points_in, int * orders_in, double * lower_limits_in, double * upper_limits_in, int dimension_in, int * modes_in)
+{
+	dimension = dimension_in;
+	modes = new int [dimension];
+	for (int idim = 0; idim < dimension; ++idim)
+		modes[idim] = modes_in[idim];
 
 	numbers_of_points = new int [dimension];
 	orders = new int [dimension];
@@ -74,6 +121,16 @@ inline double Chebyshev::dot(double * x, double * y, int length)
     for (int i = 0; i < length; ++i)
         sum += x[i]*y[i];
     return (sum);
+}
+
+inline double semi_infinite_scaling(double x, double L)
+{
+	return ( L * ( 1. + x ) / ( 1. - x ) );
+}
+
+inline double semi_infinite_inverse_scaling(double x, double L)
+{
+	return ( ( x - L ) / ( x + L ) );
 }
 
 void Chebyshev::set_nodes(int number_of_points, double * nodes)
@@ -230,7 +287,21 @@ double Chebyshev::eval(double * p)
 	//p is point at which to evaluate approximating polynomial
 	double * unadj_p = new double [dimension];	//the unadjusted point
 	for (int idim = 0; idim < dimension; ++idim)
-		unadj_p[idim] = 2.0 * ((p[idim] - lower_limits[idim]) / (upper_limits[idim] - lower_limits[idim])) - 1.0;
+	{
+		switch (modes[idim])
+		{
+			case 0:		//standard Chebyshev interpolation on finite interval
+				unadj_p[idim] = 2.0 * ((p[idim] - lower_limits[idim]) / (upper_limits[idim] - lower_limits[idim])) - 1.0;
+				break;
+			case 1:		//semi-infinite Chebyshev interpolation: scale set by upper_limits[idim]
+				unadj_p[idim] = semi_infinite_inverse_scaling(p[idim], upper_limits[idim]);
+				break;
+			default:
+				cerr << "Chebyshev(): invalid mode choice of modes[dim = " << idim << "] == " << modes[idim] << "!" << endl;
+				exit(1);
+				break;
+		}
+	}
 
 	double result = 0.0;
 	for (int ic = 0; ic < total_coeffs_length; ++ic)
