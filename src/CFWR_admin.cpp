@@ -1195,7 +1195,7 @@ void CorrelationFunction::Set_q_points()
 	iqy0 = (qynpts - 1) / 2;
 	iqz0 = (qznpts - 1) / 2;
 
-	cerr << "Output iq*0 = " << iqt0 << "   " << iqx0 << "   " << iqy0 << "   " << iqz0 << endl;
+	cout << "Output iq*0 = " << iqt0 << "   " << iqx0 << "   " << iqy0 << "   " << iqz0 << endl;
 
 	return;
 }

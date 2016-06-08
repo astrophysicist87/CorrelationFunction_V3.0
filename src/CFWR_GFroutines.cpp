@@ -215,9 +215,9 @@ void CorrelationFunction::Compute_correlationfunction(double * totalresult, doub
 void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi, double sample_scale /*==1.0*/)
 {
 	//declare needed quantities here
-	double qxmin = sample_scale*qx_pts[0], qxmax = sample_scale*qx_pts[qxnpts-1];
-	double qymin = sample_scale*qy_pts[0], qymax = sample_scale*qy_pts[qynpts-1];
-	double qzmin = sample_scale*qz_pts[0], qzmax = sample_scale*qz_pts[qznpts-1];
+	double qxmin = 0.9999*sample_scale*qx_pts[0], qxmax = 0.9999*sample_scale*qx_pts[qxnpts-1];
+	double qymin = 0.9999*sample_scale*qy_pts[0], qymax = 0.9999*sample_scale*qy_pts[qynpts-1];
+	double qzmin = 0.9999*sample_scale*qz_pts[0], qzmax = 0.9999*sample_scale*qz_pts[qznpts-1];
 
 	double new_Del_qx = (qxmax - qxmin)/(double(new_nqpts-1)+1.e-100);
 	double new_Del_qy = (qymax - qymin)/(double(new_nqpts-1)+1.e-100);
