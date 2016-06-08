@@ -18,7 +18,7 @@
 
 using namespace std;
 
-void CorrelationFunction::Get_GF_HBTradii(int folderindex)
+void CorrelationFunction::Get_GF_HBTradii()
 {
 	//if (!VARY_ALPHA)
 		*global_out_stream_ptr << "--> Getting HBT radii by Gaussian fit method" << endl;
@@ -46,9 +46,6 @@ void CorrelationFunction::Get_GF_HBTradii(int folderindex)
 			Fit_Correlationfunction3D_withlambda( CF_for_fitting, ipt, ipphi, FLESH_OUT_CF );
 		else
 			Fit_Correlationfunction3D( CF_for_fitting, ipt, ipphi, FLESH_OUT_CF );
-
-		//if (FLESH_OUT_CF)
-		//	Output_fleshed_out_correlationfunction(ipt, ipphi);
 	}
 
 	if (FLESH_OUT_CF)
@@ -215,12 +212,12 @@ void CorrelationFunction::Compute_correlationfunction(double * totalresult, doub
 // Routines for refining correlation function grid via interpolation
 //******************************************************************
 
-void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
+void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi, double sample_scale /*==1.0*/)
 {
 	//declare needed quantities here
-	double qxmin = 0.9999*qx_pts[0], qxmax = 0.9999*qx_pts[qxnpts-1];
-	double qymin = 0.9999*qy_pts[0], qymax = 0.9999*qy_pts[qynpts-1];
-	double qzmin = 0.9999*qz_pts[0], qzmax = 0.9999*qz_pts[qznpts-1];
+	double qxmin = sample_scale*qx_pts[0], qxmax = sample_scale*qx_pts[qxnpts-1];
+	double qymin = sample_scale*qy_pts[0], qymax = sample_scale*qy_pts[qynpts-1];
+	double qzmin = sample_scale*qz_pts[0], qzmax = sample_scale*qz_pts[qznpts-1];
 
 	double new_Del_qx = (qxmax - qxmin)/(double(new_nqpts-1)+1.e-100);
 	double new_Del_qy = (qymax - qymin)/(double(new_nqpts-1)+1.e-100);
@@ -291,7 +288,10 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 		for (int iqx = 0; iqx < qxnpts; ++iqx)
 		for (int iqy = 0; iqy < qynpts; ++iqy)
 		for (int iqz = 0; iqz < qznpts; ++iqz)
-			flat_C_at_q[qidx++] = current_C_slice[iqx][iqy][iqz];
+		{
+			flat_C_at_q[qidx++] = current_C_slice[iqx][iqy][iqz] - 1.0;
+			cout << "FC: " << current_C_slice[iqx][iqy][iqz] << endl;
+		}
 
 		Chebyshev cf(flat_C_at_q, npts_loc, os, lls, uls, 3);
 
@@ -301,7 +301,7 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 			int iqXY = 0;
 			for (int iqx = 0; iqx < qxnpts; ++iqx)
 			for (int iqy = 0; iqy < qynpts; ++iqy)
-				flat2D_C_at_q_XY[iqXY++] = current_C_slice[iqx][iqy][iqz];
+				flat2D_C_at_q_XY[iqXY++] = current_C_slice[iqx][iqy][iqz] - 1.0;
 			cf_XY.push_back(new Chebyshev(flat2D_C_at_q_XY, npts_loc_XY, os_XY, lls_XY, uls_XY, 2) );
 		}
 		
@@ -311,7 +311,7 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 			int iqXZ = 0;
 			for (int iqx = 0; iqx < qxnpts; ++iqx)
 			for (int iqz = 0; iqz < qznpts; ++iqz)
-				flat2D_C_at_q_XZ[iqXZ++] = current_C_slice[iqx][iqy][iqz];
+				flat2D_C_at_q_XZ[iqXZ++] = current_C_slice[iqx][iqy][iqz] - 1.0;
 			cf_XZ.push_back(new Chebyshev(flat2D_C_at_q_XZ, npts_loc_XZ, os_XZ, lls_XZ, uls_XZ, 2) );
 		}
 
@@ -321,7 +321,7 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 			int iqYZ = 0;
 			for (int iqy = 0; iqy < qynpts; ++iqy)
 			for (int iqz = 0; iqz < qznpts; ++iqz)
-				flat2D_C_at_q_YZ[iqYZ++] = current_C_slice[iqx][iqy][iqz];
+				flat2D_C_at_q_YZ[iqYZ++] = current_C_slice[iqx][iqy][iqz] - 1.0;
 			cf_YZ.push_back(new Chebyshev(flat2D_C_at_q_YZ, npts_loc_YZ, os_YZ, lls_YZ, uls_YZ, 2) );
 		}
 
@@ -331,7 +331,7 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 		{
 			int iqX = 0;
 			for (int iqx = 0; iqx < qxnpts; ++iqx)
-				flat1D_C_at_q_X[iqX++] = current_C_slice[iqx][iqy][iqz];
+				flat1D_C_at_q_X[iqX++] = current_C_slice[iqx][iqy][iqz] - 1.0;
 			cf_X[iqy].push_back(new Chebyshev(flat1D_C_at_q_X, npts_loc_X, os_X, lls_X, uls_X, 1) );
 		}
 		
@@ -341,7 +341,7 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 		{
 			int iqY = 0;
 			for (int iqy = 0; iqy < qynpts; ++iqy)
-				flat1D_C_at_q_Y[iqY++] = current_C_slice[iqx][iqy][iqz];
+				flat1D_C_at_q_Y[iqY++] = current_C_slice[iqx][iqy][iqz] - 1.0;
 			cf_Y[iqx].push_back(new Chebyshev(flat1D_C_at_q_Y, npts_loc_Y, os_Y, lls_Y, uls_Y, 1) );
 		}
 
@@ -351,7 +351,7 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 		{
 			int iqZ = 0;
 			for (int iqz = 0; iqz < qznpts; ++iqz)
-				flat1D_C_at_q_Z[iqZ++] = current_C_slice[iqx][iqy][iqz];
+				flat1D_C_at_q_Z[iqZ++] = current_C_slice[iqx][iqy][iqz] - 1.0;
 			cf_Z[iqx].push_back(new Chebyshev(flat1D_C_at_q_Z, npts_loc_Z, os_Z, lls_Z, uls_Z, 1) );
 		}
 
@@ -421,23 +421,25 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 			int iqy0_loc = ( qy0 < qy_pts[0]) ? 0 : qynpts - 2;
 			int iqz0_loc = ( qz0 < qz_pts[0]) ? 0 : qznpts - 2;
 
+cout << "FLESH CHECK: " << qx0 << "   " << qy0 << "   " << qz0 << "   " << iqx0_loc << "   " << iqy0_loc << "   " << iqz0_loc << "   " << region_index[iqx][iqy][iqz] << "   ";
+
 			switch(region_index[iqx][iqy][iqz])
 			{
 				case 0:	//X-Y-Z in range
 					double point_XYZ[3] = { qx0, qy0, qz0 };
-					fleshed_out_CF[iqx][iqy][iqz] = cf.eval(point_XYZ);
+					fleshed_out_CF[iqx][iqy][iqz] = 1.0 + cf.eval(point_XYZ);
 					break;
 				case 1:	//X-Y in range, Z out of range
 					double point_XY[2] = { qx0, qy0 };
 					double fZ1 = (*cf_XY[iqz0_loc]).eval(point_XY);
 					double fZ2 = (*cf_XY[iqz0_loc+1]).eval(point_XY);
-					fleshed_out_CF[iqx][iqy][iqz] = Extrapolate_Gaussian_1D(qz0, qz_pts[iqz0_loc], qz_pts[iqz0_loc+1], fZ1, fZ2);
+					fleshed_out_CF[iqx][iqy][iqz] = 1.0 + Extrapolate_Gaussian_1D(qz0, qz_pts[iqz0_loc], qz_pts[iqz0_loc+1], fZ1, fZ2);
 					break;
 				case 2:	//X-Z in range, Y out of range
 					double point_XZ[2] = { qx0, qz0 };
 					double fY1 = (*cf_XZ[iqy0_loc]).eval(point_XZ);
 					double fY2 = (*cf_XZ[iqy0_loc+1]).eval(point_XZ);
-					fleshed_out_CF[iqx][iqy][iqz] = Extrapolate_Gaussian_1D(qy0, qy_pts[iqy0_loc], qy_pts[iqy0_loc+1], fY1, fY2);
+					fleshed_out_CF[iqx][iqy][iqz] = 1.0 + Extrapolate_Gaussian_1D(qy0, qy_pts[iqy0_loc], qy_pts[iqy0_loc+1], fY1, fY2);
 					break;
 				case 3:	//X in range, Y-Z out of range
 					double point_X[1] = { qx0 };
@@ -448,13 +450,13 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 					for (int i1 = 0; i1 < 2; ++i1)
 					for (int i2 = 0; i2 < 2; ++i2)
 						Gvals_YZ[i1][i2] = (*cf_X[iqy0_loc+i1][iqz0_loc+i2]).eval(point_X);
-					fleshed_out_CF[iqx][iqy][iqz] = Extrapolate_Gaussian_2D(Gpoint_YZ, Glower_YZ, Gupper_YZ, Gvals_YZ);
+					fleshed_out_CF[iqx][iqy][iqz] = 1.0 + Extrapolate_Gaussian_2D(Gpoint_YZ, Glower_YZ, Gupper_YZ, Gvals_YZ);
 					break;
 				case 4:	//Y-Z in range, X out of range
 					double point_YZ[2] = { qy0, qz0 };
 					double fX1 = (*cf_YZ[iqx0_loc]).eval(point_YZ);
 					double fX2 = (*cf_YZ[iqx0_loc+1]).eval(point_YZ);
-					fleshed_out_CF[iqx][iqy][iqz] = Extrapolate_Gaussian_1D(qx0, qx_pts[iqx0_loc], qx_pts[iqx0_loc+1], fX1, fX2);
+					fleshed_out_CF[iqx][iqy][iqz] = 1.0 + Extrapolate_Gaussian_1D(qx0, qx_pts[iqx0_loc], qx_pts[iqx0_loc+1], fX1, fX2);
 					break;
 				case 5:	//Y in range, X-Z out of range
 					double point_Y[1] = { qy0 };
@@ -465,7 +467,7 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 					for (int i1 = 0; i1 < 2; ++i1)
 					for (int i2 = 0; i2 < 2; ++i2)
 						Gvals_XZ[i1][i2] = (*cf_Y[iqx0_loc+i1][iqz0_loc+i2]).eval(point_Y);
-					fleshed_out_CF[iqx][iqy][iqz] = Extrapolate_Gaussian_2D(Gpoint_XZ, Glower_XZ, Gupper_XZ, Gvals_XZ);
+					fleshed_out_CF[iqx][iqy][iqz] = 1.0 + Extrapolate_Gaussian_2D(Gpoint_XZ, Glower_XZ, Gupper_XZ, Gvals_XZ);
 					break;
 				case 6:	//Z in range, X-Y out of range
 					double point_Z[1] = { qz0 };
@@ -476,7 +478,7 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 					for (int i1 = 0; i1 < 2; ++i1)
 					for (int i2 = 0; i2 < 2; ++i2)
 						Gvals_XY[i1][i2] = (*cf_Z[iqx0_loc+i1][iqy0_loc+i2]).eval(point_Z);
-					fleshed_out_CF[iqx][iqy][iqz] = Extrapolate_Gaussian_2D(Gpoint_XY, Glower_XY, Gupper_XY, Gvals_XY);
+					fleshed_out_CF[iqx][iqy][iqz] = 1.0 + Extrapolate_Gaussian_2D(Gpoint_XY, Glower_XY, Gupper_XY, Gvals_XY);
 					break;
 				case 7:	//X-Y-Z out of range
 					double Gpoint_XYZ[3] = { qx0, qy0, qz0 };
@@ -486,15 +488,16 @@ void CorrelationFunction::Flesh_out_CF(int ipt, int ipphi)
 					for (int i1 = 0; i1 < 2; ++i1)
 					for (int i2 = 0; i2 < 2; ++i2)
 					for (int i3 = 0; i3 < 2; ++i3)
-						Gvals_XYZ[i1][i2][i3] = current_C_slice[iqx0_loc+i1][iqy0_loc+i2][iqz0_loc+i3];
-					fleshed_out_CF[iqx][iqy][iqz] = Extrapolate_Gaussian_3D(Gpoint_XYZ, Glower_XYZ, Gupper_XYZ, Gvals_XYZ);
+						Gvals_XYZ[i1][i2][i3] = current_C_slice[iqx0_loc+i1][iqy0_loc+i2][iqz0_loc+i3] - 1.0;
+					fleshed_out_CF[iqx][iqy][iqz] = 1.0 + Extrapolate_Gaussian_3D(Gpoint_XYZ, Glower_XYZ, Gupper_XYZ, Gvals_XYZ);
 					break;
 				default:
 					cerr << "CorrelationFunction::Flesh_out_CF(" << ipt << ", " << ipphi << "): shouldn't have made it to this point!  Exiting..." << endl;
 					exit(1);
 					break;
 			}
-
+cout << fleshed_out_CF[iqx][iqy][iqz] << endl;
+//exit(1);
 		}
 
 		for (int it = 0; it < cf_XY.size(); ++it)
@@ -608,7 +611,7 @@ double CorrelationFunction::Extrapolate_Gaussian_3D(double * q0, double * qi0, d
 	if (vals[0][0][0] <= 0.0 || vals[0][0][1] <= 0.0 || vals[0][1][0] <= 0.0 || vals[0][1][1] <= 0.0
 			|| vals[1][0][0] <= 0.0 || vals[1][0][1] <= 0.0 || vals[1][1][0] <= 0.0 || vals[1][1][1] <= 0.0)
 	{
-		for (int i = 0; i < 2; ++i)
+		for (int i = 0; i < 3; ++i)
 		{
 			slopes[i][0] = (qi1[i] - q0[i]) / (qi1[i] - qi0[i]);
 			slopes[i][1] = 1.0 - slopes[i][0];
@@ -621,7 +624,7 @@ double CorrelationFunction::Extrapolate_Gaussian_3D(double * q0, double * qi0, d
 	}
 	else
 	{
-		for (int i = 0; i < 2; ++i)
+		for (int i = 0; i < 3; ++i)
 		{
 			double sqi1 = sgn(qi1[i])*qi1[i]*qi1[i];
 			double sq0 = sgn(q0[i])*q0[i]*q0[i];
@@ -708,7 +711,7 @@ double CorrelationFunction::interpolate_CF(double *** current_C_slice, double qx
 	}
 	else
 	{
-		int cqx = (qxnpts - 1)/2;           //central qx index
+		/*int cqx = (qxnpts - 1)/2;           //central qx index
 		int cqy = (qynpts - 1)/2;
 		int cqz = (qznpts - 1)/2;
 		int iqxh0 = (qxnpts - cqx - 1)/2;   //halfway between cqx and nqpts-1
@@ -771,7 +774,7 @@ double CorrelationFunction::interpolate_CF(double *** current_C_slice, double qx
 		double fx1yizi = interpolate_qi(qy0, qy_0, qy_1, fx1y0zi, fx1y1zi, use_linear_qy);
 	
 		//finally, interpolate over qx-points
-		fxiyizi = interpolate_qi(qx0, qx_0, qx_1, fx0yizi, fx1yizi, use_linear_qx) - offset;
+		fxiyizi = interpolate_qi(qx0, qx_0, qx_1, fx0yizi, fx1yizi, use_linear_qx) - offset;*/
 
 		fxiyizi = interpolate3D(qx_pts, qy_pts, qz_pts, current_C_slice, qx0, qy0, qz0, qxnpts, qynpts, qznpts, 1, true);
 
@@ -935,9 +938,9 @@ void CorrelationFunction::get_CF(double * totalresult, double * thermalresult, d
 
 	if (return_projected_value)
 	{
-		nonFTd_spectra += (nonFTd_spectra - nonFTd_tspectra) / fraction_of_resonances;
-		cos_transf_spectra += (cos_transf_spectra - cos_transf_tspectra) / fraction_of_resonances;
-		sin_transf_spectra += (sin_transf_spectra - sin_transf_tspectra) / fraction_of_resonances;
+		nonFTd_spectra = nonFTd_tspectra + (nonFTd_spectra - nonFTd_tspectra) / fraction_of_resonances;
+		cos_transf_spectra = cos_transf_tspectra + (cos_transf_spectra - cos_transf_tspectra) / fraction_of_resonances;
+		sin_transf_spectra = sin_transf_tspectra + (sin_transf_spectra - sin_transf_tspectra) / fraction_of_resonances;
 	}
 
 	//non-thermal
@@ -963,6 +966,19 @@ void CorrelationFunction::get_CF(double * totalresult, double * thermalresult, d
 
 	//cout << "CHECK (" << ipt << ", " << ipphi << ", " << iqt << ", " << iqx << ", " << iqy << ", " << iqz << "): "
 	//		<< *thermalresult << "   " << *crosstermresult << "   " << *resonanceresult << "   " << *totalresult << endl;
+
+	//this is just for debugging: get rid of it if you don't remember what it does!
+	/*if (return_projected_value)
+	{
+		nonFTd_spectra = spectra[target_particle_id][ipt][ipphi];
+		cos_transf_spectra = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
+		sin_transf_spectra = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
+
+		double CF0 = (cos_transf_tspectra*cos_transf_tspectra + sin_transf_tspectra*sin_transf_tspectra) / (nonFTd_tspectra*nonFTd_tspectra);
+		double CF1 = (cos_transf_spectra*cos_transf_spectra + sin_transf_spectra*sin_transf_spectra) / (nonFTd_spectra*nonFTd_spectra);
+		*totalresult = CF0 + (CF1 - CF0) / fraction_of_resonances;
+	}*/
+
 
 	return;
 }
@@ -1100,10 +1116,10 @@ if (i==(q1npts-1)/2 && j==(q2npts-1)/2 && k==(q3npts-1)/2)
 
 	lambda_Correl[ipt][ipphi] = 1.0;
 	lambda_Correl_err[ipt][ipphi] = 0.0;
-	R2_out[ipt][ipphi] = fabs(get_fit_results(0, solver_ptr))*hbarC*hbarC;
-	R2_side[ipt][ipphi] = fabs(get_fit_results(1, solver_ptr))*hbarC*hbarC;
-	R2_long[ipt][ipphi] = fabs(get_fit_results(2, solver_ptr))*hbarC*hbarC;
-	R2_outside[ipt][ipphi] = get_fit_results(3, solver_ptr)*hbarC*hbarC;
+	R2_out_GF[ipt][ipphi] = fabs(get_fit_results(0, solver_ptr))*hbarC*hbarC;
+	R2_side_GF[ipt][ipphi] = fabs(get_fit_results(1, solver_ptr))*hbarC*hbarC;
+	R2_long_GF[ipt][ipphi] = fabs(get_fit_results(2, solver_ptr))*hbarC*hbarC;
+	R2_outside_GF[ipt][ipphi] = get_fit_results(3, solver_ptr)*hbarC*hbarC;
 	R2_out_err[ipt][ipphi] = c*get_fit_err(0, covariance_ptr)*hbarC*hbarC;
 	R2_side_err[ipt][ipphi] = c*get_fit_err(1, covariance_ptr)*hbarC*hbarC;
 	R2_long_err[ipt][ipphi] = c*get_fit_err(2, covariance_ptr)*hbarC*hbarC;
@@ -1116,10 +1132,10 @@ if (i==(q1npts-1)/2 && j==(q2npts-1)/2 && k==(q3npts-1)/2)
 			<< "chisq/dof = " << chi*chi/dof << endl;
 		cout << scientific << setw(10) << setprecision(5) 
 			<< " lambda[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << lambda_Correl[ipt][ipphi] << " +/- " << lambda_Correl_err[ipt][ipphi] << endl;
-		cout << " R2_out[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_out[ipt][ipphi] << " +/- " << R2_out_err[ipt][ipphi] << endl;
-		cout << " R2_side[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_side[ipt][ipphi] << " +/- " << R2_side_err[ipt][ipphi] << endl;
-		cout << " R2_long[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_long[ipt][ipphi] << " +/- " << R2_long_err[ipt][ipphi] << endl;
-		cout << " R2_outside[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_outside[ipt][ipphi] << " +/- " << R2_outside_err[ipt][ipphi] << endl;
+		cout << " R2_out[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_out_GF[ipt][ipphi] << " +/- " << R2_out_err[ipt][ipphi] << endl;
+		cout << " R2_side[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_side_GF[ipt][ipphi] << " +/- " << R2_side_err[ipt][ipphi] << endl;
+		cout << " R2_long[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_long_GF[ipt][ipphi] << " +/- " << R2_long_err[ipt][ipphi] << endl;
+		cout << " R2_outside[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_outside_GF[ipt][ipphi] << " +/- " << R2_outside_err[ipt][ipphi] << endl;
 	}
 
 	//clean up
@@ -1266,10 +1282,10 @@ if (i==(q1npts-1)/2 && j==(q2npts-1)/2 && k==(q3npts-1)/2)
 
 	lambda_Correl[ipt][ipphi] = get_fit_results(0, solver_ptr);
 	lambda_Correl_err[ipt][ipphi] = c*get_fit_err(0, covariance_ptr);
-	R2_out[ipt][ipphi] = fabs(get_fit_results(1, solver_ptr))*hbarC*hbarC;
-	R2_side[ipt][ipphi] = fabs(get_fit_results(2, solver_ptr))*hbarC*hbarC;
-	R2_long[ipt][ipphi] = fabs(get_fit_results(3, solver_ptr))*hbarC*hbarC;
-	R2_outside[ipt][ipphi] = get_fit_results(4, solver_ptr)*hbarC*hbarC;
+	R2_out_GF[ipt][ipphi] = fabs(get_fit_results(1, solver_ptr))*hbarC*hbarC;
+	R2_side_GF[ipt][ipphi] = fabs(get_fit_results(2, solver_ptr))*hbarC*hbarC;
+	R2_long_GF[ipt][ipphi] = fabs(get_fit_results(3, solver_ptr))*hbarC*hbarC;
+	R2_outside_GF[ipt][ipphi] = get_fit_results(4, solver_ptr)*hbarC*hbarC;
 	R2_out_err[ipt][ipphi] = c*get_fit_err(1, covariance_ptr)*hbarC*hbarC;
 	R2_side_err[ipt][ipphi] = c*get_fit_err(2, covariance_ptr)*hbarC*hbarC;
 	R2_long_err[ipt][ipphi] = c*get_fit_err(3, covariance_ptr)*hbarC*hbarC;
@@ -1282,10 +1298,10 @@ if (i==(q1npts-1)/2 && j==(q2npts-1)/2 && k==(q3npts-1)/2)
 			<< "chisq/dof = " << chi*chi/dof << endl;
 		cout << scientific << setw(10) << setprecision(5) 
 			<< " lambda = " << lambda_Correl[ipt][ipphi] << " +/- " << lambda_Correl_err[ipt][ipphi] << endl;
-		cout << " R2_out[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_out[ipt][ipphi] << " +/- " << R2_out_err[ipt][ipphi] << endl;
-		cout << " R2_side[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_side[ipt][ipphi] << " +/- " << R2_side_err[ipt][ipphi] << endl;
-		cout << " R2_long[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_long[ipt][ipphi] << " +/- " << R2_long_err[ipt][ipphi] << endl;
-		cout << " R2_outside[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_outside[ipt][ipphi] << " +/- " << R2_outside_err[ipt][ipphi] << endl;
+		cout << " R2_out[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_out_GF[ipt][ipphi] << " +/- " << R2_out_err[ipt][ipphi] << endl;
+		cout << " R2_side[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_side_GF[ipt][ipphi] << " +/- " << R2_side_err[ipt][ipphi] << endl;
+		cout << " R2_long[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_long_GF[ipt][ipphi] << " +/- " << R2_long_err[ipt][ipphi] << endl;
+		cout << " R2_outside[ipt=" << ipt << "][ipphi=" << ipphi << "] = " << R2_outside_GF[ipt][ipphi] << " +/- " << R2_outside_err[ipt][ipphi] << endl;
 	}
 
 	//clean up

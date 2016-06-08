@@ -59,6 +59,19 @@ void initialize_PRfile(string currentworkingdirectory, string PRfilename = "Proc
 	output << "      --> eta_s_i: " << eta_s_i << endl;
 	output << "      --> eta_s_f: " << eta_s_f << endl;
 
+	output << "   - Single-particle momentum information:" << endl;
+	output << "      --> n_interp_pT_pts: " << n_interp_pT_pts << endl;
+	output << "      --> n_interp_pphi_pts: " << n_interp_pphi_pts << endl;
+	output << "      --> interp_pT_min: " << interp_pT_min << endl;
+	output << "      --> interp_pT_max: " << interp_pT_max << endl;
+	output << "      --> interp_pphi_min: " << interp_pphi_min << endl;
+	output << "      --> interp_pphi_max: " << interp_pphi_max << endl;
+
+	output << "   - Phase-space integral information:" << endl;
+	output << "      --> s_npts: " << s_npts << endl;
+	output << "      --> v_npts: " << v_npts << endl;
+	output << "      --> zeta_npts: " << zeta_npts << endl;
+
 	output << "   - Relative momentum information:" << endl;
 	output << "      --> qtnpts: " << qtnpts << endl;
 	output << "      --> qxnpts: " << qxnpts << endl;
@@ -73,10 +86,6 @@ void initialize_PRfile(string currentworkingdirectory, string PRfilename = "Proc
 	output << "      --> init_qy: " << init_qy << endl;
 	output << "      --> init_qz: " << init_qz << endl;
 
-	output << "   - Correlation function information:" << endl;
-	output << "      --> corrfuncdim: " << corrfuncdim << endl;
-	output << "      --> lambdaflag: " << lambdaflagstring << endl;
-
 	output << "   - Pair momentum information:" << endl;
 	output << "      --> n_localp_T: " << n_localp_T << endl;
 	output << "      --> localp_T_min: " << localp_T_min << endl;
@@ -84,6 +93,10 @@ void initialize_PRfile(string currentworkingdirectory, string PRfilename = "Proc
 	output << "      --> n_localp_phi: " << n_localp_phi << endl;
 	output << "      --> localp_phi_min: " << localp_phi_min << endl;
 	output << "      --> localp_phi_max: " << localp_phi_max << endl;
+
+	output << "   - Correlation function information:" << endl;
+	output << "      --> corrfuncdim: " << corrfuncdim << endl;
+	output << "      --> lambdaflag: " << lambdaflagstring << endl;
 
 	output << "   - HBT Fourier information:" << endl;
 	output << "      --> n_order: " << n_order << endl;

@@ -1573,8 +1573,9 @@ double CorrelationFunction::Cal_dN_dypTdpTdphi_function(FO_surf* FOsurf_ptr, int
 	return dN_dypTdpTdphi;
 }
 
-void CorrelationFunction::R2_Fourier_transform(int iKT, double plane_psi)
+void CorrelationFunction::R2_Fourier_transform(int iKT, double plane_psi, int mode)
 {
+	//int mode: 0 - GF, 1 - QM
 	for(int Morder = 0; Morder < n_order; ++Morder)
 	{
 		double cos_mK_phi[n_localp_phi], sin_mK_phi[n_localp_phi];
@@ -1609,18 +1610,36 @@ void CorrelationFunction::R2_Fourier_transform(int iKT, double plane_psi)
 			temp_sum_outlong_sin += (*approx_R2ol).eval(point)*sin_mK_phi[iKphi]*K_phi_weight[iKphi];
 		}
 
-		R2_side_C[iKT][Morder] = temp_sum_side_cos/(2.*M_PI);
-		R2_side_S[iKT][Morder] = temp_sum_side_sin/(2.*M_PI);
-		R2_out_C[iKT][Morder] = temp_sum_out_cos/(2.*M_PI);
-		R2_out_S[iKT][Morder] = temp_sum_out_sin/(2.*M_PI);
-		R2_outside_C[iKT][Morder] = temp_sum_outside_cos/(2.*M_PI);
-		R2_outside_S[iKT][Morder] = temp_sum_outside_sin/(2.*M_PI);
-		R2_long_C[iKT][Morder] = temp_sum_long_cos/(2.*M_PI);
-		R2_long_S[iKT][Morder] = temp_sum_long_sin/(2.*M_PI);
-		R2_sidelong_C[iKT][Morder] = temp_sum_sidelong_cos/(2.*M_PI);
-		R2_sidelong_S[iKT][Morder] = temp_sum_sidelong_sin/(2.*M_PI);
-		R2_outlong_C[iKT][Morder] = temp_sum_outlong_cos/(2.*M_PI);
-		R2_outlong_S[iKT][Morder] = temp_sum_outlong_sin/(2.*M_PI);
+		if (mode == 0)
+		{
+			R2_side_GF_C[iKT][Morder] = temp_sum_side_cos/(2.*M_PI);
+			R2_side_GF_S[iKT][Morder] = temp_sum_side_sin/(2.*M_PI);
+			R2_out_GF_C[iKT][Morder] = temp_sum_out_cos/(2.*M_PI);
+			R2_out_GF_S[iKT][Morder] = temp_sum_out_sin/(2.*M_PI);
+			R2_outside_GF_C[iKT][Morder] = temp_sum_outside_cos/(2.*M_PI);
+			R2_outside_GF_S[iKT][Morder] = temp_sum_outside_sin/(2.*M_PI);
+			R2_long_GF_C[iKT][Morder] = temp_sum_long_cos/(2.*M_PI);
+			R2_long_GF_S[iKT][Morder] = temp_sum_long_sin/(2.*M_PI);
+			R2_sidelong_GF_C[iKT][Morder] = temp_sum_sidelong_cos/(2.*M_PI);
+			R2_sidelong_GF_S[iKT][Morder] = temp_sum_sidelong_sin/(2.*M_PI);
+			R2_outlong_GF_C[iKT][Morder] = temp_sum_outlong_cos/(2.*M_PI);
+			R2_outlong_GF_S[iKT][Morder] = temp_sum_outlong_sin/(2.*M_PI);
+		}
+		else if (mode == 1)
+		{
+			R2_side_QM_C[iKT][Morder] = temp_sum_side_cos/(2.*M_PI);
+			R2_side_QM_S[iKT][Morder] = temp_sum_side_sin/(2.*M_PI);
+			R2_out_QM_C[iKT][Morder] = temp_sum_out_cos/(2.*M_PI);
+			R2_out_QM_S[iKT][Morder] = temp_sum_out_sin/(2.*M_PI);
+			R2_outside_QM_C[iKT][Morder] = temp_sum_outside_cos/(2.*M_PI);
+			R2_outside_QM_S[iKT][Morder] = temp_sum_outside_sin/(2.*M_PI);
+			R2_long_QM_C[iKT][Morder] = temp_sum_long_cos/(2.*M_PI);
+			R2_long_QM_S[iKT][Morder] = temp_sum_long_sin/(2.*M_PI);
+			R2_sidelong_QM_C[iKT][Morder] = temp_sum_sidelong_cos/(2.*M_PI);
+			R2_sidelong_QM_S[iKT][Morder] = temp_sum_sidelong_sin/(2.*M_PI);
+			R2_outlong_QM_C[iKT][Morder] = temp_sum_outlong_cos/(2.*M_PI);
+			R2_outlong_QM_S[iKT][Morder] = temp_sum_outlong_sin/(2.*M_PI);
+		}
 	}
 
 	return;

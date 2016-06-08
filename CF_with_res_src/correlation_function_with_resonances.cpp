@@ -118,8 +118,8 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-	//double threshold = 0.35;	//include only enough of the most important resonances to account for fixed fraction of total resonance-decay pion(+)s
-	double threshold = atof(argv[1]);
+	double threshold = 0.60;	//include only enough of the most important resonances to account for fixed fraction of total resonance-decay pion(+)s
+	//double threshold = atof(argv[1]);
 				//threshold = 1.0 means include all resonance-decay pion(+)s,
 				//threshold = 0.0 means include none of them
 	double net_fraction_resonance_contribution = 0.0;
@@ -193,22 +193,21 @@ int main(int argc, char *argv[])
 	correlation_function.Output_resonance_fraction();
 	correlation_function.Output_correlationfunction();
 
-	//for (int icr = 0; icr < (int)chosen_resonance_indices.size(); icr++)
-	//{
-	//	output << "Outputting pid = " << chosen_resonance_indices[icr] << "..." << endl;
-	//	correlation_function.Output_total_eiqx_dN_dypTdpTdphi(chosen_resonance_indices[icr], folderindex);
-	//}
-
 	output << "Finished calculating correlation function with all resonance decays..." << endl;
 
 	//if there's a full 3D grid to fit over, do the Gaussian fit and get the HBT radii too
 	if (qxnpts > 1 && qynpts > 1 && qznpts > 1)
 	{
 		output << "Calculating HBT radii via Gaussian fit method..." << endl;
-		correlation_function.Get_GF_HBTradii(folderindex);	//does outputting of results too
-		correlation_function.Output_results(folderindex);
+		correlation_function.Get_GF_HBTradii();
+		correlation_function.Output_results(folderindex, 0);	//0 means do GF R2ij
 		output << "Finished calculating HBT radii via Gaussian fit method" << endl;
-	 	if (FLESH_OUT_CF)
+		/*output << "Calculating HBT radii via q-moments method..." << endl;
+		correlation_function.Get_QM_HBTradii();
+		correlation_function.Output_results(folderindex, 1);	//1 means do QM R2ij
+		output << "Finished calculating HBT radii via q-moments method" << endl;*/
+//exit(1);
+	 	/*if (FLESH_OUT_CF)
 		{
 			output << "Allocating fleshed out CFvals..." << endl;
 			correlation_function.Allocate_fleshed_out_CF();
@@ -219,7 +218,7 @@ int main(int argc, char *argv[])
 				correlation_function.Flesh_out_CF(ipt, ipphi);
 				correlation_function.Output_fleshed_out_correlationfunction(ipt, ipphi);
 			}
-		} 
+		}*/
 	}
 
 	//do some clean up

@@ -34,11 +34,12 @@ endif
 SRC		=	correlation_function_with_resonances.cpp \
 			$(SRCDIR)/readindata.cpp \
 			$(SRCDIR)/CFWR.cpp \
-			$(SRCDIR)/CFWR_HDF.cpp \
+			$(SRCDIR)/CFWR_HDF_short.cpp \
 			$(SRCDIR)/CFWR_admin.cpp \
 			$(SRCDIR)/CFWR_resonance.cpp \
 			$(SRCDIR)/CFWR_IO.cpp \
 			$(SRCDIR)/CFWR_GFroutines.cpp \
+			$(SRCDIR)/CFWR_QMroutines.cpp \
 			$(SRCDIR)/Arsenal.cpp \
 			$(SRCDIR)/gauss_quadrature.cpp \
 			$(SRCDIR)/chebyshev.cpp \
@@ -108,10 +109,11 @@ install:	$(TARGET)
 $(SRCDIR)/Arsenal.cpp: $(SRCDIR)/Arsenal.h
 $(SRCDIR)/stats.cpp: $(SRCDIR)/stats.h
 $(SRCDIR)/readindata.cpp: $(SRCDIR)/readindata.h
-$(SRCDIR)/CFWR_HDF.cpp: $(SRCDIR)/CFWR.h $(SRCDIR)/CFWR_lib.h
+$(SRCDIR)/CFWR_HDF_short.cpp: $(SRCDIR)/CFWR.h $(SRCDIR)/CFWR_lib.h
 $(SRCDIR)/CFWR_admin.cpp: $(SRCDIR)/CFWR.h $(SRCDIR)/Arsenal.h $(SRCDIR)/gauss_quadrature.h $(SRCDIR)/CFWR_lib.h
 $(SRCDIR)/CFWR_IO.cpp: $(SRCDIR)/CFWR.h $(SRCDIR)/Arsenal.h $(SRCDIR)/gauss_quadrature.h $(SRCDIR)/stats.h
 $(SRCDIR)/CFWR_GFroutines.cpp: $(SRCDIR)/CFWR.h $(SRCDIR)/Arsenal.h $(SRCDIR)/gauss_quadrature.h $(SRCDIR)/Stopwatch.h $(SRCDIR)/CFWR_lib.h $(SRCDIR)/stats.h
+$(SRCDIR)/CFWR_QMroutines.cpp: $(SRCDIR)/CFWR.h
 $(SRCDIR)/CFWR_resonance.cpp: $(SRCDIR)/CFWR.h $(SRCDIR)/Arsenal.h $(SRCDIR)/gauss_quadrature.h $(SRCDIR)/CFWR_lib.h
 $(SRCDIR)/CFWR.cpp: $(SRCDIR)/CFWR.h $(SRCDIR)/Arsenal.h $(SRCDIR)/gauss_quadrature.h $(SRCDIR)/CPStopwatch.h $(SRCDIR)/Stopwatch.h $(SRCDIR)/CFWR_lib.h
 ./correlation_function_with_resonances.cpp: $(SRCDIR)/Stopwatch.h $(SRCDIR)/CPStopwatch.h $(SRCDIR)/parameters.h $(SRCDIR)/readindata.h $(SRCDIR)/CFWR.h \

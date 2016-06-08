@@ -64,18 +64,24 @@ void CorrelationFunction::Load_spectra_array(string input_filename, double *** a
 	in.close();
 }
 
-void CorrelationFunction::Output_results(int folderindex)
+void CorrelationFunction::Output_results(int folderindex, int mode)
 {
+	string modeString = "";
+	if (mode == 0)
+		modeString = "GF_";
+	else if (mode == 1)
+		modeString = "QM_";
+
 	ostringstream filename_stream_HBT_g0;
-	filename_stream_HBT_g0 << global_path << "/HBTradii_GF_ev" << folderindex << no_df_stem << "_grid0.dat";
+	filename_stream_HBT_g0 << global_path << "/HBTradii_" << modeString << "ev" << folderindex << no_df_stem << "_grid0.dat";
 	ofstream outputHBT_g0;
 	outputHBT_g0.open(filename_stream_HBT_g0.str().c_str());
 	ostringstream filename_stream_HBT;
-	filename_stream_HBT << global_path << "/HBTradii_GF_ev" << folderindex << no_df_stem << ".dat";
+	filename_stream_HBT << global_path << "/HBTradii_" << modeString << "ev" << folderindex << no_df_stem << ".dat";
 	ofstream outputHBT;
 	outputHBT.open(filename_stream_HBT.str().c_str());
 	ostringstream filename_stream_HBTcfs;
-	filename_stream_HBTcfs << global_path << "/HBTradii_GF_cfs_ev" << folderindex << no_df_stem << ".dat";
+	filename_stream_HBTcfs << global_path << "/HBTradii_" << modeString << "cfs_ev" << folderindex << no_df_stem << ".dat";
 	ofstream outputHBTcfs;
 	outputHBTcfs.open(filename_stream_HBTcfs.str().c_str());
 
@@ -94,16 +100,33 @@ void CorrelationFunction::Output_results(int folderindex)
 	int modes_loc[2] = { 0, 0 };
 
 	int iptipphi = 0;
-	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+	if (mode == 0)
 	{
-		flat_R2s[iptipphi] = R2_side[ipt][ipphi];
-		flat_R2o[iptipphi] = R2_out[ipt][ipphi];
-		flat_R2l[iptipphi] = R2_long[ipt][ipphi];
-		flat_R2os[iptipphi] = R2_outside[ipt][ipphi];
-		flat_R2sl[iptipphi] = R2_sidelong[ipt][ipphi];
-		flat_R2ol[iptipphi] = R2_outlong[ipt][ipphi];
-		iptipphi++;
+		for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		{
+			flat_R2s[iptipphi] = R2_side_GF[ipt][ipphi];
+			flat_R2o[iptipphi] = R2_out_GF[ipt][ipphi];
+			flat_R2l[iptipphi] = R2_long_GF[ipt][ipphi];
+			flat_R2os[iptipphi] = R2_outside_GF[ipt][ipphi];
+			flat_R2sl[iptipphi] = R2_sidelong_GF[ipt][ipphi];
+			flat_R2ol[iptipphi] = R2_outlong_GF[ipt][ipphi];
+			iptipphi++;
+		}
+	}
+	else if (mode == 1)
+	{
+		for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		{
+			flat_R2s[iptipphi] = R2_side_QM[ipt][ipphi];
+			flat_R2o[iptipphi] = R2_out_QM[ipt][ipphi];
+			flat_R2l[iptipphi] = R2_long_QM[ipt][ipphi];
+			flat_R2os[iptipphi] = R2_outside_QM[ipt][ipphi];
+			flat_R2sl[iptipphi] = R2_sidelong_QM[ipt][ipphi];
+			flat_R2ol[iptipphi] = R2_outlong_QM[ipt][ipphi];
+			iptipphi++;
+		}
 	}
 
 	approx_R2s = new Chebyshev (flat_R2s, npts_loc, os, lls, uls, 2, modes_loc);
@@ -113,23 +136,37 @@ void CorrelationFunction::Output_results(int folderindex)
 	approx_R2sl = new Chebyshev (flat_R2sl, npts_loc, os, lls, uls, 2, modes_loc);
 	approx_R2ol = new Chebyshev (flat_R2ol, npts_loc, os, lls, uls, 2, modes_loc);
 
-	//output R2ij on original pT-pphi grid first
-	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+	//output R2ij on original pT-pphi grid
+	if (mode == 0)
 	{
-		outputHBT_g0 << SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi]
-			<< "   " << R2_side[ipt][ipphi] << "   " << R2_out[ipt][ipphi]
-			<< "   " << R2_outside[ipt][ipphi] << "   " << R2_long[ipt][ipphi]
-			<< "   " << R2_sidelong[ipt][ipphi] << "   " << R2_outlong[ipt][ipphi] << endl;
+		for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		{
+			outputHBT_g0 << SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi]
+				<< "   " << R2_side_GF[ipt][ipphi] << "   " << R2_out_GF[ipt][ipphi]
+				<< "   " << R2_outside_GF[ipt][ipphi] << "   " << R2_long_GF[ipt][ipphi]
+				<< "   " << R2_sidelong_GF[ipt][ipphi] << "   " << R2_outlong_GF[ipt][ipphi] << endl;
+		}
+	}
+	else if (mode == 1)
+	{
+		for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		{
+			outputHBT_g0 << SPinterp_pT[ipt] << "   " << SPinterp_pphi[ipphi]
+				<< "   " << R2_side_QM[ipt][ipphi] << "   " << R2_out_QM[ipt][ipphi]
+				<< "   " << R2_outside_QM[ipt][ipphi] << "   " << R2_long_QM[ipt][ipphi]
+				<< "   " << R2_sidelong_QM[ipt][ipphi] << "   " << R2_outlong_QM[ipt][ipphi] << endl;
+		}
 	}
 
-	//then output them on the desired KT-Kphi grid, and Fourier transform
+	//output R2ij them on the desired KT-Kphi grid, and Fourier transform
 	for (int iKT = 0; iKT < n_localp_T; ++iKT)
 	{
 		//output actual extracted R2ij
 		for (int iKphi = 0; iKphi < n_localp_phi; ++iKphi)
 		{
-			double point[2] = {K_T[iKT], K_phi[iKphi]};
+			double point[2] = { K_T[iKT], K_phi[iKphi] };
 			outputHBT << K_T[iKT] << "   " << K_phi[iKphi]
 				<< "   " << (*approx_R2s).eval(point) << "   " << (*approx_R2o).eval(point)
 				<< "   " << (*approx_R2os).eval(point) << "   " << (*approx_R2l).eval(point)
@@ -138,17 +175,37 @@ void CorrelationFunction::Output_results(int folderindex)
 
 		//do Fourier transforming here for now...
 		double plane_psi = 0.0;
-		R2_Fourier_transform(iKT, plane_psi);
+		R2_Fourier_transform(iKT, plane_psi, mode);
 
 		//output Fourier coefficients
-		for (int Morder = 0; Morder < n_order; Morder++)
+		if (mode == 0)
 		{
-			outputHBTcfs << folderindex << "  " << SPinterp_pT[iKT] << "  " << Morder
-				<< "  " << R2_side_C[iKT][Morder] << "   " << R2_side_S[iKT][Morder] << "  " << R2_out_C[iKT][Morder] << "  " << R2_out_S[iKT][Morder]
-				<< "  " << R2_outside_C[iKT][Morder] << "   " << R2_outside_S[iKT][Morder] << "  " << R2_long_C[iKT][Morder] << "  " << R2_long_S[iKT][Morder]
-				<< "  " << R2_sidelong_C[iKT][Morder] << "   " << R2_sidelong_S[iKT][Morder] << "  " << R2_outlong_C[iKT][Morder] << "  " << R2_outlong_S[iKT][Morder] << endl;
+			for (int Morder = 0; Morder < n_order; Morder++)
+			{
+				outputHBTcfs << folderindex << "  " << SPinterp_pT[iKT] << "  " << Morder
+					<< "  " << R2_side_GF_C[iKT][Morder] << "   " << R2_side_GF_S[iKT][Morder] << "  " << R2_out_GF_C[iKT][Morder] << "  " << R2_out_GF_S[iKT][Morder]
+					<< "  " << R2_outside_GF_C[iKT][Morder] << "   " << R2_outside_GF_S[iKT][Morder] << "  " << R2_long_GF_C[iKT][Morder] << "  " << R2_long_GF_S[iKT][Morder]
+					<< "  " << R2_sidelong_GF_C[iKT][Morder] << "   " << R2_sidelong_GF_S[iKT][Morder] << "  " << R2_outlong_GF_C[iKT][Morder] << "  " << R2_outlong_GF_S[iKT][Morder] << endl;
+			}
+		}
+		else if (mode == 1)
+		{
+			for (int Morder = 0; Morder < n_order; Morder++)
+			{
+				outputHBTcfs << folderindex << "  " << SPinterp_pT[iKT] << "  " << Morder
+					<< "  " << R2_side_QM_C[iKT][Morder] << "   " << R2_side_QM_S[iKT][Morder] << "  " << R2_out_QM_C[iKT][Morder] << "  " << R2_out_QM_S[iKT][Morder]
+					<< "  " << R2_outside_QM_C[iKT][Morder] << "   " << R2_outside_QM_S[iKT][Morder] << "  " << R2_long_QM_C[iKT][Morder] << "  " << R2_long_QM_S[iKT][Morder]
+					<< "  " << R2_sidelong_QM_C[iKT][Morder] << "   " << R2_sidelong_QM_S[iKT][Morder] << "  " << R2_outlong_QM_C[iKT][Morder] << "  " << R2_outlong_QM_S[iKT][Morder] << endl;
+			}
 		}
 	}
+
+	delete approx_R2s;
+	delete approx_R2o;
+	delete approx_R2l;
+	delete approx_R2os;
+	delete approx_R2sl;
+	delete approx_R2ol;
 
 	outputHBT_g0.close();
 	outputHBT.close();
@@ -231,24 +288,48 @@ void CorrelationFunction::Output_fleshed_out_correlationfunction(int ipt, int ip
 	return;
 }
 
-void CorrelationFunction::Readin_results(int folderindex)
+void CorrelationFunction::Readin_results(int folderindex, int mode)
 {
+	string modeString = "";
+	if (mode == 0)
+		modeString = "GF_";
+	else if (mode == 1)
+		modeString = "QM_";
+
 	double dummy;
 	ostringstream filename_stream_HBT;
-	filename_stream_HBT << global_path << "/HBTradii_GF_ev" << folderindex << no_df_stem << ".dat";
+	filename_stream_HBT << global_path << "/HBTradii_" << modeString << "ev" << folderindex << no_df_stem << ".dat";
 	ifstream inputHBT(filename_stream_HBT.str().c_str());
 
-	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+	if (mode == 0)
 	{
-		inputHBT >> dummy;	//pt value
-		inputHBT >> dummy;	//pphi value
-		inputHBT >> R2_side[ipt][ipphi];
-		inputHBT >> R2_out[ipt][ipphi];
-		inputHBT >> R2_outside[ipt][ipphi];
-		inputHBT >> R2_long[ipt][ipphi];
-		inputHBT >> R2_sidelong[ipt][ipphi];
-		inputHBT >> R2_outlong[ipt][ipphi];
+		for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		{
+			inputHBT >> dummy;	//pt value
+			inputHBT >> dummy;	//pphi value
+			inputHBT >> R2_side_GF[ipt][ipphi];
+			inputHBT >> R2_out_GF[ipt][ipphi];
+			inputHBT >> R2_outside_GF[ipt][ipphi];
+			inputHBT >> R2_long_GF[ipt][ipphi];
+			inputHBT >> R2_sidelong_GF[ipt][ipphi];
+			inputHBT >> R2_outlong_GF[ipt][ipphi];
+		}
+	}
+	else if (mode == 1)
+	{
+		for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
+		{
+			inputHBT >> dummy;	//pt value
+			inputHBT >> dummy;	//pphi value
+			inputHBT >> R2_side_QM[ipt][ipphi];
+			inputHBT >> R2_out_QM[ipt][ipphi];
+			inputHBT >> R2_outside_QM[ipt][ipphi];
+			inputHBT >> R2_long_QM[ipt][ipphi];
+			inputHBT >> R2_sidelong_QM[ipt][ipphi];
+			inputHBT >> R2_outlong_QM[ipt][ipphi];
+		}
 	}
 
 	inputHBT.close();

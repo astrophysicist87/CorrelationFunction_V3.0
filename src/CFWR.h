@@ -83,7 +83,7 @@ class CorrelationFunction
 		particle_info * all_particles;
 		vector<int> chosen_resonances;
 		bool thermal_pions_only;
-		int Nparticle;
+		int Nparticle, NchosenParticle;
 		int target_particle_id;		//the particle whose spectra (with resonance contributions) you want to compute
 		int current_level_of_output;
 		int qspace_cs_slice_length;
@@ -208,14 +208,19 @@ class CorrelationFunction
 		double *** fleshed_out_CF, *** fleshed_out_thermal, *** fleshed_out_crossterm, *** fleshed_out_resonances;
 		double *** Correl_3D_err;
 		double ** lambda_Correl, ** lambda_Correl_err;
+		double ** lambda_QM;
 		int *** correlator_minus_one_cutoff_norms;
 		double * qx_fleshed_out_pts, * qy_fleshed_out_pts, * qz_fleshed_out_pts;
 
 		//HBT radii coefficients
-		double ** R2_side, ** R2_out, ** R2_long, ** R2_outside, ** R2_sidelong, ** R2_outlong;
-		double ** R2_side_C, ** R2_out_C, ** R2_long_C, ** R2_outside_C, ** R2_sidelong_C, ** R2_outlong_C;
-		double ** R2_side_S, ** R2_out_S, ** R2_long_S, ** R2_outside_S, ** R2_sidelong_S, ** R2_outlong_S;
+		double ** R2_side_GF, ** R2_out_GF, ** R2_long_GF, ** R2_outside_GF, ** R2_sidelong_GF, ** R2_outlong_GF;
+		double ** R2_side_GF_C, ** R2_out_GF_C, ** R2_long_GF_C, ** R2_outside_GF_C, ** R2_sidelong_GF_C, ** R2_outlong_GF_C;
+		double ** R2_side_GF_S, ** R2_out_GF_S, ** R2_long_GF_S, ** R2_outside_GF_S, ** R2_sidelong_GF_S, ** R2_outlong_GF_S;
 		double ** R2_side_err, ** R2_out_err, ** R2_long_err, ** R2_outside_err, ** R2_sidelong_err, ** R2_outlong_err;
+
+		double ** R2_side_QM, ** R2_out_QM, ** R2_long_QM, ** R2_outside_QM, ** R2_sidelong_QM, ** R2_outlong_QM;
+		double ** R2_side_QM_C, ** R2_out_QM_C, ** R2_long_QM_C, ** R2_outside_QM_C, ** R2_sidelong_QM_C, ** R2_outlong_QM_C;
+		double ** R2_side_QM_S, ** R2_out_QM_S, ** R2_long_QM_S, ** R2_outside_QM_S, ** R2_sidelong_QM_S, ** R2_outlong_QM_S;
 
 		double *** res_sign_info, *** res_log_info, *** res_moments_info;
 		double ** spec_sign_info, ** spec_log_info, ** spec_vals_info;
@@ -324,8 +329,6 @@ class CorrelationFunction
 		int list_daughters(int parent_resonance_index, set<int> * daughter_resonance_indices_ptr, particle_info * particle, int Nparticle);
 		void eiqxEdndp3(double ptr, double phir, double * results, int loc_verb = 0);
 		void Edndp3(double ptr, double phir, double * result, int loc_verb = 0);
-		void eiqxEdndp3_OLD(double ptr, double phir, double * results, int loc_verb = 0);
-		void Edndp3_OLD(double ptr, double phir, double * result, int loc_verb = 0);
 		void Set_correlation_function_q_pts();
 		void Set_q_points();
 		void Set_sorted_q_pts_list();
@@ -341,7 +344,7 @@ class CorrelationFunction
 		void Allocate_osc_arrays(int FOarray_length);
 		void Delete_osc_arrays();
 		void test_interpolator();
-		void R2_Fourier_transform(int ipt, double plane_psi);
+		void R2_Fourier_transform(int ipt, double plane_psi, int mode);
 		double Extrapolate_Gaussian_1D(double q0, double qi0, double qi1, double f1, double f2);
 		double Extrapolate_Gaussian_2D(double * q0, double * qi0, double * qi1, double (*vals) [2]);
 		double Extrapolate_Gaussian_3D(double * q0, double * qi0, double * qi1, double (*vals) [2][2]);
@@ -351,10 +354,12 @@ class CorrelationFunction
 		void Delete_CFvals();
 		void Allocate_fleshed_out_CF();
 		void Delete_fleshed_out_CF();
-		void Flesh_out_CF(int ipt, int ipphi);
+		void Flesh_out_CF(int ipt, int ipphi, double sample_scale = 1.0);
 		double interpolate_CF(double *** current_C_slice, double qx0, double qy0, double qz0, int ipt, int thermal_or_resonances);
 		double interpolate_qi(double q0, double qi0, double qi1, double f1, double f2, bool use_linear);
-		void Get_GF_HBTradii(int folderindex);
+		void Get_GF_HBTradii();
+		void Get_QM_HBTradii();
+		void Get_q_moments(double *** current_C_slice, int ipt, int ipphi);
 		double get_CF(int ipt, int ipphi, int iqt, int iqx, int iqy, int iqz, bool return_projected_value);
 		void get_CF(double * totalresult, double * thermalresult, double * crosstermresult, double * resonanceresult,
 									int ipt, int ipphi, int iqt, int iqx, int iqy, int iqz, bool return_projected_value);
@@ -379,8 +384,8 @@ class CorrelationFunction
 		void Output_total_target_eiqx_dN_dypTdpTdphi(int folderindex, double current_fraction = -1.0);
 		void Readin_total_target_eiqx_dN_dypTdpTdphi(int folderindex);
 		void Output_total_eiqx_dN_dypTdpTdphi(int local_pid, int folderindex);
-		void Output_results(int folderindex);
-		void Readin_results(int folderindex);
+		void Output_results(int folderindex, int mode);
+		void Readin_results(int folderindex, int mode);
 		void Read_in_all_dN_dypTdpTdphi(int folderindex);
 		void Output_chosen_resonances();
 		void Output_resonance_fraction();
