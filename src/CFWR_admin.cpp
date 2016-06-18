@@ -409,12 +409,14 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
 			SPinterp_pT[ipt] = cen - del * cos( M_PI*(2.*(ipt+1.) - 1.) / (2.*n_interp_pT_pts) );
 			//double tmp = - cos( M_PI*(2.*(ipt+1.) - 1.) / (2.*n_interp_pT_pts) );
 			//SPinterp_pT[ipt] = ( (1.-sin(M_PI/n_interp_pT_pts))/(1.+sin(M_PI/n_interp_pT_pts)) ) * ( 1. + tmp ) / ( 1. - tmp );
+cout << "SPinterp_pT[" << ipt << "] = " << SPinterp_pT[ipt] << endl;
 		}
 		for(int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 		{
 			double del = 0.5 * (interp_pphi_max - interp_pphi_min);
 			double cen = 0.5 * (interp_pphi_max + interp_pphi_min);
 			SPinterp_pphi[ipphi] = cen - del * cos( M_PI*(2.*(ipphi+1.) - 1.) / (2.*n_interp_pphi_pts) );
+cout << "SPinterp_pphi[" << ipphi << "] = " << SPinterp_pT[ipphi] << endl;
 		}
 	//}
 	for(int ipphi=0; ipphi<n_interp_pphi_pts; ipphi++)

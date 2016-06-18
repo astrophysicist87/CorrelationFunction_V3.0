@@ -348,7 +348,12 @@ void CorrelationFunction::Output_total_target_dN_dypTdpTdphi(int folderindex)
 	for(int ipphi = 0; ipphi < n_interp_pphi_pts; ipphi++)
 	{
 		for(int ipt = 0; ipt < n_interp_pT_pts; ipt++)
+		{
+			double fs = spectra[target_particle_id][ipt][ipphi];
+			double ts = thermal_spectra[target_particle_id][ipt][ipphi];
+			double result = (fs - ts) / fraction_of_resonances + ts;
 			output_target_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12) << spectra[target_particle_id][ipt][ipphi] << "   ";
+		}
 		output_target_dN_dypTdpTdphi << endl;
 	}
 

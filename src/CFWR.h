@@ -116,6 +116,15 @@ class CorrelationFunction
 		double ******** current_daughters_sign_of_dN_dypTdpTdphi_moments;
 		double ******* thermal_target_dN_dypTdpTdphi_moments;
 		double ******* full_target_dN_dypTdpTdphi_moments;
+		/*double * current_dN_dypTdpTdphi_moments;
+		double * current_ln_dN_dypTdpTdphi_moments;
+		double * current_sign_of_dN_dypTdpTdphi_moments;
+		double * current_daughters_dN_dypTdpTdphi_moments;
+		double * current_daughters_ln_dN_dypTdpTdphi_moments;
+		double * current_daughters_sign_of_dN_dypTdpTdphi_moments;
+		double * thermal_target_dN_dypTdpTdphi_moments;
+		double * full_target_dN_dypTdpTdphi_moments;*/
+
 
 		double ***** target_pphiavgd_CFs;
 		double ***** target_pphivar_CFs;

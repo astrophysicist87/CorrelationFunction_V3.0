@@ -120,7 +120,8 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 							PKphi = VEC_n2_PPhi_tildeFLIP[iv][izeta];		//also takes Pp --> Pm
 						currentPpm = VEC_n2_Ppm[iv][izeta][tempidx];
 						Edndp3(PKT, PKphi, &Csum);							//set spectra
-						eiqxEdndp3(PKT, PKphi, Csum_vec, local_verbose);					//set weights
+						if (!IGNORE_LONG_LIVED_RESONANCES || Gamma >= 0.0002)
+							eiqxEdndp3(PKT, PKphi, Csum_vec, local_verbose);					//set weights
 					}												// end of tempidx sum
 					for (int qpt_cs_idx = 0; qpt_cs_idx < qspace_cs_slice_length; ++qpt_cs_idx)
 						zetasum_vec[qpt_cs_idx] += VEC_n2_zeta_factor[iv][izeta]*Csum_vec[qpt_cs_idx];
@@ -231,7 +232,8 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 								PKphi = VEC_PPhi_tildeFLIP[is][iv][izeta];		//also takes Pp --> Pm
 							currentPpm = VEC_Ppm[is][iv][izeta][tempidx];
 							Edndp3(PKT, PKphi, &Csum);							//set spectra
-							eiqxEdndp3(PKT, PKphi, Csum_vec, local_verbose);					//set weights
+							if (!IGNORE_LONG_LIVED_RESONANCES || Gamma >= 0.0002)
+								eiqxEdndp3(PKT, PKphi, Csum_vec, local_verbose);					//set weights
 						}										// end of tempidx sum
 						for (int qpt_cs_idx = 0; qpt_cs_idx < qspace_cs_slice_length; ++qpt_cs_idx)
 							zetasum_vec[qpt_cs_idx] += VEC_zeta_factor[is][iv][izeta]*Csum_vec[qpt_cs_idx];
