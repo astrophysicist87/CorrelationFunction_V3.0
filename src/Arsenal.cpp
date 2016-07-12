@@ -549,7 +549,11 @@ double interpLinearDirect(double * x, double * y, double x0, long size, bool ret
 				<< "x0=" << x0 << ", " << "dx=" << dx << ", " << "idx=" << idx << endl;
 			exit(1);
 		}
-		else return default_return_value;
+		else
+		{
+			idx = (idx<0) ? 0 : size-2;	//uses extrapolation
+		}
+		//else return default_return_value;
 	}
 
   return y[idx] + (y[idx+1]-y[idx])/dx*(x0-x[idx]);
@@ -573,6 +577,8 @@ double interpLinearNondirect(double * x, double * y, double x0, long size, bool 
 	long idx = binarySearch(x, size, x0, true);
 	if (idx<0 || idx>=size-1)
 	{
+cout << "returnflag = " << returnflag << endl;
+//debugger(__LINE__, __FILE__);
 		if (!returnflag)	//i.e., if returnflag is false, exit
 		{
 			cout    << "interpLinearNondirect: x0 out of bounds." << endl
@@ -580,7 +586,11 @@ double interpLinearNondirect(double * x, double * y, double x0, long size, bool 
 				<< "x0=" << x0 << ", " << "dx=" << dx << ", " << "idx=" << idx << endl;
 			exit(1);
 		}
-		else return default_return_value;
+		else
+		{
+			idx = (idx<0) ? 0 : size-2;	//uses extrapolation
+		}
+		//else return default_return_value;
 	}
 
 	return y[idx] + (y[idx+1]-y[idx])/(x[idx+1]-x[idx])*(x0-x[idx]);
@@ -594,7 +604,7 @@ double interpBiLinearDirect(double * x, double * y, double ** z, double x0, doub
 	if (x_size==1 && y_size==1) {cout<<"interpBiLinearDirect warning: table size = 1"<<endl; return z[0][0];}
 	double dx = x[1]-x[0]; // increment in x
 	//double dy = y[1]-y[0]; // increment in y
-	
+
 	// assume not close to edges for now...
 	// find x's integer index
 	long xidx = floor((x0-x[0])/dx);
@@ -609,8 +619,8 @@ double interpBiLinearDirect(double * x, double * y, double ** z, double x0, doub
 		else return (default_return_value);
 	}
 
-	double xidxINT = interpLinearDirect(y, z[xidx], y0, y_size);
-	double xidxp1INT = interpLinearDirect(y, z[xidx+1], y0, y_size);
+	double xidxINT = interpLinearDirect(y, z[xidx], y0, y_size, returnflag);
+	double xidxp1INT = interpLinearDirect(y, z[xidx+1], y0, y_size, returnflag);
 
 	return xidxINT + (xidxp1INT-xidxINT)/dx*(x0-x[xidx]);
 }
@@ -639,8 +649,8 @@ double interpBiLinearNondirect(double * x, double * y, double ** z, double x0, d
 		else return (default_return_value);
 	}
 
-	double xidxINT = interpLinearNondirect(y, z[xidx], y0, y_size);
-	double xidxp1INT = interpLinearNondirect(y, z[xidx+1], y0, y_size);
+	double xidxINT = interpLinearNondirect(y, z[xidx], y0, y_size, returnflag);
+	double xidxp1INT = interpLinearNondirect(y, z[xidx+1], y0, y_size, returnflag);
 
 	//return xidxINT + (xidxp1INT-xidxINT)/dx*(x0-x[xidx]);
 	return xidxINT + (xidxp1INT-xidxINT)/(x[xidx+1]-x[xidx])*(x0-x[xidx]);
@@ -669,8 +679,8 @@ double interpTriLinearDirect(double * x, double * y, double * z, double *** f, d
 		else return (default_return_value);
 	}
 
-	double xidxINT = interpBiLinearDirect(y, z, f[xidx], y0, z0, y_size, z_size);
-	double xidxp1INT = interpBiLinearDirect(y, z, f[xidx+1], y0, z0, y_size, z_size);
+	double xidxINT = interpBiLinearDirect(y, z, f[xidx], y0, z0, y_size, z_size, returnflag);
+	double xidxp1INT = interpBiLinearDirect(y, z, f[xidx+1], y0, z0, y_size, z_size, returnflag);
 
 	return xidxINT + (xidxp1INT-xidxINT)/dx*(x0-x[xidx]);
 }
@@ -700,8 +710,8 @@ double interpTriLinearNondirect(double * x, double * y, double * z, double *** f
 		else return (default_return_value);
 	}
 
-	double xidxINT = interpBiLinearNondirect(y, z, f[xidx], y0, z0, y_size, z_size);
-	double xidxp1INT = interpBiLinearNondirect(y, z, f[xidx+1], y0, z0, y_size, z_size);
+	double xidxINT = interpBiLinearNondirect(y, z, f[xidx], y0, z0, y_size, z_size, returnflag);
+	double xidxp1INT = interpBiLinearNondirect(y, z, f[xidx+1], y0, z0, y_size, z_size, returnflag);
 
 	return xidxINT + (xidxp1INT-xidxINT)/(x[xidx+1]-x[xidx])*(x0-x[xidx]);
 }
@@ -730,8 +740,8 @@ double interpQuadriLinearNondirect(double * x, double * y, double * z, double * 
 		else return (default_return_value);
 	}
 
-	double xidxINT = interpTriLinearNondirect(y, z, t, f[xidx], y0, z0, t0, y_size, z_size, t_size);
-	double xidxp1INT = interpTriLinearNondirect(y, z, t, f[xidx+1], y0, z0, t0, y_size, z_size, t_size);
+	double xidxINT = interpTriLinearNondirect(y, z, t, f[xidx], y0, z0, t0, y_size, z_size, t_size, returnflag);
+	double xidxp1INT = interpTriLinearNondirect(y, z, t, f[xidx+1], y0, z0, t0, y_size, z_size, t_size, returnflag);
 
 	return xidxINT + (xidxp1INT-xidxINT)/(x[xidx+1]-x[xidx])*(x0-x[xidx]);
 }
@@ -805,7 +815,12 @@ double interpCubicDirect(double * x, double * y, double x0, long size, bool retu
 				<< "interpCubicDirect(): size = " << size << ", x0 = " << x0 << ", " << "dx=" << dx << ", " << "idx=" << idx << endl;
 			exit(1);
 		}
-		else return (default_return_value);
+		else
+		{
+			idx = (idx<0) ? 0 : size-2;	//uses linear extrapolation
+			return y[idx] + (y[idx+1]-y[idx])/(x[idx+1]-x[idx])*(x0-x[idx]);
+		}
+		//else return default_return_value;
 	}
 
   if (idx==0)
@@ -874,7 +889,11 @@ double interpCubicNonDirect(double * x, double * y, double xi, long size, bool r
 				<< "interpCubicNonDirect(): size = " << size << ", x0 = " << xi << ", " << "idx=" << idx << endl;
 			exit(1);
 		}
-		else return (default_return_value);
+		else
+		{
+			idx = (idx<0) ? 0 : size-2;	//uses linear extrapolation
+		}
+		//else return default_return_value;
 	}
 
   if (idx==0)
@@ -962,28 +981,28 @@ double interpBiCubicDirect(double * x, double * y, double ** z, double x0, doubl
   if (xidx==0)
   {
     // use quadratic interpolation at left end
-    double A0 = interpCubicDirect(y, z[0], y0, y_size);
-	double A1 = interpCubicDirect(y, z[1], y0, y_size);
-	double A2 = interpCubicDirect(y, z[2], y0, y_size);
+    double A0 = interpCubicDirect(y, z[0], y0, y_size, returnflag);
+	double A1 = interpCubicDirect(y, z[1], y0, y_size, returnflag);
+	double A2 = interpCubicDirect(y, z[2], y0, y_size, returnflag);
 	double deltaX = x0 - x[0]; // deltaX is the increment of x0 compared to the closest lattice point
     return (A0-2.0*A1+A2)/(2.0*dx*dx)*deltaX*deltaX - (3.0*A0-4.0*A1+A2)/(2.0*dx)*deltaX + A0;
   }
   else if (xidx==x_size-2)
   {
     // use quadratic interpolation at right end
-    double A0 = interpCubicDirect(y, z[x_size-3], y0, y_size);
-	double A1 = interpCubicDirect(y, z[x_size-2], y0, y_size);
-	double A2 = interpCubicDirect(y, z[x_size-1], y0, y_size);
+    double A0 = interpCubicDirect(y, z[x_size-3], y0, y_size, returnflag);
+	double A1 = interpCubicDirect(y, z[x_size-2], y0, y_size, returnflag);
+	double A2 = interpCubicDirect(y, z[x_size-1], y0, y_size, returnflag);
 	double deltaX = x0 - (x[0] + (xidx-1)*dx);
     return (A0-2.0*A1+A2)/(2.0*dx*dx)*deltaX*deltaX - (3.0*A0-4.0*A1+A2)/(2.0*dx)*deltaX + A0;
   }
   else
   {
     // use cubic interpolation
-    double A0 = interpCubicDirect(y, z[xidx-1], y0, y_size);
-	double A1 = interpCubicDirect(y, z[xidx], y0, y_size);
-	double A2 = interpCubicDirect(y, z[xidx+1], y0, y_size);
-	double A3 = interpCubicDirect(y, z[xidx+2], y0, y_size);
+    double A0 = interpCubicDirect(y, z[xidx-1], y0, y_size, returnflag);
+	double A1 = interpCubicDirect(y, z[xidx], y0, y_size, returnflag);
+	double A2 = interpCubicDirect(y, z[xidx+1], y0, y_size, returnflag);
+	double A3 = interpCubicDirect(y, z[xidx+2], y0, y_size, returnflag);
 	double deltaX = x0 - (x[0] + xidx*dx);
     //cout << A0 << "  " << A1 << "  " << A2 << "  " << A3 << endl;
     return (-A0+3.0*A1-3.0*A2+A3)/(6.0*dx*dx*dx)*deltaX*deltaX*deltaX
@@ -1029,28 +1048,28 @@ double interpTriCubicDirect(double * x, double * y, double * z, double *** f, do
   if (xidx==0)
   {
     // use quadratic interpolation at left end
-    double A0 = interpBiCubicDirect(y, z, f[0], y0, z0, y_size, z_size);
-	double A1 = interpBiCubicDirect(y, z, f[1], y0, z0, y_size, z_size);
-	double A2 = interpBiCubicDirect(y, z, f[2], y0, z0, y_size, z_size);
+    double A0 = interpBiCubicDirect(y, z, f[0], y0, z0, y_size, z_size, returnflag);
+	double A1 = interpBiCubicDirect(y, z, f[1], y0, z0, y_size, z_size, returnflag);
+	double A2 = interpBiCubicDirect(y, z, f[2], y0, z0, y_size, z_size, returnflag);
 	double deltaX = x0 - x[0]; // deltaX is the increment of x0 compared to the closest lattice point
     return (A0-2.0*A1+A2)/(2.0*dx*dx)*deltaX*deltaX - (3.0*A0-4.0*A1+A2)/(2.0*dx)*deltaX + A0;
   }
   else if (xidx==x_size-2)
   {
     // use quadratic interpolation at right end
-    double A0 = interpBiCubicDirect(y, z, f[x_size-3], y0, z0, y_size, z_size);
-	double A1 = interpBiCubicDirect(y, z, f[x_size-2], y0, z0, y_size, z_size);
-	double A2 = interpBiCubicDirect(y, z, f[x_size-1], y0, z0, y_size, z_size);
+    double A0 = interpBiCubicDirect(y, z, f[x_size-3], y0, z0, y_size, z_size, returnflag);
+	double A1 = interpBiCubicDirect(y, z, f[x_size-2], y0, z0, y_size, z_size, returnflag);
+	double A2 = interpBiCubicDirect(y, z, f[x_size-1], y0, z0, y_size, z_size, returnflag);
 	double deltaX = x0 - (x[0] + (xidx-1)*dx);
     return (A0-2.0*A1+A2)/(2.0*dx*dx)*deltaX*deltaX - (3.0*A0-4.0*A1+A2)/(2.0*dx)*deltaX + A0;
   }
   else
   {
     // use cubic interpolation
-    double A0 = interpBiCubicDirect(y, z, f[xidx-1], y0, z0, y_size, z_size);
-	double A1 = interpBiCubicDirect(y, z, f[xidx], y0, z0, y_size, z_size);
-	double A2 = interpBiCubicDirect(y, z, f[xidx+1], y0, z0, y_size, z_size);
-	double A3 = interpBiCubicDirect(y, z, f[xidx+2], y0, z0, y_size, z_size);
+    double A0 = interpBiCubicDirect(y, z, f[xidx-1], y0, z0, y_size, z_size, returnflag);
+	double A1 = interpBiCubicDirect(y, z, f[xidx], y0, z0, y_size, z_size, returnflag);
+	double A2 = interpBiCubicDirect(y, z, f[xidx+1], y0, z0, y_size, z_size, returnflag);
+	double A3 = interpBiCubicDirect(y, z, f[xidx+2], y0, z0, y_size, z_size, returnflag);
 	double deltaX = x0 - (x[0] + xidx*dx);
     //cout << A0 << "  " << A1 << "  " << A2 << "  " << A3 << endl;
     return (-A0+3.0*A1-3.0*A2+A3)/(6.0*dx*dx*dx)*deltaX*deltaX*deltaX
@@ -1175,28 +1194,28 @@ double interpTriCubicNonDirect(double * x, double * y, double * z, double *** t,
   if (xidx==0)
   {
     // use quadratic interpolation at left end
-    double A0 = interpBiCubicNonDirectALT(y, z, t[0], y0, z0, y_size, z_size);
-	double A1 = interpBiCubicNonDirectALT(y, z, t[1], y0, z0, y_size, z_size);
-	double A2 = interpBiCubicNonDirectALT(y, z, t[2], y0, z0, y_size, z_size);
+    double A0 = interpBiCubicNonDirectALT(y, z, t[0], y0, z0, y_size, z_size, returnflag);
+	double A1 = interpBiCubicNonDirectALT(y, z, t[1], y0, z0, y_size, z_size, returnflag);
+	double A2 = interpBiCubicNonDirectALT(y, z, t[2], y0, z0, y_size, z_size, returnflag);
 	double deltaX = x0 - x[0]; // deltaX is the increment of x0 compared to the closest lattice point
     return (A0-2.0*A1+A2)/(2.0*dx*dx)*deltaX*deltaX - (3.0*A0-4.0*A1+A2)/(2.0*dx)*deltaX + A0;
   }
   else if (xidx==x_size-2)
   {
     // use quadratic interpolation at right end
-    double A0 = interpBiCubicNonDirectALT(y, z, t[x_size-3], y0, z0, y_size, z_size);
-	double A1 = interpBiCubicNonDirectALT(y, z, t[x_size-2], y0, z0, y_size, z_size);
-	double A2 = interpBiCubicNonDirectALT(y, z, t[x_size-1], y0, z0, y_size, z_size);
+    double A0 = interpBiCubicNonDirectALT(y, z, t[x_size-3], y0, z0, y_size, z_size, returnflag);
+	double A1 = interpBiCubicNonDirectALT(y, z, t[x_size-2], y0, z0, y_size, z_size, returnflag);
+	double A2 = interpBiCubicNonDirectALT(y, z, t[x_size-1], y0, z0, y_size, z_size, returnflag);
 	double deltaX = x0 - (x[0] + (xidx-1)*dx);
     return (A0-2.0*A1+A2)/(2.0*dx*dx)*deltaX*deltaX - (3.0*A0-4.0*A1+A2)/(2.0*dx)*deltaX + A0;
   }
   else
   {
     // use cubic interpolation
-    double A0 = interpBiCubicNonDirectALT(y, z, t[xidx-1], y0, z0, y_size, z_size);
-	double A1 = interpBiCubicNonDirectALT(y, z, t[xidx], y0, z0, y_size, z_size);
-	double A2 = interpBiCubicNonDirectALT(y, z, t[xidx+1], y0, z0, y_size, z_size);
-	double A3 = interpBiCubicNonDirectALT(y, z, t[xidx+2], y0, z0, y_size, z_size);
+    double A0 = interpBiCubicNonDirectALT(y, z, t[xidx-1], y0, z0, y_size, z_size, returnflag);
+	double A1 = interpBiCubicNonDirectALT(y, z, t[xidx], y0, z0, y_size, z_size, returnflag);
+	double A2 = interpBiCubicNonDirectALT(y, z, t[xidx+1], y0, z0, y_size, z_size, returnflag);
+	double A3 = interpBiCubicNonDirectALT(y, z, t[xidx+2], y0, z0, y_size, z_size, returnflag);
 	double deltaX = x0 - (x[0] + xidx*dx);
     //cout << A0 << "  " << A1 << "  " << A2 << "  " << A3 << endl;
     return (-A0+3.0*A1-3.0*A2+A3)/(6.0*dx*dx*dx)*deltaX*deltaX*deltaX
@@ -1246,28 +1265,28 @@ double interpQuadriCubicNonDirect(double * x, double * y, double * z, double * t
   if (xidx==0)
   {
     // use quadratic interpolation at left end
-    double A0 = interpTriCubicNonDirect(y, z, t, f[0], y0, z0, t0, y_size, z_size, t_size);
-	double A1 = interpTriCubicNonDirect(y, z, t, f[1], y0, z0, t0, y_size, z_size, t_size);
-	double A2 = interpTriCubicNonDirect(y, z, t, f[2], y0, z0, t0, y_size, z_size, t_size);
+    double A0 = interpTriCubicNonDirect(y, z, t, f[0], y0, z0, t0, y_size, z_size, t_size, returnflag);
+	double A1 = interpTriCubicNonDirect(y, z, t, f[1], y0, z0, t0, y_size, z_size, t_size, returnflag);
+	double A2 = interpTriCubicNonDirect(y, z, t, f[2], y0, z0, t0, y_size, z_size, t_size, returnflag);
 	double deltaX = x0 - x[0]; // deltaX is the increment of x0 compared to the closest lattice point
     return (A0-2.0*A1+A2)/(2.0*dx*dx)*deltaX*deltaX - (3.0*A0-4.0*A1+A2)/(2.0*dx)*deltaX + A0;
   }
   else if (xidx==x_size-2)
   {
     // use quadratic interpolation at right end
-    double A0 = interpTriCubicNonDirect(y, z, t, f[x_size-3], y0, z0, t0, y_size, z_size, t_size);
-	double A1 = interpTriCubicNonDirect(y, z, t, f[x_size-2], y0, z0, t0, y_size, z_size, t_size);
-	double A2 = interpTriCubicNonDirect(y, z, t, f[x_size-1], y0, z0, t0, y_size, z_size, t_size);
+    double A0 = interpTriCubicNonDirect(y, z, t, f[x_size-3], y0, z0, t0, y_size, z_size, t_size, returnflag);
+	double A1 = interpTriCubicNonDirect(y, z, t, f[x_size-2], y0, z0, t0, y_size, z_size, t_size, returnflag);
+	double A2 = interpTriCubicNonDirect(y, z, t, f[x_size-1], y0, z0, t0, y_size, z_size, t_size, returnflag);
 	double deltaX = x0 - (x[0] + (xidx-1)*dx);
     return (A0-2.0*A1+A2)/(2.0*dx*dx)*deltaX*deltaX - (3.0*A0-4.0*A1+A2)/(2.0*dx)*deltaX + A0;
   }
   else
   {
     // use cubic interpolation
-    double A0 = interpTriCubicNonDirect(y, z, t, f[xidx-1], y0, z0, t0, y_size, z_size, t_size);
-	double A1 = interpTriCubicNonDirect(y, z, t, f[xidx], y0, z0, t0, y_size, z_size, t_size);
-	double A2 = interpTriCubicNonDirect(y, z, t, f[xidx+1], y0, z0, t0, y_size, z_size, t_size);
-	double A3 = interpTriCubicNonDirect(y, z, t, f[xidx+2], y0, z0, t0, y_size, z_size, t_size);
+    double A0 = interpTriCubicNonDirect(y, z, t, f[xidx-1], y0, z0, t0, y_size, z_size, t_size, returnflag);
+	double A1 = interpTriCubicNonDirect(y, z, t, f[xidx], y0, z0, t0, y_size, z_size, t_size, returnflag);
+	double A2 = interpTriCubicNonDirect(y, z, t, f[xidx+1], y0, z0, t0, y_size, z_size, t_size, returnflag);
+	double A3 = interpTriCubicNonDirect(y, z, t, f[xidx+2], y0, z0, t0, y_size, z_size, t_size, returnflag);
 	double deltaX = x0 - (x[0] + xidx*dx);
     //cout << A0 << "  " << A1 << "  " << A2 << "  " << A3 << endl;
     return (-A0+3.0*A1-3.0*A2+A3)/(6.0*dx*dx*dx)*deltaX*deltaX*deltaX
@@ -1361,6 +1380,7 @@ double interpolate2D(double * x, double * y, double ** z, double x0, double y0, 
 	{
 		case 0:
 		{
+//debugger(__LINE__, __FILE__);
 			if (uniform_spacing)
 				return interpBiLinearDirect(x, y, z, x0, y0, x_size, y_size, returnflag, default_return_value);
 			else

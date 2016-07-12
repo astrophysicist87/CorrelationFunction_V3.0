@@ -24,8 +24,21 @@ template <typename T> int sgn(T val)
 }
 
 CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info* all_particles_in, int Nparticle_in,
-					FO_surf* FOsurf_ptr, vector<int> chosen_resonances_in, int particle_idx, ofstream& myout)
+					FO_surf* FOsurf_ptr, vector<int> chosen_resonances_in, int particle_idx, ofstream& myout,
+					const int n_interp_pT_pts_in, const int n_interp_pphi_pts_in, const int qtnpts_in, const int qxnpts_in, const int qynpts_in, const int qznpts_in)
 {
+	//set header info
+	n_interp_pT_pts = n_interp_pT_pts_in;
+	n_interp_pphi_pts = n_interp_pphi_pts_in;
+	qtnpts = qtnpts_in;
+	qxnpts = qxnpts_in;
+	qynpts = qynpts_in;
+	qznpts = qznpts_in;
+	init_qt = -0.5*double(qtnpts-1)*delta_qt;
+	init_qx = -0.5*double(qxnpts-1)*delta_qx;
+	init_qy = -0.5*double(qynpts-1)*delta_qy;
+	init_qz = -0.5*double(qznpts-1)*delta_qz;
+
 	//set ofstream for output file
 	global_out_stream_ptr = &myout;
 	
@@ -209,7 +222,7 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
 		}
 	}
 
-	thermal_target_dN_dypTdpTdphi_moments = new double ****** [n_interp_pT_pts];
+	/*thermal_target_dN_dypTdpTdphi_moments = new double ****** [n_interp_pT_pts];
 	current_dN_dypTdpTdphi_moments = new double ****** [n_interp_pT_pts];
 	current_ln_dN_dypTdpTdphi_moments = new double ****** [n_interp_pT_pts];
 	current_sign_of_dN_dypTdpTdphi_moments = new double ****** [n_interp_pT_pts];
@@ -261,7 +274,22 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
 				}
 			}
 		}
+	}*/
+
+	//try flattening
+	const int giant_flat_array_size = n_interp_pT_pts * n_interp_pphi_pts * qtnpts * qxnpts * qynpts * qznpts * ntrig;
+	thermal_target_dN_dypTdpTdphi_moments = new double [giant_flat_array_size];
+	current_dN_dypTdpTdphi_moments = new double [giant_flat_array_size];
+	current_ln_dN_dypTdpTdphi_moments = new double [giant_flat_array_size];
+	current_sign_of_dN_dypTdpTdphi_moments = new double [giant_flat_array_size];
+	for (int i = 0; i < giant_flat_array_size; ++i)
+	{
+		thermal_target_dN_dypTdpTdphi_moments[i] = 0.0;
+		current_dN_dypTdpTdphi_moments[i] = 0.0;
+		current_ln_dN_dypTdpTdphi_moments[i] = 0.0;
+		current_sign_of_dN_dypTdpTdphi_moments[i] = 0.0;
 	}
+
 
 	int qidx = 0;
 	qlist = new double * [qtnpts*qxnpts*qynpts*qznpts];
@@ -395,13 +423,13 @@ CorrelationFunction::CorrelationFunction(particle_info* particle, particle_info*
 	SPinterp_pphi_wts = new double [n_interp_pphi_pts];
 	sin_SPinterp_pphi = new double [n_interp_pphi_pts];
 	cos_SPinterp_pphi = new double [n_interp_pphi_pts];
-	//if (USE_OLD_INTERP)
-	//{
-	//	gauss_quadrature(n_interp_pT_pts, 5, 0.0, 0.0, 0.0, 13.0, SPinterp_pT, SPinterp_pT_wts);
-	//	gauss_quadrature(n_interp_pphi_pts, 1, 0.0, 0.0, interp_pphi_min, interp_pphi_max, SPinterp_pphi, SPinterp_pphi_wts);
-	//}
-	//else
-	//{
+	if (USE_OLD_INTERP)
+	{
+		gauss_quadrature(n_interp_pT_pts, 5, 0.0, 0.0, 0.0, 13.0, SPinterp_pT, SPinterp_pT_wts);
+		gauss_quadrature(n_interp_pphi_pts, 1, 0.0, 0.0, interp_pphi_min, interp_pphi_max, SPinterp_pphi, SPinterp_pphi_wts);
+	}
+	else
+	{
 		for(int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 		{
 			double del = 0.5 * (interp_pT_max - interp_pT_min);
@@ -418,7 +446,7 @@ cout << "SPinterp_pT[" << ipt << "] = " << SPinterp_pT[ipt] << endl;
 			SPinterp_pphi[ipphi] = cen - del * cos( M_PI*(2.*(ipphi+1.) - 1.) / (2.*n_interp_pphi_pts) );
 cout << "SPinterp_pphi[" << ipphi << "] = " << SPinterp_pT[ipphi] << endl;
 		}
-	//}
+	}
 	for(int ipphi=0; ipphi<n_interp_pphi_pts; ipphi++)
 	{
 		sin_SPinterp_pphi[ipphi] = sin(SPinterp_pphi[ipphi]);
@@ -1422,7 +1450,7 @@ void CorrelationFunction::Zero_resonance_running_sum_vector(double * vec)
 		vec[tmp] = 0.0;
 }
 
-void CorrelationFunction::Setup_current_daughters_dN_dypTdpTdphi_moments(int n_daughter)
+/*void CorrelationFunction::Setup_current_daughters_dN_dypTdpTdphi_moments(int n_daughter)
 {
 	current_daughters_dN_dypTdpTdphi_moments = new double ******* [n_daughter];
 	current_daughters_ln_dN_dypTdpTdphi_moments = new double ******* [n_daughter];
@@ -1527,6 +1555,42 @@ void CorrelationFunction::Cleanup_current_daughters_dN_dypTdpTdphi_moments(int n
 	delete [] current_daughters_sign_of_dN_dypTdpTdphi_moments;
 
 	return;
+}*/
+
+void CorrelationFunction::Setup_current_daughters_dN_dypTdpTdphi_moments(int n_daughter)
+{
+	const int giant_flat_array_size = n_interp_pT_pts * n_interp_pphi_pts * qtnpts * qxnpts * qynpts * qznpts * ntrig;
+	current_daughters_dN_dypTdpTdphi_moments = new double * [n_daughter];
+	current_daughters_ln_dN_dypTdpTdphi_moments = new double * [n_daughter];
+	current_daughters_sign_of_dN_dypTdpTdphi_moments = new double * [n_daughter];
+	for (int id = 0; id < n_daughter; ++id)
+	{
+		current_daughters_dN_dypTdpTdphi_moments[id] = new double [giant_flat_array_size];
+		current_daughters_ln_dN_dypTdpTdphi_moments[id] = new double [giant_flat_array_size];
+		current_daughters_sign_of_dN_dypTdpTdphi_moments[id] = new double [giant_flat_array_size];
+		for (int i = 0; i < giant_flat_array_size; ++i)
+		{
+			current_daughters_dN_dypTdpTdphi_moments[id][i] = 0.0;
+			current_daughters_ln_dN_dypTdpTdphi_moments[id][i] = 0.0;
+			current_daughters_sign_of_dN_dypTdpTdphi_moments[id][i] = 0.0;
+		}
+	}
+	return;
+}
+
+void CorrelationFunction::Cleanup_current_daughters_dN_dypTdpTdphi_moments(int n_daughter)
+{
+	for (int id = 0; id < n_daughter; ++id)
+	{
+		delete [] current_daughters_dN_dypTdpTdphi_moments[id];
+		delete [] current_daughters_ln_dN_dypTdpTdphi_moments[id];
+		delete [] current_daughters_sign_of_dN_dypTdpTdphi_moments[id];
+	}
+	delete [] current_daughters_dN_dypTdpTdphi_moments;
+	delete [] current_daughters_ln_dN_dypTdpTdphi_moments;
+	delete [] current_daughters_sign_of_dN_dypTdpTdphi_moments;
+
+	return;
 }
 
 void CorrelationFunction::Set_target_pphiavgd_CFs()
@@ -1560,8 +1624,10 @@ void CorrelationFunction::Set_target_pphiavgd_CFs()
 						double tmpsum = 0.0, tmp2sum = 0.0;
 						for(int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 						{
-							double tmpC = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
-							double tmpS = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
+							//double tmpC = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
+							//double tmpS = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
+							double tmpC = current_dN_dypTdpTdphi_moments[indexer(ipt,ipphi,iqt,iqx,iqy,iqz,0)];
+							double tmpS = current_dN_dypTdpTdphi_moments[indexer(ipt,ipphi,iqt,iqx,iqy,iqz,1)];
 							double tmpspec = spectra[target_particle_id][ipt][ipphi];
 							double tmp = 1.0 + (tmpC*tmpC+tmpS*tmpS) / (tmpspec*tmpspec);
 							target_pphiavgd_CFs[ipt][iqt][iqx][iqy][iqz] += tmp;

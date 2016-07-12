@@ -607,9 +607,12 @@ void CorrelationFunction::Set_current_resonance_logs_and_signs()
 	for (int iqz = 0; iqz < qznpts; ++iqz)
 	for (int itrig = 0; itrig < 2; ++itrig)
 	{
-		double temp = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][itrig];
-		current_ln_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][itrig] = log(abs(temp)+1.e-100);
-		current_sign_of_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][itrig] = sgn(temp);
+		//double temp = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][itrig];
+		//current_ln_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][itrig] = log(abs(temp)+1.e-100);
+		//current_sign_of_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][itrig] = sgn(temp);
+		double temp = current_dN_dypTdpTdphi_moments[indexer(ipt,ipphi,iqt,iqx,iqy,iqz,itrig)];
+		current_ln_dN_dypTdpTdphi_moments[indexer(ipt,ipphi,iqt,iqx,iqy,iqz,itrig)] = log(abs(temp)+1.e-100);
+		current_sign_of_dN_dypTdpTdphi_moments[indexer(ipt,ipphi,iqt,iqx,iqy,iqz,itrig)] = sgn(temp);
 	}
 
 	return;
@@ -626,9 +629,12 @@ void CorrelationFunction::Set_current_daughters_resonance_logs_and_signs(int n_d
 	for (int iqz = 0; iqz < qznpts; ++iqz)
 	for (int itrig = 0; itrig < 2; ++itrig)
 	{
-		double temp = current_daughters_dN_dypTdpTdphi_moments[idaughter][ipt][ipphi][iqt][iqx][iqy][iqz][itrig];
-		current_daughters_ln_dN_dypTdpTdphi_moments[idaughter][ipt][ipphi][iqt][iqx][iqy][iqz][itrig] = log(abs(temp)+1.e-100);
-		current_daughters_sign_of_dN_dypTdpTdphi_moments[idaughter][ipt][ipphi][iqt][iqx][iqy][iqz][itrig] = sgn(temp);
+		//double temp = current_daughters_dN_dypTdpTdphi_moments[idaughter][ipt][ipphi][iqt][iqx][iqy][iqz][itrig];
+		//current_daughters_ln_dN_dypTdpTdphi_moments[idaughter][ipt][ipphi][iqt][iqx][iqy][iqz][itrig] = log(abs(temp)+1.e-100);
+		//current_daughters_sign_of_dN_dypTdpTdphi_moments[idaughter][ipt][ipphi][iqt][iqx][iqy][iqz][itrig] = sgn(temp);
+		double temp = current_daughters_dN_dypTdpTdphi_moments[idaughter][indexer(ipt,ipphi,iqt,iqx,iqy,iqz,itrig)];
+		current_daughters_ln_dN_dypTdpTdphi_moments[idaughter][indexer(ipt,ipphi,iqt,iqx,iqy,iqz,itrig)] = log(abs(temp)+1.e-100);
+		current_daughters_sign_of_dN_dypTdpTdphi_moments[idaughter][indexer(ipt,ipphi,iqt,iqx,iqy,iqz,itrig)] = sgn(temp);
 	}
 
 	return;
@@ -1159,8 +1165,10 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 			double tmp = spectra[local_pid][ipt][ipphi];
 			if ( tempC*tempC + tempS*tempS >= tmp*tmp*correlator_minus_one_cutoff )
 			{
-				current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0] = tempC;
-				current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1] = tempS;
+				//current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0] = tempC;
+				//current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1] = tempS;
+				current_dN_dypTdpTdphi_moments[indexer(ipt,ipphi,iqt,iqx,iqy,iqz,0)] = tempC;
+				current_dN_dypTdpTdphi_moments[indexer(ipt,ipphi,iqt,iqx,iqy,iqz,1)] = tempS;
 			}
 			else if	( iqt!=iqt0 && iqx==iqx0 && iqy==iqy0 && iqz==iqz0 )
 				correlator_minus_one_cutoff_norms[ipt][ipphi][0] = iqt;
@@ -1196,8 +1204,10 @@ void CorrelationFunction::Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, i
 	for (int itrig = 0; itrig < ntrig; ++itrig)
 	{
 		//*global_out_stream_ptr << "Working on (iqt, iqx, iqy, iqz) = (" << iqt << ", " << iqx << ", " << iqy << ", " << iqz << ") INDIRECTLY..." << endl;
-		current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][itrig]
-			= (1.0 - 2.0 * itrig) * current_dN_dypTdpTdphi_moments[ipt][ipphi][qtnpts - iqt - 1][qxnpts - iqx - 1][qynpts - iqy - 1][qznpts - iqz - 1][itrig];
+		//current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][itrig]
+		//	= (1.0 - 2.0 * itrig) * current_dN_dypTdpTdphi_moments[ipt][ipphi][qtnpts - iqt - 1][qxnpts - iqx - 1][qynpts - iqy - 1][qznpts - iqz - 1][itrig];
+		current_dN_dypTdpTdphi_moments[indexer(ipt,ipphi,iqt,iqx,iqy,iqz,itrig)]
+			= (1.0 - 2.0 * itrig) * current_dN_dypTdpTdphi_moments[indexer(ipt, ipphi, qtnpts - iqt - 1, qxnpts - iqx - 1, qynpts - iqy - 1, qznpts - iqz - 1, itrig)];
 	}		//end of second set of q-loops
 
 	*global_out_stream_ptr << "Spent " << sw_set_giant_array_slice.printTime() << " seconds setting giant_array_slice." << endl;
@@ -1575,6 +1585,7 @@ double CorrelationFunction::Cal_dN_dypTdpTdphi_function(FO_surf* FOsurf_ptr, int
 
 void CorrelationFunction::R2_Fourier_transform(int iKT, double plane_psi, int mode)
 {
+	const int interpMode = 1;
 	//int mode: 0 - GF, 1 - QM
 	for(int Morder = 0; Morder < n_order; ++Morder)
 	{
@@ -1595,19 +1606,24 @@ void CorrelationFunction::R2_Fourier_transform(int iKT, double plane_psi, int mo
 
 		for(int iKphi = 0; iKphi < n_localp_phi; ++iKphi)
 		{
-			double point[2] = {K_T[iKT], K_phi[iKphi]};
-			temp_sum_side_cos += (*approx_R2s).eval(point)*cos_mK_phi[iKphi]*K_phi_weight[iKphi];
-			temp_sum_side_sin += (*approx_R2s).eval(point)*sin_mK_phi[iKphi]*K_phi_weight[iKphi];
-			temp_sum_out_cos += (*approx_R2o).eval(point)*cos_mK_phi[iKphi]*K_phi_weight[iKphi];
-			temp_sum_out_sin += (*approx_R2o).eval(point)*sin_mK_phi[iKphi]*K_phi_weight[iKphi];
-			temp_sum_outside_cos += (*approx_R2os).eval(point)*cos_mK_phi[iKphi]*K_phi_weight[iKphi];
-			temp_sum_outside_sin += (*approx_R2os).eval(point)*sin_mK_phi[iKphi]*K_phi_weight[iKphi];
-			temp_sum_long_cos += (*approx_R2l).eval(point)*cos_mK_phi[iKphi]*K_phi_weight[iKphi];
-			temp_sum_long_sin += (*approx_R2l).eval(point)*sin_mK_phi[iKphi]*K_phi_weight[iKphi];
-			temp_sum_sidelong_cos += (*approx_R2sl).eval(point)*cos_mK_phi[iKphi]*K_phi_weight[iKphi];
-			temp_sum_sidelong_sin += (*approx_R2sl).eval(point)*sin_mK_phi[iKphi]*K_phi_weight[iKphi];
-			temp_sum_outlong_cos += (*approx_R2ol).eval(point)*cos_mK_phi[iKphi]*K_phi_weight[iKphi];
-			temp_sum_outlong_sin += (*approx_R2ol).eval(point)*sin_mK_phi[iKphi]*K_phi_weight[iKphi];
+			double local_R2s = interpolate2D(SPinterp_pT, SPinterp_pphi, R2_side_GF, K_T[iKT], K_phi[iKphi], n_interp_pT_pts, n_interp_pphi_pts, interpMode, false, true);
+			double local_R2o = interpolate2D(SPinterp_pT, SPinterp_pphi, R2_out_GF, K_T[iKT], K_phi[iKphi], n_interp_pT_pts, n_interp_pphi_pts, interpMode, false, true);
+			double local_R2os = interpolate2D(SPinterp_pT, SPinterp_pphi, R2_outside_GF, K_T[iKT], K_phi[iKphi], n_interp_pT_pts, n_interp_pphi_pts, interpMode, false, true);
+			double local_R2l = interpolate2D(SPinterp_pT, SPinterp_pphi, R2_long_GF, K_T[iKT], K_phi[iKphi], n_interp_pT_pts, n_interp_pphi_pts, interpMode, false, true);
+			double local_R2sl = interpolate2D(SPinterp_pT, SPinterp_pphi, R2_sidelong_GF, K_T[iKT], K_phi[iKphi], n_interp_pT_pts, n_interp_pphi_pts, interpMode, false, true);
+			double local_Rol = interpolate2D(SPinterp_pT, SPinterp_pphi, R2_outlong_GF, K_T[iKT], K_phi[iKphi], n_interp_pT_pts, n_interp_pphi_pts, interpMode, false, true);
+			temp_sum_side_cos += local_R2s*cos_mK_phi[iKphi]*K_phi_weight[iKphi];
+			temp_sum_side_sin += local_R2s*sin_mK_phi[iKphi]*K_phi_weight[iKphi];
+			temp_sum_out_cos += local_R2o*cos_mK_phi[iKphi]*K_phi_weight[iKphi];
+			temp_sum_out_sin += local_R2o*sin_mK_phi[iKphi]*K_phi_weight[iKphi];
+			temp_sum_outside_cos += local_R2os*cos_mK_phi[iKphi]*K_phi_weight[iKphi];
+			temp_sum_outside_sin += local_R2os*sin_mK_phi[iKphi]*K_phi_weight[iKphi];
+			temp_sum_long_cos += local_R2l*cos_mK_phi[iKphi]*K_phi_weight[iKphi];
+			temp_sum_long_sin += local_R2l*sin_mK_phi[iKphi]*K_phi_weight[iKphi];
+			temp_sum_sidelong_cos += local_R2sl*cos_mK_phi[iKphi]*K_phi_weight[iKphi];
+			temp_sum_sidelong_sin += local_R2sl*sin_mK_phi[iKphi]*K_phi_weight[iKphi];
+			temp_sum_outlong_cos += local_Rol*cos_mK_phi[iKphi]*K_phi_weight[iKphi];
+			temp_sum_outlong_sin += local_Rol*sin_mK_phi[iKphi]*K_phi_weight[iKphi];
 		}
 
 		if (mode == 0)

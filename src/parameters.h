@@ -7,6 +7,7 @@
 
 using namespace std;
 
+#define USE_OLD_INTERP			true		// duh
 #define USE_EXACT			false
 #define ASSUME_ETA_SYMMETRIC 		1		// 1 means integrate only over eta_s = 0..eta_s_max, and multiply by 2 or 0 to speed up calculations
 							// 0 means just integrate over given range of eta_s without worrying about symmetry
@@ -106,22 +107,22 @@ const double init_q = 0.0;
 const int new_nqpts = 51;
 
 //all direction-specific q points information here
-const int qtnpts = 43;
-const int qxnpts = 7;
-const int qynpts = 7;
-const int qznpts = 7;
+//const int qtnpts = 13;
+//const int qxnpts = 7;
+//const int qynpts = 7;
+//const int qznpts = 7;
 //try to make max. sqrt(q dot q) ~ 0.025 GeV or so
 const double delta_qt = 0.00625;
 const double delta_qx = 0.0125;
 const double delta_qy = 0.0125;
 const double delta_qz = 0.015;
-//const double delta_qx = 0.003;
-//const double delta_qy = 0.003;
-//const double delta_qz = 0.003;
-const double init_qt = -0.5*double(qtnpts-1)*delta_qt;
-const double init_qx = -0.5*double(qxnpts-1)*delta_qx;
-const double init_qy = -0.5*double(qynpts-1)*delta_qy;
-const double init_qz = -0.5*double(qznpts-1)*delta_qz;
+//const double delta_qx = 0.0075;
+//const double delta_qy = 0.0075;
+//const double delta_qz = 0.0075;
+//const double init_qt = -0.5*double(qtnpts-1)*delta_qt;
+//const double init_qx = -0.5*double(qxnpts-1)*delta_qx;
+//const double init_qy = -0.5*double(qynpts-1)*delta_qy;
+//const double init_qz = -0.5*double(qznpts-1)*delta_qz;
 
 //single particle spectra info
 const int n_SP_pT = 15;
@@ -131,14 +132,16 @@ const double SP_pT_max = 3.0;
 
 //parameters for interpolation grid
 //  - polar
-const int n_interp_pT_pts = 7;
-const int n_interp_pphi_pts = 11;
+//const int n_interp_pT_pts = 15;
+//const int n_interp_pphi_pts = 48;
 const double interp_pT_min = 0.0;
 const double interp_pphi_min = 0.0;
 const double interp_pT_max = 4.0;
 const double interp_pphi_max = 2.*M_PI;
-const double Del2_pT = (interp_pT_max - interp_pT_min) / (double)(n_interp_pT_pts-1);
-const double Del2_pphi = (interp_pphi_max - interp_pphi_min) / (double)(n_interp_pphi_pts-1);
+//const double Del2_pT = (interp_pT_max - interp_pT_min) / (double)(n_interp_pT_pts-1);
+//const double Del2_pphi = (interp_pphi_max - interp_pphi_min) / (double)(n_interp_pphi_pts-1);
+const double Del2_pT = 0.01;
+const double Del2_pphi = 0.01;
 
 //correlation function info
 const int corrfuncdim = 1;
@@ -146,10 +149,10 @@ const bool lambdaflag = USE_LAMBDA;
 const double correlator_minus_one_cutoff = 0.0;		//zero means all calculations happen as usual
 
 //pair momentum info
-const int n_localp_T = 14;
-const double localp_T_min = 0.05;
-const double localp_T_max = 0.7;
-const int n_localp_phi = 51;
+const int n_localp_T = 101;
+const double localp_T_min = 0.01;
+const double localp_T_max = 1.01;
+const int n_localp_phi = 48;
 const double localp_phi_min = 0.0;
 const double localp_phi_max = 2*M_PI;
 

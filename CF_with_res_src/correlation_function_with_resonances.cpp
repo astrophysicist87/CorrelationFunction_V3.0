@@ -118,8 +118,8 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-	double threshold = 0.60;	//include only enough of the most important resonances to account for fixed fraction of total resonance-decay pion(+)s
-	//double threshold = atof(argv[1]);
+	//double threshold = 0.60;	//include only enough of the most important resonances to account for fixed fraction of total resonance-decay pion(+)s
+	double threshold = atof(argv[7]);
 				//threshold = 1.0 means include all resonance-decay pion(+)s,
 				//threshold = 0.0 means include none of them
 	double net_fraction_resonance_contribution = 0.0;
@@ -139,11 +139,15 @@ int main(int argc, char *argv[])
 		get_all_descendants(&chosen_resonance_indices, particle, Nparticle, output);
 		sort_by_mass(&chosen_resonance_indices, particle, Nparticle, output);
 		for (int ii = 0; ii < (int)chosen_resonance_indices.size(); ii++)
-			output << ii << "   " << chosen_resonance_indices[ii] << "   " << particle[chosen_resonance_indices[ii]].name << endl;
+			output << ii << "   " << chosen_resonance_indices[ii] << "   " << particle[chosen_resonance_indices[ii]].name
+					<< "   ,   Gamma = " << particle[chosen_resonance_indices[ii]].width
+					<< "   ,   pc = " << particle[chosen_resonance_indices[ii]].percent_contribution << endl;
 	}
 
+if (1) exit(1);
 
-	CorrelationFunction correlation_function(&particle[particle_idx], particle, Nparticle, FOsurf_ptr, chosen_resonance_indices, particle_idx, output);
+	CorrelationFunction correlation_function(&particle[particle_idx], particle, Nparticle, FOsurf_ptr, chosen_resonance_indices, particle_idx, output,
+												atoi(argv[1]), atoi(argv[2]), atoi(argv[3]), atoi(argv[4]), atoi(argv[5]), atoi(argv[6]));
 
 	correlation_function.read_in_all_dN_dypTdpTdphi = false;
 	correlation_function.output_all_dN_dypTdpTdphi = !(correlation_function.read_in_all_dN_dypTdpTdphi);
@@ -196,7 +200,7 @@ int main(int argc, char *argv[])
 	output << "Finished calculating correlation function with all resonance decays..." << endl;
 
 	//if there's a full 3D grid to fit over, do the Gaussian fit and get the HBT radii too
-	if (qxnpts > 1 && qynpts > 1 && qznpts > 1)
+	if (atoi(argv[4]) > 1 && atoi(argv[5]) > 1 && atoi(argv[6]) > 1)
 	{
 		output << "Calculating HBT radii via Gaussian fit method..." << endl;
 		correlation_function.Get_GF_HBTradii();

@@ -119,9 +119,18 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 						if (tempidx != 0)
 							PKphi = VEC_n2_PPhi_tildeFLIP[iv][izeta];		//also takes Pp --> Pm
 						currentPpm = VEC_n2_Ppm[iv][izeta][tempidx];
-						Edndp3(PKT, PKphi, &Csum);							//set spectra
-						if (!IGNORE_LONG_LIVED_RESONANCES || Gamma >= 0.0002)
-							eiqxEdndp3(PKT, PKphi, Csum_vec, local_verbose);					//set weights
+						if (USE_OLD_INTERP)
+						{
+							Edndp3_OLD(PKT, PKphi, &Csum);							//set spectra
+							if (!IGNORE_LONG_LIVED_RESONANCES || Gamma >= 0.0002)
+								eiqxEdndp3_OLD(PKT, PKphi, Csum_vec, local_verbose);					//set weights
+						}
+						else
+						{
+							Edndp3(PKT, PKphi, &Csum);							//set spectra
+							if (!IGNORE_LONG_LIVED_RESONANCES || Gamma >= 0.0002)
+								eiqxEdndp3(PKT, PKphi, Csum_vec, local_verbose);					//set weights
+						}
 					}												// end of tempidx sum
 					for (int qpt_cs_idx = 0; qpt_cs_idx < qspace_cs_slice_length; ++qpt_cs_idx)
 						zetasum_vec[qpt_cs_idx] += VEC_n2_zeta_factor[iv][izeta]*Csum_vec[qpt_cs_idx];
@@ -143,7 +152,8 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 			for (int iqz = 0; iqz < qznpts; ++iqz)
 			for (int itrig = 0; itrig < 2; ++itrig)
 			{
-				current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt][iqx][iqy][iqz][itrig] += ssum_vec[qpt_cs_idx];
+				//current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt][iqx][iqy][iqz][itrig] += ssum_vec[qpt_cs_idx];
+				current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][indexer(ipt,ipphi,iqt,iqx,iqy,iqz,itrig)] += ssum_vec[qpt_cs_idx];
 				++qpt_cs_idx;
 			}
 
@@ -160,23 +170,24 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 			if (IGNORE_LONG_LIVED_RESONANCES && qtnpts%2==1 && qxnpts%2==1 && qynpts%2==1 && qznpts%2==1 && Gamma < 0.0002 /*&& daughter_particle_id == target_particle_id*/)
 			{	//i.e., the eta and eta'(958) mesons, and possibly a few others
 				//*global_out_stream_ptr << "RESONANCES: Leaving out long-lived resonance " << all_particles[parent_resonance_particle_id].name << " from q=0!" << endl;
-				current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0] -= ssum_vec[tmp_qpt_cs_idx];
+				//current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0] -= ssum_vec[tmp_qpt_cs_idx];
+				current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][indexer(ipt,ipphi,iqt0,iqx0,iqy0,iqz0,0)] -= ssum_vec[tmp_qpt_cs_idx];
 				//*global_out_stream_ptr << "RESONANCES2 (" << all_particles[parent_resonance_particle_id].name << " --> " << all_particles[daughter_particle_id].name
 				//						<< ", nbody = " << n_body << "): (pt, pphi) = (" << SPinterp_pT[ipt] << "," << SPinterp_pphi[ipphi] << "): "
 				//						<< ssum_vec[tmp_qpt_cs_idx] << "   " << ssum << "   " << spectra[daughter_particle_id][ipt][ipphi]
 				//						<< "   " << current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0] << endl;
 			}
 	
-			if (isnan(current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][0][0][0][0][0]
-					+ current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][0][0][0][0][1]))
+			if (isnan(current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][indexer(ipt,ipphi,0,0,0,0,0)]
+					+ current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][indexer(ipt,ipphi,0,0,0,0,1)]))
 			{
 				*global_out_stream_ptr << "ERROR: NaNs encountered!" << endl
 										<< "current_daughters_dN_dypTdpTdphi_moments[" << daughter_lookup_idx << "][" << ipt << "][" << ipphi << "][0][0][0][0][0] = "
 										<< setw(8) << setprecision(15)
-										<< current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][0][0][0][0][0] << endl
+										<< current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][indexer(ipt,ipphi,0,0,0,0,0)] << endl
 										<< "current_daughters_dN_dypTdpTdphi_moments[" << daughter_lookup_idx << "][" << ipt << "][" << ipphi << "][0][0][0][0][1] = "
 										<< setw(8) << setprecision(15)
-										<< current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][0][0][0][0][1] << endl
+										<< current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][indexer(ipt,ipphi,0,0,0,0,1)] << endl
 										<< "  --> pt = " << local_pT << std::endl
 										<< "  --> pphi = " << local_pphi << std::endl
 										<< "daughter_particle_id = " << daughter_particle_id << endl
@@ -231,9 +242,18 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 							if (tempidx != 0)
 								PKphi = VEC_PPhi_tildeFLIP[is][iv][izeta];		//also takes Pp --> Pm
 							currentPpm = VEC_Ppm[is][iv][izeta][tempidx];
-							Edndp3(PKT, PKphi, &Csum);							//set spectra
-							if (!IGNORE_LONG_LIVED_RESONANCES || Gamma >= 0.0002)
-								eiqxEdndp3(PKT, PKphi, Csum_vec, local_verbose);					//set weights
+							if (USE_OLD_INTERP)
+							{
+								Edndp3_OLD(PKT, PKphi, &Csum);							//set spectra
+								if (!IGNORE_LONG_LIVED_RESONANCES || Gamma >= 0.0002)
+									eiqxEdndp3_OLD(PKT, PKphi, Csum_vec, local_verbose);					//set weights
+							}
+							else
+							{
+								Edndp3(PKT, PKphi, &Csum);							//set spectra
+								if (!IGNORE_LONG_LIVED_RESONANCES || Gamma >= 0.0002)
+									eiqxEdndp3(PKT, PKphi, Csum_vec, local_verbose);					//set weights
+							}
 						}										// end of tempidx sum
 						for (int qpt_cs_idx = 0; qpt_cs_idx < qspace_cs_slice_length; ++qpt_cs_idx)
 							zetasum_vec[qpt_cs_idx] += VEC_zeta_factor[is][iv][izeta]*Csum_vec[qpt_cs_idx];
@@ -255,7 +275,8 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 			for (int iqz = 0; iqz < qznpts; ++iqz)
 			for (int itrig = 0; itrig < 2; ++itrig)
 			{
-				current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt][iqx][iqy][iqz][itrig] += ssum_vec[qpt_cs_idx];
+				//current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt][iqx][iqy][iqz][itrig] += ssum_vec[qpt_cs_idx];
+				current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][indexer(ipt,ipphi,iqt,iqx,iqy,iqz,itrig)] += ssum_vec[qpt_cs_idx];
 				++qpt_cs_idx;
 			}
 
@@ -272,23 +293,23 @@ void CorrelationFunction::Do_resonance_integrals(int parent_resonance_particle_i
 			if (IGNORE_LONG_LIVED_RESONANCES && qtnpts%2==1 && qxnpts%2==1 && qynpts%2==1 && qznpts%2==1 && Gamma < 0.0002 /*&& daughter_particle_id == target_particle_id*/)
 			{	//i.e., the eta and eta'(958) mesons, and possibly a few others
 				//*global_out_stream_ptr << "RESONANCES: Leaving out long-lived resonance " << all_particles[parent_resonance_particle_id].name << " from q=0!" << endl;
-				current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0] -= ssum_vec[tmp_qpt_cs_idx];
+				current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][indexer(ipt,ipphi,iqt0,iqx0,iqy0,iqz0,0)] -= ssum_vec[tmp_qpt_cs_idx];
 				//*global_out_stream_ptr << "RESONANCES2 (" << all_particles[parent_resonance_particle_id].name << " --> " << all_particles[daughter_particle_id].name
 				//						<< ", nbody = " << n_body << "): (pt, pphi) = (" << SPinterp_pT[ipt] << "," << SPinterp_pphi[ipphi] << "): "
 				//						<< ssum_vec[tmp_qpt_cs_idx] << "   " << ssum << "   " << spectra[daughter_particle_id][ipt][ipphi]
 				//						<< "   " << current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][iqt0][iqx0][iqy0][iqz0][0] << endl;
 			}
 
-			if (isnan(current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][0][0][0][0][0]
-					+ current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][0][0][0][0][1]))
+			if (isnan(current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][indexer(ipt,ipphi,0,0,0,0,0)]
+					+ current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][indexer(ipt,ipphi,0,0,0,0,1)]))
 			{
 				*global_out_stream_ptr << "ERROR: NaNs encountered!" << endl
 										<< "current_daughters_dN_dypTdpTdphi_moments[" << daughter_lookup_idx << "][" << ipt << "][" << ipphi << "][0][0][0][0][0] = "
 										<< setw(8) << setprecision(15)
-										<< current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][0][0][0][0][0] << endl
+										<< current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][indexer(ipt,ipphi,0,0,0,0,0)] << endl
 										<< "current_daughters_dN_dypTdpTdphi_moments[" << daughter_lookup_idx << "][" << ipt << "][" << ipphi << "][0][0][0][0][1] = "
 										<< setw(8) << setprecision(15)
-										<< current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][ipt][ipphi][0][0][0][0][1] << endl
+										<< current_daughters_dN_dypTdpTdphi_moments[daughter_lookup_idx][indexer(ipt,ipphi,0,0,0,0,1)] << endl
 										<< "  --> pt = " << local_pT << endl
 										<< "  --> pphi = " << local_pphi << endl
 										<< "daughter_particle_id = " << daughter_particle_id << endl
@@ -352,14 +373,19 @@ void CorrelationFunction::Flatten_dN_dypTdpTdphi_moments(int parent_resonance_pa
 		{
 			for (int itrig = 0; itrig < 2; ++itrig)
 			{
-				res_sign_info[ipt][ipphi][qpt_cs_idx] = current_sign_of_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][itrig];
-				res_log_info[ipt][ipphi][qpt_cs_idx] = current_ln_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][itrig];
-				res_moments_info[ipt][ipphi][qpt_cs_idx] = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][itrig];
+				//res_sign_info[ipt][ipphi][qpt_cs_idx] = current_sign_of_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][itrig];
+				//res_log_info[ipt][ipphi][qpt_cs_idx] = current_ln_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][itrig];
+				//res_moments_info[ipt][ipphi][qpt_cs_idx] = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][itrig];
+				res_sign_info[ipt][ipphi][qpt_cs_idx] = current_sign_of_dN_dypTdpTdphi_moments[indexer(ipt,ipphi,iqt,iqx,iqy,iqz,itrig)];
+				res_log_info[ipt][ipphi][qpt_cs_idx] = current_ln_dN_dypTdpTdphi_moments[indexer(ipt,ipphi,iqt,iqx,iqy,iqz,itrig)];
+				res_moments_info[ipt][ipphi][qpt_cs_idx] = current_dN_dypTdpTdphi_moments[indexer(ipt,ipphi,iqt,iqx,iqy,iqz,itrig)];
 				++qpt_cs_idx;
 			}
 
-			tmp_moments_real[iqt][iqx][iqy][iqz][momidx] = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
-			tmp_moments_imag[iqt][iqx][iqy][iqz][momidx] = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
+			//tmp_moments_real[iqt][iqx][iqy][iqz][momidx] = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
+			//tmp_moments_imag[iqt][iqx][iqy][iqz][momidx] = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
+			tmp_moments_real[iqt][iqx][iqy][iqz][momidx] = current_dN_dypTdpTdphi_moments[indexer(ipt,ipphi,iqt,iqx,iqy,iqz,0)];
+			tmp_moments_imag[iqt][iqx][iqy][iqz][momidx] = current_dN_dypTdpTdphi_moments[indexer(ipt,ipphi,iqt,iqx,iqy,iqz,1)];
 		}
 
 		flat_spectra[momidx] = spectra[parent_resonance_particle_id][ipt][ipphi];
@@ -734,6 +760,367 @@ void CorrelationFunction::eiqxEdndp3(double ptr, double phir, double * results, 
 			// DO SINE PART NEXT
 			double Zki = (*imag_resonance_grid_approximator[qlist_idx]).eval(point);
 	
+			//--> update the real part of weighted daughter spectra
+			results[qpt_cs_idx] += akr*Zkr-aki*Zki;
+			//--> update the imaginary part of weighted daughter spectra
+			results[qpt_cs_idx+1] += akr*Zki+aki*Zkr;
+	
+			qpt_cs_idx += 2;
+			qlist_idx++;
+		}	//end of all q-loops
+	}
+
+	return;
+}
+
+void CorrelationFunction::Edndp3_OLD(double ptr, double phir, double * result, int loc_verb /*==0*/)
+{
+	double phi0, phi1;
+	double f1, f2;
+
+	int npphi_max = n_interp_pphi_pts - 1;
+	int npT_max = n_interp_pT_pts - 1;
+
+	// locate pT interval
+	int npt = 1;
+	while ((ptr > SPinterp_pT[npt]) &&
+			(npt < npT_max)) ++npt;
+	double pT0 = SPinterp_pT[npt-1];
+	double pT1 = SPinterp_pT[npt];
+
+	// locate pphi interval
+	int nphi = 1, nphim1 = 0;
+	if(phir < SPinterp_pphi[0])			//if angle is less than minimum angle grid point
+	{
+		phi0 = SPinterp_pphi[npphi_max] - 2. * M_PI;
+		phi1 = SPinterp_pphi[0];
+		nphi = 0;
+		nphim1 = npphi_max;
+	}
+	else if(phir > SPinterp_pphi[npphi_max])	//if angle is greater than maximum angle grid point
+	{
+		phi0 = SPinterp_pphi[npphi_max];
+		phi1 = SPinterp_pphi[0] + 2. * M_PI;
+		nphi = 0;
+		nphim1 = npphi_max;
+	}
+	else						//if angle is within grid range
+	{
+		while ((phir > SPinterp_pphi[nphi]) &&
+				(nphi < npphi_max)) ++nphi;
+		nphim1 = nphi - 1;
+		phi0 = SPinterp_pphi[nphim1];
+		phi1 = SPinterp_pphi[nphi];
+	}
+
+	if (pT0==pT1 || phi0==phi1)
+	{
+		cerr << "ERROR in Edndp3(): pT and/or pphi values equal!" << endl;
+		exit(1);
+	}
+
+	double one_by_pTdiff = 1./(pT1 - pT0), one_by_pphidiff = 1./(phi1 - phi0);
+
+	// choose pt-pphi slice of resonance info arrays
+	double log_f11 = spec_log_info[npt-1][nphim1];
+	double log_f12 = spec_log_info[npt-1][nphi];
+	double log_f21 = spec_log_info[npt][nphim1];
+	double log_f22 = spec_log_info[npt][nphi];
+
+	double f11 = spec_vals_info[npt-1][nphim1];
+	double f12 = spec_vals_info[npt-1][nphi];
+	double f21 = spec_vals_info[npt][nphim1];
+	double f22 = spec_vals_info[npt][nphi];
+
+	/////////////////////////////////////////////////////////////////
+	// interpolate over pT values first
+	/////////////////////////////////////////////////////////////////
+	if (USE_EXACT)
+	{
+		*result += Cal_dN_dypTdpTdphi_function(current_FOsurf_ptr, current_parent_resonance, ptr, phir);
+	}
+	else if(ptr > PTCHANGE)				// if pT interpolation point is larger than PTCHANGE (currently 1.0 GeV)
+	{
+		double sign_of_f11 = spec_sign_info[npt-1][nphim1];
+		double sign_of_f12 = spec_sign_info[npt-1][nphi];
+		double sign_of_f21 = spec_sign_info[npt][nphim1];
+		double sign_of_f22 = spec_sign_info[npt][nphi];
+		
+		//*******************************************************************************************************************
+		// set f1 first
+		//*******************************************************************************************************************
+		// if using extrapolation and spectra at pT1 has larger magnitude than at pT0 (or the signs are different), just return zero
+		if ( ptr > pT1 && ( log_f21 > log_f11 || sign_of_f11 * sign_of_f21 < 0 ) )
+		{
+			f1 = 0.0;
+			//if ( loc_verb ) *global_out_stream_ptr << "Chose branch 1Aa!" << endl;
+		}
+		else if (sign_of_f11 * sign_of_f21 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
+		{
+			f1 = sign_of_f11 * exp( lin_int(ptr-pT0, one_by_pTdiff, log_f11, log_f21) );
+			//if ( loc_verb ) *global_out_stream_ptr << "Chose branch 1Ba!" << endl;
+		}
+		else					// otherwise, just interpolate original vals
+		{
+			f1 = lin_int(ptr-pT0, one_by_pTdiff, f11, f21);
+			//if ( loc_verb ) *global_out_stream_ptr << "Chose branch 1Ca!" << endl;
+		}
+			
+		//*******************************************************************************************************************
+		// set f2 next
+		//*******************************************************************************************************************
+		if ( ptr > pT1 && ( log_f22 > log_f12 || sign_of_f12 * sign_of_f22 < 0 ) )
+		{
+			f2 = 0.0;
+			//if ( loc_verb ) *global_out_stream_ptr << "Chose branch 1Ab!" << endl;
+		}
+		else if (sign_of_f12 * sign_of_f22 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
+		{
+			f2 = sign_of_f12 * exp( lin_int(ptr-pT0, one_by_pTdiff, log_f12, log_f22) );
+			//if ( loc_verb ) *global_out_stream_ptr << "Chose branch 1Bb!" << endl;
+		}
+		else					// otherwise, just interpolate original vals
+		{
+			f2 = lin_int(ptr-pT0, one_by_pTdiff, f12, f22);
+			//if ( loc_verb ) *global_out_stream_ptr << "Chose branch 1Cb!" << endl;
+		}
+		//*******************************************************************************************************************
+	}
+	else						// if pT is smaller than PTCHANGE, just use linear interpolation, no matter what
+	{
+		f1 = lin_int(ptr-pT0, one_by_pTdiff, f11, f21);
+		f2 = lin_int(ptr-pT0, one_by_pTdiff, f12, f22);
+		//if ( loc_verb ) *global_out_stream_ptr << "Chose branch 2!" << endl;
+	}
+				
+	// now, interpolate f1 and f2 over the pphi direction
+	*result += lin_int(phir-phi0, one_by_pphidiff, f1, f2);
+
+	return;
+}
+
+void CorrelationFunction::eiqxEdndp3_OLD(double ptr, double phir, double * results, int loc_verb /*==0*/)
+{
+	double phi0, phi1;
+	double f1, f2;
+
+	int npphi_max = n_interp_pphi_pts - 1;
+	int npT_max = n_interp_pT_pts - 1;
+
+	// locate pT interval
+	int npt = 1;
+	while ((ptr > SPinterp_pT[npt]) &&
+			(npt < npT_max)) ++npt;
+	double pT0 = SPinterp_pT[npt-1];
+	double pT1 = SPinterp_pT[npt];
+
+	// locate pphi interval
+	int nphi = 1, nphim1 = 0;
+	if(phir < SPinterp_pphi[0])			//if angle is less than minimum angle grid point
+	{
+		phi0 = SPinterp_pphi[npphi_max] - 2. * M_PI;
+		phi1 = SPinterp_pphi[0];
+		nphi = 0;
+		nphim1 = npphi_max;
+	}
+	else if(phir > SPinterp_pphi[npphi_max])	//if angle is greater than maximum angle grid point
+	{
+		phi0 = SPinterp_pphi[npphi_max];
+		phi1 = SPinterp_pphi[0] + 2. * M_PI;
+		nphi = 0;
+		nphim1 = npphi_max;
+	}
+	else						//if angle is within grid range
+	{
+		while ((phir > SPinterp_pphi[nphi]) &&
+				(nphi < npphi_max)) ++nphi;
+		nphim1 = nphi - 1;
+		phi0 = SPinterp_pphi[nphim1];
+		phi1 = SPinterp_pphi[nphi];
+	}
+
+	if (pT0==pT1 || phi0==phi1)
+	{
+		cerr << "ERROR in eiqxEdndp3(): pT and/or pphi values equal!" << endl;
+		exit(1);
+	}
+
+	double one_by_pTdiff = 1./(pT1 - pT0), one_by_pphidiff = 1./(phi1 - phi0);
+	double del_ptr_pt0 = ptr - pT0, del_phir_phi0 = phir - phi0;
+
+	// choose pt-pphi slice of resonance info arrays
+	double * sign_of_f11_arr = res_sign_info[npt-1][nphim1];
+	double * sign_of_f12_arr = res_sign_info[npt-1][nphi];
+	double * sign_of_f21_arr = res_sign_info[npt][nphim1];
+	double * sign_of_f22_arr = res_sign_info[npt][nphi];
+
+	double * log_f11_arr = res_log_info[npt-1][nphim1];
+	double * log_f12_arr = res_log_info[npt-1][nphi];
+	double * log_f21_arr = res_log_info[npt][nphim1];
+	double * log_f22_arr = res_log_info[npt][nphi];
+
+	double * f11_arr = res_moments_info[npt-1][nphim1];
+	double * f12_arr = res_moments_info[npt-1][nphi];
+	double * f21_arr = res_moments_info[npt][nphim1];
+	double * f22_arr = res_moments_info[npt][nphi];
+
+	// set index for looping
+	int qpt_cs_idx = 0;
+	int qlist_idx = 0;
+
+
+	if (USE_EXACT)
+	{
+		for (int iqt = 0; iqt < qtnpts; ++iqt)
+		for (int iqx = 0; iqx < qxnpts; ++iqx)
+		for (int iqy = 0; iqy < qynpts; ++iqy)
+		for (int iqz = 0; iqz < qznpts; ++iqz)
+		{
+			double arg = one_by_Gamma_Mres * dot_four_vectors(qlist[qlist_idx], currentPpm);
+			double akr = 1./(1.+arg*arg);
+			double aki = arg/(1.+arg*arg);
+
+			double Zkr = 0.0, Zki = 0.0;
+
+			results[qpt_cs_idx] += akr*Zkr-aki*Zki;
+			results[qpt_cs_idx+1] += akr*Zki+aki*Zkr;
+
+			qpt_cs_idx += 2;
+			qlist_idx++;
+		}
+	}
+	else if (ptr > PTCHANGE)				// if pT interpolation point is larger than PTCHANGE (currently 1.0 GeV)
+	{
+		for (int iqt = 0; iqt < qtnpts; ++iqt)
+		for (int iqx = 0; iqx < qxnpts; ++iqx)
+		for (int iqy = 0; iqy < qynpts; ++iqy)
+		for (int iqz = 0; iqz < qznpts; ++iqz)
+		{
+			double arg = one_by_Gamma_Mres * dot_four_vectors(qlist[qlist_idx], currentPpm);
+			double akr = 1./(1.+arg*arg);
+			double aki = arg/(1.+arg*arg);
+
+			/////////////////////////////////////////////////////////////////
+			// DO COSINE PART FIRST
+			/////////////////////////////////////////////////////////////////
+			// interpolate over pT values first
+			/////////////////////////////////////////////////////////////////
+			double sign_of_f11 = sign_of_f11_arr[qpt_cs_idx];
+			double sign_of_f12 = sign_of_f12_arr[qpt_cs_idx];
+			double sign_of_f21 = sign_of_f21_arr[qpt_cs_idx];
+			double sign_of_f22 = sign_of_f22_arr[qpt_cs_idx];
+			
+			//*******************************************************************************************************************
+			// set f1 first
+			//*******************************************************************************************************************
+			// if using extrapolation and spectra at pT1 has larger magnitude than at pT0 (or the signs are different), just return zero
+			if ( ptr > pT1 && ( log_f21_arr[qpt_cs_idx] > log_f11_arr[qpt_cs_idx] || sign_of_f11 * sign_of_f21 < 0 ) )
+				f1 = 0.0;
+			else if (sign_of_f11 * sign_of_f21 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
+				f1 = sign_of_f11 * exp( lin_int(del_ptr_pt0, one_by_pTdiff, log_f11_arr[qpt_cs_idx], log_f21_arr[qpt_cs_idx]) );
+			else					// otherwise, just interpolate original vals
+				f1 = lin_int(del_ptr_pt0, one_by_pTdiff, f11_arr[qpt_cs_idx], f21_arr[qpt_cs_idx]);
+				
+			//*******************************************************************************************************************
+			// set f2 next
+			//*******************************************************************************************************************
+			if ( ptr > pT1 && ( log_f22_arr[qpt_cs_idx] > log_f12_arr[qpt_cs_idx] || sign_of_f12 * sign_of_f22 < 0 ) )
+				f2 = 0.0;
+			else if (sign_of_f12 * sign_of_f22 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
+				f2 = sign_of_f12 * exp( lin_int(del_ptr_pt0, one_by_pTdiff, log_f12_arr[qpt_cs_idx], log_f22_arr[qpt_cs_idx]) );
+			else					// otherwise, just interpolate original vals
+				f2 = lin_int(del_ptr_pt0, one_by_pTdiff, f12_arr[qpt_cs_idx], f22_arr[qpt_cs_idx]);
+			//*******************************************************************************************************************
+			// now, interpolate f1 and f2 over the pphi direction
+			double Zkr = lin_int(del_phir_phi0, one_by_pphidiff, f1, f2);
+
+			double f1s = f1, f2s = f2;
+	
+			/////////////////////////////////////////////////////////////////
+			// DO SINE PART NEXT
+			/////////////////////////////////////////////////////////////////
+			// interpolate over pT values first
+			/////////////////////////////////////////////////////////////////
+			sign_of_f11 = sign_of_f11_arr[qpt_cs_idx+1];
+			sign_of_f12 = sign_of_f12_arr[qpt_cs_idx+1];
+			sign_of_f21 = sign_of_f21_arr[qpt_cs_idx+1];
+			sign_of_f22 = sign_of_f22_arr[qpt_cs_idx+1];
+			
+			//*******************************************************************************************************************
+			// set f1 first
+			//*******************************************************************************************************************
+			// if using extrapolation and spectra at pT1 has larger magnitude than at pT0 (or the signs are different), just return zero
+			if ( ptr > pT1 && ( log_f21_arr[qpt_cs_idx+1] > log_f11_arr[qpt_cs_idx+1] || sign_of_f11 * sign_of_f21 < 0 ) )
+				f1 = 0.0;
+			else if (sign_of_f11 * sign_of_f21 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
+				f1 = sign_of_f11 * exp( lin_int(del_ptr_pt0, one_by_pTdiff, log_f11_arr[qpt_cs_idx+1], log_f21_arr[qpt_cs_idx+1]) );
+			else					// otherwise, just interpolate original vals
+				f1 = lin_int(del_ptr_pt0, one_by_pTdiff, f11_arr[qpt_cs_idx+1], f21_arr[qpt_cs_idx+1]);
+				
+			//*******************************************************************************************************************
+			// set f2 next
+			//*******************************************************************************************************************
+			if ( ptr > pT1 && ( log_f22_arr[qpt_cs_idx+1] > log_f12_arr[qpt_cs_idx+1] || sign_of_f12 * sign_of_f22 < 0 ) )
+				f2 = 0.0;
+			else if (sign_of_f12 * sign_of_f22 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
+				f2 = sign_of_f12 * exp( lin_int(del_ptr_pt0, one_by_pTdiff, log_f12_arr[qpt_cs_idx+1], log_f22_arr[qpt_cs_idx+1]) );
+			else					// otherwise, just interpolate original vals
+				f2 = lin_int(del_ptr_pt0, one_by_pTdiff, f12_arr[qpt_cs_idx+1], f22_arr[qpt_cs_idx+1]);
+			//*******************************************************************************************************************
+
+			// now, interpolate f1 and f2 over the pphi direction
+			double Zki = lin_int(del_phir_phi0, one_by_pphidiff, f1, f2);
+
+			/////////////////////////////////////////////////////
+			// Finally, update results vectors appropriately
+			/////////////////////////////////////////////////////
+			//--> update the real part of weighted daughter spectra
+			results[qpt_cs_idx] += akr*Zkr-aki*Zki;
+			//--> update the imaginary part of weighted daughter spectra
+			results[qpt_cs_idx+1] += akr*Zki+aki*Zkr;
+	
+			qpt_cs_idx += 2;
+			qlist_idx++;
+		}	//end of all q-loops
+	}
+	else						// if pT is smaller than PTCHANGE, just use linear interpolation, no matter what
+	{
+		for (int iqt = 0; iqt < qtnpts; ++iqt)
+		for (int iqx = 0; iqx < qxnpts; ++iqx)
+		for (int iqy = 0; iqy < qynpts; ++iqy)
+		for (int iqz = 0; iqz < qznpts; ++iqz)
+		{
+			double arg = one_by_Gamma_Mres * dot_four_vectors(qlist[qlist_idx], currentPpm);
+			double akr = 1./(1.+arg*arg);
+			double aki = arg/(1.+arg*arg);
+
+			/////////////////////////////////////////////////////////////////
+			// DO COSINE PART FIRST
+			/////////////////////////////////////////////////////////////////
+			// interpolate over pT values first
+			/////////////////////////////////////////////////////////////////
+			f1 = lin_int(del_ptr_pt0, one_by_pTdiff, f11_arr[qpt_cs_idx], f21_arr[qpt_cs_idx]);
+			f2 = lin_int(del_ptr_pt0, one_by_pTdiff, f12_arr[qpt_cs_idx], f22_arr[qpt_cs_idx]);
+
+			// now, interpolate f1 and f2 over the pphi direction
+			double Zkr = lin_int(del_phir_phi0, one_by_pphidiff, f1, f2);
+
+			double f1s = f1, f2s = f2;
+	
+			/////////////////////////////////////////////////////////////////
+			// DO SINE PART NEXT
+			/////////////////////////////////////////////////////////////////
+			// interpolate over pT values first
+			/////////////////////////////////////////////////////////////////
+			f1 = lin_int(del_ptr_pt0, one_by_pTdiff, f11_arr[qpt_cs_idx+1], f21_arr[qpt_cs_idx+1]);
+			f2 = lin_int(del_ptr_pt0, one_by_pTdiff, f12_arr[qpt_cs_idx+1], f22_arr[qpt_cs_idx+1]);
+
+			// now, interpolate f1 and f2 over the pphi direction
+			double Zki = lin_int(del_phir_phi0, one_by_pphidiff, f1, f2);
+
+			/////////////////////////////////////////////////////
+			// Finally, update results vectors appropriately
+			/////////////////////////////////////////////////////
 			//--> update the real part of weighted daughter spectra
 			results[qpt_cs_idx] += akr*Zkr-aki*Zki;
 			//--> update the imaginary part of weighted daughter spectra

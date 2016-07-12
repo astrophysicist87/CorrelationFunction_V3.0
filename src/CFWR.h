@@ -34,31 +34,31 @@ using namespace std;
 
 typedef struct
 {
-   int resonance_particle_id;		// keeps track of current resonance's index in all_particles array
-   int resonance_idx;			// keeps track of current resonance's index in chosen_resonances vector
-   int nbody;
-   int resonance_sign;
-   double resonance_mass;
-   double resonance_mu;
-   double resonance_gspin;
-   double resonance_Gamma;
-   double resonance_total_br;
-   double resonance_direct_br;
-   double * resonance_decay_masses;
-   int * resonance_decay_monvals;
-   double * resonance_decay_Gammas;
-   string resonance_name;
-   bool include_channel;
+	int resonance_particle_id;		// keeps track of current resonance's index in all_particles array
+	int resonance_idx;			// keeps track of current resonance's index in chosen_resonances vector
+	int nbody;
+	int resonance_sign;
+	double resonance_mass;
+	double resonance_mu;
+	double resonance_gspin;
+	double resonance_Gamma;
+	double resonance_total_br;
+	double resonance_direct_br;
+	double * resonance_decay_masses;
+	int * resonance_decay_monvals;
+	double * resonance_decay_Gammas;
+	string resonance_name;
+	bool include_channel;
 }decay_info;
 
 struct Correlationfunction3D_data
 {
-  size_t data_length;
-  double * q_o;
-  double * q_s;
-  double * q_l;
-  double * y;
-  double * sigma;
+	size_t data_length;
+	double * q_o;
+	double * q_s;
+	double * q_l;
+	double * y;
+	double * sigma;
 };
 
 int Fittarget_correlfun3D_f (const gsl_vector *xvec_ptr, void *params_ptr, gsl_vector *f_ptr);
@@ -71,6 +71,11 @@ int Fittarget_correlfun3D_fdf_withlambda (const gsl_vector* xvec_ptr, void *para
 class CorrelationFunction
 {
 	private:
+		//header info
+		int n_interp_pT_pts, n_interp_pphi_pts;
+		int qtnpts, qxnpts, qynpts, qznpts;
+		double init_qt, init_qx, init_qy, init_qz;
+
 		//particle information 
 		string particle_name;
 		double particle_mass;
@@ -108,22 +113,22 @@ class CorrelationFunction
 		double * previous_resonance_decay_masses;
 		
 		//arrays to hold results of resonance phase-space integrations
-		double ******* current_dN_dypTdpTdphi_moments;
+		/*double ******* current_dN_dypTdpTdphi_moments;
 		double ******* current_ln_dN_dypTdpTdphi_moments;
 		double ******* current_sign_of_dN_dypTdpTdphi_moments;
 		double ******** current_daughters_dN_dypTdpTdphi_moments;
 		double ******** current_daughters_ln_dN_dypTdpTdphi_moments;
 		double ******** current_daughters_sign_of_dN_dypTdpTdphi_moments;
 		double ******* thermal_target_dN_dypTdpTdphi_moments;
-		double ******* full_target_dN_dypTdpTdphi_moments;
-		/*double * current_dN_dypTdpTdphi_moments;
+		double ******* full_target_dN_dypTdpTdphi_moments;*/
+		double * current_dN_dypTdpTdphi_moments;
 		double * current_ln_dN_dypTdpTdphi_moments;
 		double * current_sign_of_dN_dypTdpTdphi_moments;
-		double * current_daughters_dN_dypTdpTdphi_moments;
-		double * current_daughters_ln_dN_dypTdpTdphi_moments;
-		double * current_daughters_sign_of_dN_dypTdpTdphi_moments;
+		double ** current_daughters_dN_dypTdpTdphi_moments;
+		double ** current_daughters_ln_dN_dypTdpTdphi_moments;
+		double ** current_daughters_sign_of_dN_dypTdpTdphi_moments;
 		double * thermal_target_dN_dypTdpTdphi_moments;
-		double * full_target_dN_dypTdpTdphi_moments;*/
+		double * full_target_dN_dypTdpTdphi_moments;
 
 
 		double ***** target_pphiavgd_CFs;
@@ -259,6 +264,7 @@ class CorrelationFunction
 
 	public:
 		//library of inline functions
+		inline int indexer(const int ipt, const int ipphi, const int iqt, const int iqx, const int iqy, const int iqz, const int itrig);
 		inline double lin_int(double x_m_x1, double one_by_x2_m_x1, double f1, double f2);
 		inline void addElementToQueue(priority_queue<pair<double, size_t> >& p, pair<double, size_t> elem, size_t max_size);
 		inline void set_to_zero(double * array, size_t arraylength);
@@ -271,19 +277,24 @@ class CorrelationFunction
 		bool fexists(const char *filename);
 
 		// HDF routines
-		int Get_resonance_from_HDF_array(int local_pid, double ******* resonance_array_to_fill);
-		int Set_resonance_in_HDF_array(int local_pid, double ******* resonance_array_to_use);
+		//int Get_resonance_from_HDF_array(int local_pid, double ******* resonance_array_to_fill);
+		//int Set_resonance_in_HDF_array(int local_pid, double ******* resonance_array_to_use);
+		int Get_resonance_from_HDF_array(int local_pid, double * resonance_array_to_fill);
+		int Set_resonance_in_HDF_array(int local_pid, double * resonance_array_to_use);
 		int Initialize_resonance_HDF_array();
 		int Open_resonance_HDF_array(string resonance_local_file_name);
 		int Close_resonance_HDF_array();
 		int Copy_chunk(int current_resonance_index, int reso_idx_to_be_copied);
-		int Dump_resonance_HDF_array_spectra(string output_filename, double ******* resonance_array_to_use);
+		//int Dump_resonance_HDF_array_spectra(string output_filename, double ******* resonance_array_to_use);
+		int Dump_resonance_HDF_array_spectra(string output_filename, double * resonance_array_to_use);
 		void Unzip_HDF5_arrays();
 		int Initialize_target_thermal_HDF_array();
 		int Open_target_thermal_HDF_array();
 		int Close_target_thermal_HDF_array();
-		int Get_target_thermal_from_HDF_array(double ******* target_thermal_array_to_fill);
-		int Set_target_thermal_in_HDF_array(double ******* tta_array_to_use);
+		//int Get_target_thermal_from_HDF_array(double ******* target_thermal_array_to_fill);
+		//int Set_target_thermal_in_HDF_array(double ******* tta_array_to_use);
+		int Get_target_thermal_from_HDF_array(double * target_thermal_array_to_fill);
+		int Set_target_thermal_in_HDF_array(double * tta_array_to_use);
 
 		void Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int dc_idx);
 		void Set_thermal_target_moments();
@@ -338,6 +349,8 @@ class CorrelationFunction
 		int list_daughters(int parent_resonance_index, set<int> * daughter_resonance_indices_ptr, particle_info * particle, int Nparticle);
 		void eiqxEdndp3(double ptr, double phir, double * results, int loc_verb = 0);
 		void Edndp3(double ptr, double phir, double * result, int loc_verb = 0);
+		void eiqxEdndp3_OLD(double ptr, double phir, double * results, int loc_verb = 0);
+		void Edndp3_OLD(double ptr, double phir, double * result, int loc_verb = 0);
 		void Set_correlation_function_q_pts();
 		void Set_q_points();
 		void Set_sorted_q_pts_list();
@@ -423,7 +436,8 @@ class CorrelationFunction
 		H5::DataSet * resonance_dataset;
 
 		CorrelationFunction(particle_info* particle, particle_info* all_particles_in, int Nparticle,
-				FO_surf* FOsurf_ptr, vector<int> chosen_resonances, int particle_idx, ofstream& myout);
+				FO_surf* FOsurf_ptr, vector<int> chosen_resonances, int particle_idx, ofstream& myout,
+				const int n_interp_pT_pts, const int n_interp_pphi_pts, const int qtnpts, const int qxnpts, const int qynpts, const int qznpts);
 		~CorrelationFunction();
 
 };

@@ -103,41 +103,6 @@ void CorrelationFunction::Cal_correlationfunction()
 	//output the un-regulated correlation function to separate file for debugging purposes
 	Output_correlationfunction();
 
-	if (REGULATE_CF)
-	{
-		sw.Reset();
-		sw.Start();
-	
-		*global_out_stream_ptr << "WARNING: Regulating computed correlator values using Hampel criterion for outlier detection..." << endl;
-		double * pphi_CF_slice = new double [n_interp_pphi_pts];
-		double * pphi_CF_slice_term1 = new double [n_interp_pphi_pts];
-		double * pphi_CF_slice_term2 = new double [n_interp_pphi_pts];
-		double * pphi_CF_slice_term3 = new double [n_interp_pphi_pts];
-	
-		for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-		for (int iqx = 0; iqx < qxnpts; ++iqx)
-		for (int iqy = 0; iqy < qynpts; ++iqy)
-		for (int iqz = 0; iqz < qznpts; ++iqz)
-		{
-			for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-			{
-				pphi_CF_slice[ipphi] = CFvals[ipt][ipphi][iqx][iqy][iqz];
-				pphi_CF_slice_term1[ipphi] = thermalCFvals[ipt][ipphi][iqx][iqy][iqz];
-				pphi_CF_slice_term2[ipphi] = crosstermCFvals[ipt][ipphi][iqx][iqy][iqz];
-				pphi_CF_slice_term3[ipphi] = resonancesCFvals[ipt][ipphi][iqx][iqy][iqz];
-			}
-			//Regulate_CF_Hampel(ipt, iqx, iqy, iqz, pphi_CF_slice, pphi_CF_slice_term1, pphi_CF_slice_term2, pphi_CF_slice_term3);
-			Regulate_CF_Hampel_v2(ipt, iqx, iqy, iqz, pphi_CF_slice, pphi_CF_slice_term1, pphi_CF_slice_term2, pphi_CF_slice_term3);
-		}
-		sw.Stop();
-		*global_out_stream_ptr << "WARNING: Finished regulating computed correlator values in " << sw.printTime() << " seconds." << endl;
-	
-		delete [] pphi_CF_slice;
-		delete [] pphi_CF_slice_term1;
-		delete [] pphi_CF_slice_term2;
-		delete [] pphi_CF_slice_term3;
-	}
-
 	delete [] q_interp;
 
 	return;
@@ -808,103 +773,19 @@ double CorrelationFunction::interpolate_qi(double q0, double qi0, double qi1, do
 	return (tmp_result);
 }
 
-void CorrelationFunction::Regulate_CF(int ipt, int iqt, int iqx, int iqy, int iqz, double * CF, double * projCF)
-{
-	double mu = target_pphiavgd_CFs[ipt][iqt][iqx][iqy][iqz];
-	double sigma = sqrt(target_pphivar_CFs[ipt][iqt][iqx][iqy][iqz]);
-
-	double zthreshhold = 3.0;
-	double pTcutoff = 2.0;	//GeV
-
-	double zact = abs(mu - *CF) / sigma;
-
-	if (zact >= zthreshhold || abs(*CF-1.5) > 0.500001)
-	{
-		//if (SPinterp_pT[ipt] < pTcutoff)
-			*global_out_stream_ptr << "WARNING: regulated CF point at pT = " << SPinterp_pT[ipt]
-				<< ": (" << *CF << "," << *projCF << ") --> (";
-		*CF = mu;	//if it's an outlier, replace with pphi-averaged value
-		*projCF = mu;
-		//if (SPinterp_pT[ipt] < pTcutoff)
-			*global_out_stream_ptr << *CF << "," << *projCF << ")" << endl;
-	}
-
-	return;
-}
-
-void CorrelationFunction::Regulate_CF_Hampel(int ipt, int iqx, int iqy, int iqz,
-												double * pphi_CF_slice, double * pphi_CF_slice_term1, double * pphi_CF_slice_term2, double * pphi_CF_slice_term3)
-{
-	bool * is_outlier = new bool [n_interp_pphi_pts];
-
-	double pphi_median = 0.0;
-
-	find_outliers_Hampel(pphi_CF_slice, n_interp_pphi_pts, is_outlier, &pphi_median, 7.5);	//last part is Hampel factor
-
-	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-	if (is_outlier[ipphi] || abs(pphi_CF_slice[ipphi]-1.5) > 0.500001)
-	{
-		//if (SPinterp_pT[ipt] < pTcutoff)
-			*global_out_stream_ptr << "\t WARNING: regulated CF point at pT = " << SPinterp_pT[ipt] << ", pphi = " << SPinterp_pphi[ipphi]
-				<< " (" << iqx << ", " << iqy << ", " << iqz << "): (" << scientific << setprecision(6) << setw(9)
-				<< pphi_CF_slice[ipphi] << ", " << pphi_CF_slice_term1[ipphi] << ", " << pphi_CF_slice_term2[ipphi] << ", " << pphi_CF_slice_term3[ipphi] << ") --> (";
-		pphi_CF_slice[ipphi] = pphi_median;	//if it's an outlier, replace with pphi-median value
-		pphi_CF_slice_term1[ipphi] = get_median(pphi_CF_slice_term1, n_interp_pphi_pts);
-		pphi_CF_slice_term2[ipphi] = get_median(pphi_CF_slice_term2, n_interp_pphi_pts);
-		pphi_CF_slice_term3[ipphi] = get_median(pphi_CF_slice_term3, n_interp_pphi_pts);
-		//if (SPinterp_pT[ipt] < pTcutoff)
-			*global_out_stream_ptr << pphi_CF_slice[ipphi] << ", " << pphi_CF_slice_term1[ipphi] << ", " << pphi_CF_slice_term2[ipphi] << ", " << pphi_CF_slice_term3[ipphi] << ")" << endl;
-	}
-
-	delete [] is_outlier;
-
-	return;
-}
-
-void CorrelationFunction::Regulate_CF_Hampel_v2(int ipt, int iqx, int iqy, int iqz,
-												double * pphi_CF_slice, double * pphi_CF_slice_term1, double * pphi_CF_slice_term2, double * pphi_CF_slice_term3)
-{
-	bool * is_outlier = new bool [n_interp_pphi_pts];
-	double * local_pphi_medians = new double [n_interp_pphi_pts];
-
-	int window_width = 11;	//this seems to work fairly well
-
-	find_outliers_window_Hampel(pphi_CF_slice, n_interp_pphi_pts, is_outlier, local_pphi_medians, 5.2, window_width);	//last part is Hampel factor
-
-	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
-	if (is_outlier[ipphi] || abs(pphi_CF_slice[ipphi]-1.5) > 0.500001)
-	{
-		//if (SPinterp_pT[ipt] < pTcutoff)
-			*global_out_stream_ptr << "\t WARNING: regulated CF point at pT = " << SPinterp_pT[ipt] << ", pphi = " << SPinterp_pphi[ipphi]
-				<< " (" << iqx << ", " << iqy << ", " << iqz << "): (" << scientific << setprecision(6) << setw(9)
-				<< pphi_CF_slice[ipphi] << ", " << pphi_CF_slice_term1[ipphi] << ", " << pphi_CF_slice_term2[ipphi] << ", " << pphi_CF_slice_term3[ipphi] << ") --> (";
-		pphi_CF_slice[ipphi] = local_pphi_medians[ipphi];	//if it's an outlier, replace with pphi-median value
-		pphi_CF_slice_term1[ipphi] = get_median(pphi_CF_slice_term1, n_interp_pphi_pts);
-		pphi_CF_slice_term2[ipphi] = get_median(pphi_CF_slice_term2, n_interp_pphi_pts);
-		pphi_CF_slice_term3[ipphi] = get_median(pphi_CF_slice_term3, n_interp_pphi_pts);
-		//if (SPinterp_pT[ipt] < pTcutoff)
-			*global_out_stream_ptr << pphi_CF_slice[ipphi] << ", " << pphi_CF_slice_term1[ipphi] << ", "
-				<< pphi_CF_slice_term2[ipphi] << ", " << pphi_CF_slice_term3[ipphi] << ")" << endl;
-	}
-
-
-	delete [] is_outlier;
-
-	return;
-}
 
 double CorrelationFunction::get_CF(int ipt, int ipphi, int iqt, int iqx, int iqy, int iqz, bool return_projected_value)
 {
 	double nonFTd_spectra = spectra[target_particle_id][ipt][ipphi];
-	double cos_transf_spectra = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
-	double sin_transf_spectra = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
+	double cos_transf_spectra = current_dN_dypTdpTdphi_moments[indexer(ipt,ipphi,iqt,iqx,iqy,iqz,0)];
+	double sin_transf_spectra = current_dN_dypTdpTdphi_moments[indexer(ipt,ipphi,iqt,iqx,iqy,iqz,1)];
 
 	if (return_projected_value)
 	{
 		//with no resonances
 		double nonFTd_tspectra = thermal_spectra[target_particle_id][ipt][ipphi];
-		double cos_transf_tspectra = thermal_target_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
-		double sin_transf_tspectra = thermal_target_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
+		double cos_transf_tspectra = thermal_target_dN_dypTdpTdphi_moments[indexer(ipt,ipphi,iqt,iqx,iqy,iqz,0)];
+		double sin_transf_tspectra = thermal_target_dN_dypTdpTdphi_moments[indexer(ipt,ipphi,iqt,iqx,iqy,iqz,1)];
 
 		double projected_nonFTd_spectra = nonFTd_tspectra + (nonFTd_spectra - nonFTd_tspectra) / fraction_of_resonances;
 		double projected_cos_transf_spectra = cos_transf_tspectra + (cos_transf_spectra - cos_transf_tspectra) / fraction_of_resonances;
@@ -929,12 +810,12 @@ void CorrelationFunction::get_CF(double * totalresult, double * thermalresult, d
 
 	//thermal
 	double nonFTd_tspectra = thermal_spectra[target_particle_id][ipt][ipphi];
-	double cos_transf_tspectra = thermal_target_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
-	double sin_transf_tspectra = thermal_target_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
+	double cos_transf_tspectra = thermal_target_dN_dypTdpTdphi_moments[indexer(ipt,ipphi,iqt,iqx,iqy,iqz,0)];
+	double sin_transf_tspectra = thermal_target_dN_dypTdpTdphi_moments[indexer(ipt,ipphi,iqt,iqx,iqy,iqz,1)];
 	//total
 	double nonFTd_spectra = spectra[target_particle_id][ipt][ipphi];
-	double cos_transf_spectra = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
-	double sin_transf_spectra = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
+	double cos_transf_spectra = current_dN_dypTdpTdphi_moments[indexer(ipt,ipphi,iqt,iqx,iqy,iqz,0)];
+	double sin_transf_spectra = current_dN_dypTdpTdphi_moments[indexer(ipt,ipphi,iqt,iqx,iqy,iqz,1)];
 
 	if (return_projected_value)
 	{
@@ -971,8 +852,8 @@ void CorrelationFunction::get_CF(double * totalresult, double * thermalresult, d
 	/*if (return_projected_value)
 	{
 		nonFTd_spectra = spectra[target_particle_id][ipt][ipphi];
-		cos_transf_spectra = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][0];
-		sin_transf_spectra = current_dN_dypTdpTdphi_moments[ipt][ipphi][iqt][iqx][iqy][iqz][1];
+		cos_transf_spectra = current_dN_dypTdpTdphi_moments[indexer(ipt,ipphi,iqt,iqx,iqy,iqz,0)];
+		sin_transf_spectra = current_dN_dypTdpTdphi_moments[indexer(ipt,ipphi,iqt,iqx,iqy,iqz,1)];
 
 		double CF0 = (cos_transf_tspectra*cos_transf_tspectra + sin_transf_tspectra*sin_transf_tspectra) / (nonFTd_tspectra*nonFTd_tspectra);
 		double CF1 = (cos_transf_spectra*cos_transf_spectra + sin_transf_spectra*sin_transf_spectra) / (nonFTd_spectra*nonFTd_spectra);

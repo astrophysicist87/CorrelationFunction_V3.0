@@ -60,8 +60,8 @@ void initialize_PRfile(string currentworkingdirectory, string PRfilename = "Proc
 	output << "      --> eta_s_f: " << eta_s_f << endl;
 
 	output << "   - Single-particle momentum information:" << endl;
-	output << "      --> n_interp_pT_pts: " << n_interp_pT_pts << endl;
-	output << "      --> n_interp_pphi_pts: " << n_interp_pphi_pts << endl;
+	//output << "      --> n_interp_pT_pts: " << n_interp_pT_pts << endl;
+	//output << "      --> n_interp_pphi_pts: " << n_interp_pphi_pts << endl;
 	output << "      --> interp_pT_min: " << interp_pT_min << endl;
 	output << "      --> interp_pT_max: " << interp_pT_max << endl;
 	output << "      --> interp_pphi_min: " << interp_pphi_min << endl;
@@ -73,18 +73,18 @@ void initialize_PRfile(string currentworkingdirectory, string PRfilename = "Proc
 	output << "      --> zeta_npts: " << zeta_npts << endl;
 
 	output << "   - Relative momentum information:" << endl;
-	output << "      --> qtnpts: " << qtnpts << endl;
-	output << "      --> qxnpts: " << qxnpts << endl;
-	output << "      --> qynpts: " << qynpts << endl;
-	output << "      --> qznpts: " << qznpts << endl;
+	//output << "      --> qtnpts: " << qtnpts << endl;
+	//output << "      --> qxnpts: " << qxnpts << endl;
+	//output << "      --> qynpts: " << qynpts << endl;
+	//output << "      --> qznpts: " << qznpts << endl;
 	output << "      --> delta_qt: " << delta_qt << endl;
 	output << "      --> delta_qx: " << delta_qx << endl;
 	output << "      --> delta_qy: " << delta_qy << endl;
 	output << "      --> delta_qz: " << delta_qz << endl;
-	output << "      --> init_qt: " << init_qt << endl;
-	output << "      --> init_qx: " << init_qx << endl;
-	output << "      --> init_qy: " << init_qy << endl;
-	output << "      --> init_qz: " << init_qz << endl;
+	//output << "      --> init_qt: " << init_qt << endl;
+	//output << "      --> init_qx: " << init_qx << endl;
+	//output << "      --> init_qy: " << init_qy << endl;
+	//output << "      --> init_qz: " << init_qz << endl;
 
 	output << "   - Pair momentum information:" << endl;
 	output << "      --> n_localp_T: " << n_localp_T << endl;
